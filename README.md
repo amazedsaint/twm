@@ -69,6 +69,7 @@ python3 -m examples.branch_confidence_transfer
 python3 -m examples.branch_pareto_transfer
 python3 -m examples.branch_outlier_filter_transfer
 python3 -m examples.branch_provenance_guard_transfer
+python3 -m examples.branch_credit_assignment_transfer
 python3 -m examples.branch_pruning_transfer
 python3 -m examples.branch_diversity_transfer
 python3 -m examples.branch_budget_transfer
@@ -123,6 +124,8 @@ the branch-outlier-filter example uses source inlier/outlier feature receipts
 to avoid anomalous source replay under the same one-call budget;
 the branch-provenance-guard example uses source-id receipts to quarantine
 source-valid but target-untrusted branches under the same one-call budget;
+the branch-credit-assignment example uses source marginal-credit receipts to
+avoid source-valid distractors under the same one-call budget;
 the branch-pruning example uses rejected branch
 receipts to remove known-dead target candidates before verifier-budget allocation; the
 branch-diversity example uses same-family rejects to force coverage of a
@@ -148,7 +151,7 @@ future proposal evidence for a sibling target and
 certifies the memory query that ranks the sibling proposals against a
 same-budget static sibling baseline; the frontier example aggregates the three
 physical certified domains, while the branch-history frontier aggregates the
-thirty-three branch-memory stages. See `examples/README.md` and
+thirty-four branch-memory stages. See `examples/README.md` and
 `docs/experiment_learnings.md`.
 
 ## Package Layout

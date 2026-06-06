@@ -435,6 +435,19 @@ in the ledger while being excluded from target proposal priority: branch memory
 needs source-id guard certificates before untrusted provenance can influence
 exploration.
 
+The branch-credit-assignment transfer example adds marginal-contribution
+evidence for source branch fragments. Each domain records three source commits:
+one high-credit fragment and two source-valid distractors. The static target
+spends one verifier call replaying a low-credit distractor and fails; the
+credit-guided target spends the same verifier call on the high-credit fragment
+and commits. The new `trwm.branch_credit_assignment_certificate.v1` artifact
+binds source actions, credit values, credited and distractor source receipts,
+static target reject, credit target commit, branch-selection certificates, and
+same-budget comparison. The substrate implication is that source-valid branch
+fragments should not all receive equal proposal priority: branch memory needs
+marginal-credit certificates before correlated source commits can influence
+target exploration.
+
 The branch-pruning transfer example adds negative-evidence admission. Each
 domain records a source branch with two hard-rejected actions and one committed
 winner. The unpruned target spends the same two-call verifier budget on the
@@ -532,7 +545,7 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the thirty-three local branch-memory
+The branch-history frontier report now aggregates the thirty-four local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
 receipt-bound ordering, accepted-loser counterfactual reuse, option-family
@@ -542,7 +555,7 @@ receipt-bound diagnostic probing, residual-template repair, boundary
 bracketing, source consensus, contrastive invariant transfer, trust-region radius transfer, analogical
 ancestor reuse, certified context selection, counterexample refinement,
 conflict-aware query-policy transfer,
-drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, receipt-bound branch pruning, diversity-certified family
+drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, receipt-bound branch pruning, diversity-certified family
 coverage, receipt-bound budget allocation, no-good stop-rule abstention, branch composition, and retained
 memory influence.
 This changes the design posture from isolated demos to a staged substrate map:
@@ -568,10 +581,11 @@ plus Wilson-style proportion intervals as a support-confidence analogy
 plus non-dominated sorting as a multi-objective tradeoff analogy
 plus RANSAC as a robust-inlier/outlier analogy
 plus Byzantine agreement as a faulty-source provenance analogy
+plus Shapley value as a marginal-contribution analogy
 plus nogood learning and backjumping as a stop-rule analogy;
 it is not a
 statistical exploration algorithm, regret guarantee, MCTS implementation,
 automatic similarity metric, CEGAR system, CDCL solver, novelty-search result,
 MAP-Elites implementation, Hyperband implementation, options-framework result,
-contextual-bandit result, curriculum-learning result, homotopy-optimization result, Hindsight Experience Replay result, causal-inference result, do-calculus result, Bayesian experimental-design result, active-learning result, query-by-committee result, version-space learning result, safe Bayesian optimization result, group-equivariant neural network, automatic symmetry-search system, CSP solver, arc-consistency algorithm, statistical validation, production calibration, multiobjective optimizer, Pareto-front approximation guarantee, case-based reasoning system, genetic algorithm, program synthesizer, or
+contextual-bandit result, curriculum-learning result, homotopy-optimization result, Hindsight Experience Replay result, causal-inference result, do-calculus result, Bayesian experimental-design result, active-learning result, query-by-committee result, version-space learning result, safe Bayesian optimization result, group-equivariant neural network, automatic symmetry-search system, CSP solver, arc-consistency algorithm, statistical validation, production calibration, multiobjective optimizer, Pareto-front approximation guarantee, case-based reasoning system, genetic algorithm, program synthesizer, Shapley-value computation, reinforcement-learning credit-assignment result, or
 RANSAC implementation, robust estimator, outlier-detection guarantee, Byzantine fault-tolerant protocol, consensus algorithm, security proof, or cross-domain scientific discovery result.

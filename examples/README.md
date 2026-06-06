@@ -39,6 +39,7 @@ python3 -m examples.branch_confidence_transfer
 python3 -m examples.branch_pareto_transfer
 python3 -m examples.branch_outlier_filter_transfer
 python3 -m examples.branch_provenance_guard_transfer
+python3 -m examples.branch_credit_assignment_transfer
 python3 -m examples.branch_pruning_transfer
 python3 -m examples.branch_diversity_transfer
 python3 -m examples.branch_budget_transfer
@@ -144,6 +145,10 @@ branch-provenance-guard command adds
 `trwm.branch_provenance_guard_certificate.v1` artifacts that bind trusted
 source ids, a quarantined source-valid branch, failed quarantined-source target
 replay, and same-budget provenance-guarded target commit. The
+branch-credit-assignment command adds
+`trwm.branch_credit_assignment_certificate.v1` artifacts that bind marginal
+credit values, one credited source fragment, source-valid distractors, failed
+low-credit target replay, and same-budget credit-guided target commit. The
 branch-pruning command adds `trwm.branch_pruning_certificate.v1` artifacts
 showing that rejected source branch receipts can prune known-dead target
 candidates before scarce verifier budget is spent. The
@@ -169,7 +174,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the thirty-three branch-memory stages into one bounded G1 report. The physical
+the thirty-four branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -642,6 +647,25 @@ Generals is only the faulty-source analogy here; this is not a Byzantine
 fault-tolerant protocol, consensus algorithm, or security proof:
 https://doi.org/10.1145/357172.357176
 
+### Branch Credit-Assignment Transfer
+
+`examples.branch_credit_assignment_transfer` tests marginal-credit evidence for
+source branch fragments. Each domain records three source commits: one
+high-credit fragment and two source-valid distractors. The static target spends
+one verifier call replaying a low-credit distractor and fails. The
+credit-guided target spends the same verifier call on the high-credit fragment
+and commits only after fresh hard verification.
+
+Learning: branches of the past can improve exploration by binding which source
+fragment actually carried useful marginal evidence, not only which source
+branch committed. `trwm.branch_credit_assignment_certificate.v1` binds source
+actions, credit values, credited and distractor source receipts, failed static
+target replay, credit-guided target commit, branch-selection certificates, and
+same-budget comparison before claiming credit-guided exploration lift. Shapley
+value is only the marginal-contribution analogy here; this is not a
+Shapley-value computation, causal inference result, or reinforcement-learning
+credit-assignment result: https://doi.org/10.1515/9781400881970-018
+
 ### Branch Pruning Transfer
 
 `examples.branch_pruning_transfer` tests negative branch evidence. Each domain
@@ -743,7 +767,7 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the thirty-three branch-history experiments and
+`examples.branch_history_frontier` runs the thirty-four branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
@@ -754,7 +778,7 @@ diagnostic probing, residual-template repair, boundary bracketing, source
 consensus, contrastive invariant transfer, trust-region radius transfer, analogical ancestor reuse, certified context selection,
 counterexample refinement,
 conflict-aware query-policy transfer,
-drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, receipt-bound branch pruning, diversity-certified family
+drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, receipt-bound branch pruning, diversity-certified family
 coverage, branch budget allocation, no-good stop-rule abstention, branch composition, and retained-memory
 influence.
 
@@ -774,7 +798,7 @@ receipts and fresh target verification, source consensus is admitted only
 through majority receipts plus fresh target verification, contrastive invariants
 are admitted only through positive/negative source receipts plus fresh target
 verification, context selection is certified, failed branches refine retrieval,
-conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, Pareto dominance is certificate-bound, outlier filtering is certificate-bound, source provenance is certificate-bound, rejected branches prune
+conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, Pareto dominance is certificate-bound, outlier filtering is certificate-bound, source provenance is certificate-bound, source-fragment credit is certificate-bound, rejected branches prune
 known-dead target candidates, same-family failures force coverage only through
 a certificate, verifier budget is allocated only through a cost-bound
 certificate, branch fragments compose
@@ -809,6 +833,9 @@ certificates before claim promotion.
 - Counterfactual regret is the design analogy for separating "what could have
   happened" evidence from committed outcomes:
   https://papers.nips.cc/paper/3306-regret-minimization-in-games-with-incomplete-information
+- Shapley value is the marginal-contribution analogy for source-fragment credit
+  assignment, not a computed game-theoretic value:
+  https://doi.org/10.1515/9781400881970-018
 - UCT/MCTS is the planning analogy for spending samples selectively:
   https://doi.org/10.1007/11871842_29
 - Case-based reasoning is the retrieval/reuse/revision analogy for solving a

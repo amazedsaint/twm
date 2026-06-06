@@ -154,6 +154,11 @@ This repository currently targets `G1` evidence:
   quarantined source-valid receipts, static quarantined-source target rejects,
   guarded target commits, and same-budget verifier-call evidence before
   source-valid but target-untrusted branches can influence target exploration,
+- branch-credit-assignment certificates that bind source actions,
+  marginal-credit values, credited and distractor source receipts, static
+  low-credit target rejects, credit-guided target commits, and same-budget
+  verifier-call evidence before correlated source-valid branch fragments can
+  influence target exploration,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can
@@ -669,6 +674,8 @@ search.
   https://www.ijcai.org/Proceedings/77-1/Papers/048.pdf
 - W3C PROV Overview:
   https://www.w3.org/TR/prov-overview/
+- Shapley, A Value for n-Person Games:
+  https://doi.org/10.1515/9781400881970-018
 - ISO/IEC/IEEE 15026-2 assurance case structure and terminology:
   https://standards.iteh.ai/catalog/standards/iso/4734d411-2bff-428f-8f4a-164859f171b8/iso-iec-ieee-15026-2-2022
 - OpenTelemetry Semantic Conventions:
