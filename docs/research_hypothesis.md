@@ -77,6 +77,10 @@ This repository currently targets `G1` evidence:
   candidate family ids, source and target receipt hashes, and same-budget
   verifier-call evidence before past same-family failures can force coverage
   of distinct candidate families,
+- branch-budget certificates that bind receipt-derived verifier-cost memory,
+  static and allocated target receipts, abstain counts, exact spent verifier
+  cost, and same-budget evidence before past branches can shape scarce
+  verifier-resource allocation,
 - branch-composition certificates that bind two source branch fragments,
   source and target receipt hashes, static/component/composed target
   comparisons, and same-budget verifier-call evidence before a composed

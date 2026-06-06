@@ -191,6 +191,19 @@ to ranking and pruning certificates: a failed family should be able to force a
 budgeted search to cover a different family, but that pressure is not commit
 authority.
 
+The branch-budget transfer example adds explicit verifier-cost allocation. Each
+domain records past receipts for two cheap reject probes and one higher-cost
+repair. The static target spends the same three-unit verifier budget on the two
+cheap rejects, then abstains the repair because the remaining budget is too
+small. The budget-allocated target spends one cheap probe plus the higher-cost
+repair, and commits under the same total budget. The new
+`trwm.branch_budget_certificate.v1` artifact binds memory receipts, static and
+allocated target receipt hashes, abstain counts, exact spent verifier cost, and
+the same-budget comparison. The substrate implication is that past branches
+should be allowed to shape resource allocation only through receipt-bound cost
+certificates: resource policy can decide which hard checks to spend, but it
+still cannot commit without a domain verifier receipt.
+
 The branch-composition transfer example adds a proposal-construction check.
 Each domain records two source branches whose committed receipts stand for
 distinct hard-gate fragments. A static target branch fails under one verifier
@@ -234,13 +247,14 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the ten local branch-memory
+The branch-history frontier report now aggregates the eleven local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
 receipt-bound ordering, analogical ancestor reuse, certified context selection,
 counterexample refinement, conflict-aware query-policy transfer, drift
 quarantine, receipt-bound branch pruning, diversity-certified family coverage,
-branch composition, and retained memory influence.
+receipt-bound budget allocation, branch composition, and retained memory
+influence.
 This changes the design posture from isolated demos to a staged substrate map:
 each branch-history capability must expose its own certificate, and later
 stages are only meaningful if earlier evidence still validates.
@@ -248,7 +262,8 @@ stages are only meaningful if earlier evidence still validates.
 The boundary remains narrow. This is a deterministic G1 canary inspired by
 experience replay, counterfactual regret evidence, and selective tree-search
 sampling plus nogood-style pruning, diversity pressure, and recombinable
-building-block search; it is not a statistical exploration algorithm, regret
-guarantee, MCTS implementation, automatic similarity metric, CEGAR system, CDCL
-solver, novelty-search result, MAP-Elites implementation, genetic algorithm,
-program synthesizer, or cross-domain scientific discovery result.
+building-block search plus successive resource allocation; it is not a
+statistical exploration algorithm, regret guarantee, MCTS implementation,
+automatic similarity metric, CEGAR system, CDCL solver, novelty-search result,
+MAP-Elites implementation, Hyperband implementation, genetic algorithm, program
+synthesizer, or cross-domain scientific discovery result.

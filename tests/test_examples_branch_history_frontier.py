@@ -4,6 +4,7 @@ import unittest
 
 from examples.analogical_branch_transfer import run_analogical_branch_transfer_certified_experiment
 from examples.ancestral_branch_exploration import run_ancestral_branch_exploration_certified_experiment
+from examples.branch_budget_transfer import run_branch_budget_transfer_certified_experiment
 from examples.branch_composition_transfer import run_branch_composition_transfer_certified_experiment
 from examples.branch_diversity_transfer import run_branch_diversity_transfer_certified_experiment
 from examples.branch_pruning_transfer import run_branch_pruning_transfer_certified_experiment
@@ -27,7 +28,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         claim = result.claim_certificate
 
         self.assertEqual(report.schema_version, "trwm.example.branch_history_frontier.v1")
-        self.assertEqual(report.stage_count, 10)
+        self.assertEqual(report.stage_count, 11)
         self.assertEqual(
             report.child_experiment_ids,
             (
@@ -39,6 +40,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
                 "context_drift_quarantine",
                 "branch_pruning_transfer",
                 "branch_diversity_transfer",
+                "branch_budget_transfer",
                 "branch_composition_transfer",
                 "context_retention_transfer",
             ),
@@ -54,6 +56,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
                 "context_drift_quarantine",
                 "receipt_bound_branch_pruning",
                 "diversity_certified_family_coverage",
+                "receipt_bound_budget_allocation",
                 "receipt_bound_branch_composition",
                 "retained_memory_influence",
             ),
@@ -61,11 +64,11 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         self.assertTrue(report.all_evidence_valid)
         self.assertTrue(report.all_claims_supported)
         self.assertTrue(report.all_primary_certificates_valid)
-        self.assertEqual(report.total_receipt_count, 309)
-        self.assertEqual(report.total_committed_count, 108)
-        self.assertEqual(report.total_rejected_count, 111)
+        self.assertEqual(report.total_receipt_count, 333)
+        self.assertEqual(report.total_committed_count, 114)
+        self.assertEqual(report.total_rejected_count, 126)
         self.assertEqual(report.total_invalid_commit_count, 0)
-        self.assertEqual(report.same_budget_stage_count, 10)
+        self.assertEqual(report.same_budget_stage_count, 11)
         self.assertEqual(report.branch_conflict_certificate_count, 6)
         self.assertEqual(report.query_policy_certificate_count, 6)
         self.assertEqual(report.drift_quarantine_certificate_count, 3)
@@ -74,6 +77,8 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         self.assertEqual(report.pruned_action_count, 6)
         self.assertEqual(report.branch_diversity_certificate_count, 3)
         self.assertEqual(report.diverse_family_count, 3)
+        self.assertEqual(report.branch_budget_certificate_count, 3)
+        self.assertEqual(report.static_abstain_count, 3)
         self.assertEqual(report.branch_composition_certificate_count, 3)
         self.assertEqual(report.retention_certificate_count, 3)
         self.assertEqual(report.influence_certificate_count, 3)
@@ -91,6 +96,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
             run_context_drift_quarantine_certified_experiment(),
             run_branch_pruning_transfer_certified_experiment(),
             run_branch_diversity_transfer_certified_experiment(),
+            run_branch_budget_transfer_certified_experiment(),
             run_branch_composition_transfer_certified_experiment(),
             run_context_retention_transfer_certified_experiment(),
         )

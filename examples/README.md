@@ -20,6 +20,7 @@ python3 -m examples.context_query_policy_transfer
 python3 -m examples.context_drift_quarantine
 python3 -m examples.branch_pruning_transfer
 python3 -m examples.branch_diversity_transfer
+python3 -m examples.branch_budget_transfer
 python3 -m examples.branch_composition_transfer
 python3 -m examples.context_retention_transfer
 python3 -m examples.branch_history_frontier
@@ -49,6 +50,9 @@ candidates before scarce verifier budget is spent. The
 branch-diversity command adds `trwm.branch_diversity_certificate.v1` artifacts
 showing that same-family rejects can force coverage of distinct candidate
 families under the same verifier budget. The
+branch-budget command adds `trwm.branch_budget_certificate.v1` artifacts
+showing that past receipt costs can allocate a fixed verifier budget toward a
+higher-cost repair after a cheap reject probe. The
 branch-composition command adds `trwm.branch_composition_certificate.v1`
 artifacts showing that two receipt-bound source fragments can be combined into
 a target proposal only after static and single-fragment branches fail under the
@@ -62,7 +66,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the ten branch-memory stages into one bounded G1 report. The physical frontier
+the eleven branch-memory stages into one bounded G1 report. The physical frontier
 command aggregates the three physical certified examples into a cross-domain
 report and bounded G1 claim certificate.
 
@@ -220,6 +224,22 @@ reject families, target baseline families, diverse target families, receipt
 hashes, branch-selection certificates, and same-budget comparison before
 claiming that diversity pressure improved exploration.
 
+### Branch Budget Transfer
+
+`examples.branch_budget_transfer` tests receipt-guided verifier-budget
+allocation. Each domain records past branch receipts that identify a cheap
+reject probe and a higher-cost repair. The static target spends the same
+three-unit verifier budget on two cheap rejects, then abstains the repair
+because the remaining budget is insufficient. The receipt-guided target spends
+one cheap probe plus the repair, and commits under the same total budget after
+hard verification.
+
+Learning: branches of the past can improve exploration by shaping how scarce
+verifier cost is allocated, not only by choosing an order or pruning actions.
+`trwm.branch_budget_certificate.v1` binds the memory receipts, static and
+allocated receipt hashes, abstain counts, exact spent verifier cost, and
+same-budget comparison before claiming budget-allocation lift.
+
 ### Branch Composition Transfer
 
 `examples.branch_composition_transfer` tests whether branches of the past can
@@ -259,21 +279,22 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the ten branch-history experiments and
+`examples.branch_history_frontier` runs the eleven branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
 ordering through conflict-aware query-policy transfer, drift quarantine,
 receipt-bound branch pruning, diversity-certified family coverage, branch
-composition, and retained-memory influence.
+budget allocation, branch composition, and retained-memory influence.
 
 Learning: the current branch-history direction is only coherent when every
 stage validates: raw past branches reorder proposals, explicit ancestor reuse is
 bounded, context selection is certified, failed branches refine retrieval,
 conflicts are certificate-bound, drift is quarantined, rejected branches prune
 known-dead target candidates, same-family failures force coverage only through a
-certificate, branch fragments compose only through a certificate, and retained memory is compared against a
-same-budget baseline.
+certificate, verifier budget is allocated only through a cost-bound
+certificate, branch fragments compose only through a certificate, and retained
+memory is compared against a same-budget baseline.
 
 ### Programmable World Model Frontier
 
@@ -329,3 +350,7 @@ certificates before claim promotion.
   behavior or feature coverage as an exploration pressure:
   https://pubmed.ncbi.nlm.nih.gov/20868264/ and
   https://arxiv.org/abs/1504.04909
+- Hyperband and successive resource allocation are the budget-search analogies
+  for spending limited verifier cost on promising branches while early-stopping
+  weak branches: https://jmlr.org/papers/v18/16-558.html and
+  https://arxiv.org/abs/1603.06560
