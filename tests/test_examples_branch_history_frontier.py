@@ -15,6 +15,7 @@ from examples.branch_confidence_transfer import run_branch_confidence_transfer_c
 from examples.branch_credit_assignment_transfer import run_branch_credit_assignment_transfer_certified_experiment
 from examples.branch_propensity_match_transfer import run_branch_propensity_match_transfer_certified_experiment
 from examples.branch_robustness_transfer import run_branch_robustness_transfer_certified_experiment
+from examples.branch_calibration_transfer import run_branch_calibration_transfer_certified_experiment
 from examples.branch_outlier_filter_transfer import run_branch_outlier_filter_transfer_certified_experiment
 from examples.branch_pareto_transfer import run_branch_pareto_transfer_certified_experiment
 from examples.branch_provenance_guard_transfer import run_branch_provenance_guard_transfer_certified_experiment
@@ -53,7 +54,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         claim = result.claim_certificate
 
         self.assertEqual(report.schema_version, "trwm.example.branch_history_frontier.v1")
-        self.assertEqual(report.stage_count, 36)
+        self.assertEqual(report.stage_count, 37)
         self.assertEqual(
             report.child_experiment_ids,
             (
@@ -87,6 +88,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
                 "branch_credit_assignment_transfer",
                 "branch_propensity_match_transfer",
                 "branch_robustness_transfer",
+                "branch_calibration_transfer",
                 "branch_pruning_transfer",
                 "branch_diversity_transfer",
                 "branch_budget_transfer",
@@ -128,6 +130,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
                 "receipt_bound_credit_assignment",
                 "receipt_bound_propensity_match",
                 "receipt_bound_uncertainty_set_coverage",
+                "receipt_bound_confidence_bin_calibration",
                 "receipt_bound_branch_pruning",
                 "diversity_certified_family_coverage",
                 "receipt_bound_budget_allocation",
@@ -139,11 +142,11 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         self.assertTrue(report.all_evidence_valid)
         self.assertTrue(report.all_claims_supported)
         self.assertTrue(report.all_primary_certificates_valid)
-        self.assertEqual(report.total_receipt_count, 705)
-        self.assertEqual(report.total_committed_count, 336)
-        self.assertEqual(report.total_rejected_count, 264)
+        self.assertEqual(report.total_receipt_count, 723)
+        self.assertEqual(report.total_committed_count, 345)
+        self.assertEqual(report.total_rejected_count, 273)
         self.assertEqual(report.total_invalid_commit_count, 0)
-        self.assertEqual(report.same_budget_stage_count, 36)
+        self.assertEqual(report.same_budget_stage_count, 37)
         self.assertEqual(report.branch_abstraction_certificate_count, 3)
         self.assertEqual(report.branch_prerequisite_certificate_count, 3)
         self.assertEqual(report.branch_curriculum_certificate_count, 3)
@@ -195,6 +198,8 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         self.assertEqual(report.propensity_matched_success_count, 3)
         self.assertEqual(report.branch_robustness_certificate_count, 3)
         self.assertEqual(report.robust_success_count, 3)
+        self.assertEqual(report.branch_calibration_certificate_count, 3)
+        self.assertEqual(report.calibrated_success_count, 3)
         self.assertEqual(report.branch_pruning_certificate_count, 3)
         self.assertEqual(report.pruned_action_count, 6)
         self.assertEqual(report.branch_diversity_certificate_count, 3)
@@ -243,6 +248,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
             run_branch_credit_assignment_transfer_certified_experiment(),
             run_branch_propensity_match_transfer_certified_experiment(),
             run_branch_robustness_transfer_certified_experiment(),
+            run_branch_calibration_transfer_certified_experiment(),
             run_branch_pruning_transfer_certified_experiment(),
             run_branch_diversity_transfer_certified_experiment(),
             run_branch_budget_transfer_certified_experiment(),

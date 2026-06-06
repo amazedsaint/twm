@@ -169,6 +169,11 @@ This repository currently targets `G1` evidence:
   static brittle target rejects, robust target commits, and same-budget
   verifier-call evidence before nominal source-valid branches can influence
   target exploration,
+- branch-calibration certificates that bind confidence-bin ids, predicted
+  confidence values, empirical accept rates, calibration gaps, overconfident
+  source rejects, calibrated source receipts, static overconfident target
+  rejects, calibrated target commits, and same-budget verifier-call evidence
+  before soft proposer scores can influence target exploration,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can
@@ -691,6 +696,8 @@ search.
   https://doi.org/10.1093/biomet/70.1.41
 - Ben-Tal and Nemirovski, Robust Convex Optimization:
   https://doi.org/10.1287/moor.23.4.769
+- Guo et al., On Calibration of Modern Neural Networks:
+  https://arxiv.org/abs/1706.04599
 - ISO/IEC/IEEE 15026-2 assurance case structure and terminology:
   https://standards.iteh.ai/catalog/standards/iso/4734d411-2bff-428f-8f4a-164859f171b8/iso-iec-ieee-15026-2-2022
 - OpenTelemetry Semantic Conventions:
