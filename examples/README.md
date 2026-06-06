@@ -15,6 +15,7 @@ python3 -m examples.material_lattice_metropolis
 python3 -m examples.ancestral_branch_exploration
 python3 -m examples.branch_counterfactual_transfer
 python3 -m examples.branch_abstraction_transfer
+python3 -m examples.branch_prerequisite_transfer
 python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
@@ -39,7 +40,10 @@ accepted-but-rolled-back branch losers can become proposal evidence when the
 old winner is stale in a target context. The branch-abstraction command adds
 `trwm.branch_abstraction_certificate.v1` artifacts showing that an abstract
 option family can guide a target-specific same-family action when exact
-source-action replay is stale. The analogical branch
+source-action replay is stale. The branch-prerequisite command adds
+`trwm.branch_prerequisite_certificate.v1` artifacts showing that past branches
+can certify prerequisite-before-final ordering under a matched two-call budget.
+The analogical branch
 command adds an `analogical_certificate` that binds explicit ancestor-context
 reuse and misleading-ancestor rejection. The context-selection command adds
 descriptor-level `trwm.ancestral_context_selection_certificate.v1` artifacts
@@ -75,7 +79,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the thirteen branch-memory stages into one bounded G1 report. The physical
+the fourteen branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -158,6 +162,22 @@ not exact action replays. `trwm.branch_abstraction_certificate.v1` binds the
 source family, source commit receipts, stale exact target rejects,
 same-family target commits, branch-selection certificates, and same-budget
 comparison before claiming abstraction-level exploration lift.
+
+### Branch Prerequisite Transfer
+
+`examples.branch_prerequisite_transfer` tests stateful prerequisite ordering.
+Each domain records source receipts where a prerequisite action commits before
+the final action. The target static branch spends two verifier calls on the
+final action and a distractor without first satisfying the target prerequisite,
+so it commits nothing. The guided target spends the same two calls on the
+target prerequisite and then the final action; both commit through the hard
+verifier and replay/rollback audit.
+
+Learning: past branches can improve exploration by certifying order, not only
+which candidate to try. `trwm.branch_prerequisite_certificate.v1` binds source
+prerequisite/final receipts, static target rejects, guided prerequisite/final
+commits, branch-selection certificates, and the same-budget comparison before
+claiming prerequisite-order lift.
 
 ### Analogical Branch Transfer
 
@@ -319,12 +339,12 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the thirteen branch-history experiments and
+`examples.branch_history_frontier` runs the fourteen branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
 ordering through accepted-loser counterfactual reuse, option-family
-abstraction, conflict-aware query-policy transfer, drift quarantine,
+abstraction, prerequisite ordering, conflict-aware query-policy transfer, drift quarantine,
 receipt-bound branch pruning, diversity-certified family coverage, branch
 budget allocation, branch composition, and retained-memory influence.
 
@@ -332,6 +352,7 @@ Learning: the current branch-history direction is only coherent when every
 stage validates: raw past branches reorder proposals, explicit ancestor reuse is
 bounded, accepted losers are reused only through a counterfactual certificate,
 option families adapt exact actions only through an abstraction certificate,
+prerequisite order is admitted only through a stateful prerequisite certificate,
 context selection is certified, failed branches refine retrieval, conflicts are
 certificate-bound, drift is quarantined, rejected branches prune known-dead
 target candidates, same-family failures force coverage only through a

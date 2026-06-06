@@ -45,6 +45,7 @@ python3 -m examples.material_lattice_metropolis
 python3 -m examples.ancestral_branch_exploration
 python3 -m examples.branch_counterfactual_transfer
 python3 -m examples.branch_abstraction_transfer
+python3 -m examples.branch_prerequisite_transfer
 python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
@@ -67,7 +68,8 @@ branch-counterfactual example certifies accepted-but-rolled-back loser receipts
 as target proposal evidence when an old winner is stale; the
 branch-abstraction example certifies an abstract option family when exact
 source-action replay is stale but a target-specific same-family action commits;
-the
+the branch-prerequisite example certifies prerequisite-before-final ordering
+under the same verifier-call budget; the
 analogical branch example tests explicit ancestor-context reuse and misleading
 ancestor rejection; the context-selection example certifies which ancestor
 contexts may influence target exploration; the context-refinement example uses
@@ -88,7 +90,7 @@ future proposal evidence for a sibling target and
 certifies the memory query that ranks the sibling proposals against a
 same-budget static sibling baseline; the frontier example aggregates the three
 physical certified domains, while the branch-history frontier aggregates the
-thirteen branch-memory stages. See `examples/README.md` and
+fourteen branch-memory stages. See `examples/README.md` and
 `docs/experiment_learnings.md`.
 
 ## Package Layout

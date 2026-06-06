@@ -127,6 +127,19 @@ implication is that past branch evidence needs typed abstraction levels: exact
 action reuse, family-level reuse, and composed reuse should be separate
 certified surfaces rather than one memory score.
 
+The branch-prerequisite transfer example adds stateful ordering evidence. Each
+domain records source receipts where a prerequisite action commits before the
+final action. The target static branch spends two verifier calls on final and
+distractor actions without first satisfying the target prerequisite, so it
+commits nothing. The guided target spends the same two calls on target
+prerequisite and final actions; both commit through the hard verifier and
+replay/rollback audit. The new `trwm.branch_prerequisite_certificate.v1`
+artifact binds source prerequisite/final receipts, static target rejects,
+guided prerequisite/final commits, branch-selection certificates, and the
+same-budget comparison. The substrate implication is that branch memory needs
+stateful ordering certificates: a useful branch of the past may say what must
+be true before another proposal is worth spending verifier budget on.
+
 The analogical branch transfer example adds one more design constraint:
 cross-context reuse must name its ancestor contexts explicitly. For each toy
 domain, two positive ancestor contexts reorder the target budget-one search
@@ -272,15 +285,15 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the thirteen local branch-memory
+The branch-history frontier report now aggregates the fourteen local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
 receipt-bound ordering, accepted-loser counterfactual reuse, option-family
-abstraction, analogical ancestor reuse, certified context selection,
-counterexample refinement, conflict-aware query-policy transfer, drift
-quarantine, receipt-bound branch pruning, diversity-certified family coverage,
-receipt-bound budget allocation, branch composition, and retained memory
-influence.
+abstraction, stateful prerequisite ordering, analogical ancestor reuse,
+certified context selection, counterexample refinement, conflict-aware
+query-policy transfer, drift quarantine, receipt-bound branch pruning,
+diversity-certified family coverage, receipt-bound budget allocation, branch
+composition, and retained memory influence.
 This changes the design posture from isolated demos to a staged substrate map:
 each branch-history capability must expose its own certificate, and later
 stages are only meaningful if earlier evidence still validates.

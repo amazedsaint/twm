@@ -77,6 +77,10 @@ This repository currently targets `G1` evidence:
   stale exact-action target rejects, same-family target commits, and
   same-budget verifier-call evidence before abstract branch families can adapt
   exact actions across target contexts,
+- branch-prerequisite certificates that bind source prerequisite/final receipts,
+  static target rejects, guided prerequisite/final commits, and same-budget
+  verifier-call evidence before past branches can impose stateful target
+  exploration order,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can
