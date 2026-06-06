@@ -154,6 +154,7 @@ class ContextQueryPolicyTransferReport:
     experiment_id: str
     evidence_grade: str
     domain_count: int
+    held_out_sibling_count: int
     domains: tuple[str, ...]
     rows: tuple[ContextQueryPolicyDomainReport, ...]
     total_receipt_count: int
@@ -196,6 +197,7 @@ class ContextQueryPolicyTransferCertificate:
     report_schema_version: str
     report_hash: str
     domain_count: int
+    held_out_sibling_count: int
     domains: tuple[str, ...]
     ledger_head: str
     receipt_hashes: tuple[str, ...]
@@ -278,7 +280,10 @@ def run_context_query_policy_transfer_certified_experiment() -> CertifiedContext
 
     for spec in DOMAIN_SPECS:
         calibration_descriptor = _descriptor(spec, f"{spec.domain_id}:calibration_target", regime="target-compatible")
-        sibling_descriptor = _descriptor(spec, f"{spec.domain_id}:sibling_target", regime="target-compatible")
+        sibling_descriptors = (
+            _descriptor(spec, f"{spec.domain_id}:sibling_target_a", regime="target-compatible"),
+            _descriptor(spec, f"{spec.domain_id}:sibling_target_b", regime="target-compatible"),
+        )
         compatible_descriptor = _descriptor(spec, f"{spec.domain_id}:policy_ancestor", regime="target-compatible")
         misleading_descriptors = (
             _descriptor(spec, f"{spec.domain_id}:policy_misleading_a", regime="source-only"),
@@ -295,22 +300,10 @@ def run_context_query_policy_transfer_certified_experiment() -> CertifiedContext
             candidate_descriptors,
             required_tag_keys=("regime",),
         )
-        sibling_base_selection = build_ancestral_context_selection_certificate(
-            sibling_descriptor,
-            candidate_descriptors,
-            required_tag_keys=(),
-        )
-        sibling_policy_selection = build_ancestral_context_selection_certificate(
-            sibling_descriptor,
-            candidate_descriptors,
-            required_tag_keys=("regime",),
-        )
         selection_certificates.extend(
             (
                 calibration_base_selection,
                 calibration_refined_selection,
-                sibling_base_selection,
-                sibling_policy_selection,
             )
         )
 
@@ -372,119 +365,133 @@ def run_context_query_policy_transfer_certified_experiment() -> CertifiedContext
         )
         refinement_certificates.append(refinement_certificate)
 
-        sibling_actions = tuple(_with_context(action, sibling_descriptor.context_id) for action in spec.actions)
-        sibling_action_tokens = tuple(str(action["action"]) for action in sibling_actions)
-        sibling_stale_order = tuple(
-            str(action) for action in memory.rank_from_contexts(sibling_base_selection.selected_context_ids, sibling_action_tokens)
-        )
-        sibling_stale_action = _action_by_name(sibling_actions, sibling_stale_order[0])
-        sibling_stale_outcome = runtime.step(
-            state,
-            _make_traces(
-                spec,
-                context=sibling_descriptor.context_id,
-                phase="sibling-stale-query-budget-one",
-                episode=0,
-                actions=(sibling_stale_action,),
-            ),
-        )
-        sibling_stale_branch_certificate = build_branch_selection_certificate(
-            sibling_stale_outcome.receipts,
-            verifier_call_count=sibling_stale_outcome.verifier_calls,
-        )
-        branch_certificate_pairs.append((tuple(sibling_stale_outcome.receipts), sibling_stale_branch_certificate))
-        branch_certificate_hashes.append(sibling_stale_branch_certificate.certificate_hash)
-
-        sibling_policy_order = tuple(
-            str(action) for action in memory.rank_from_contexts(sibling_policy_selection.selected_context_ids, sibling_action_tokens)
-        )
-        sibling_policy_action = _action_by_name(sibling_actions, sibling_policy_order[0])
-        sibling_policy_outcome = runtime.step(
-            state,
-            _make_traces(
-                spec,
-                context=sibling_descriptor.context_id,
-                phase="sibling-query-policy-budget-one",
-                episode=0,
-                actions=(sibling_policy_action,),
-            ),
-        )
-        state = normalize_state(sibling_policy_outcome.state)
-        sibling_policy_branch_certificate = build_branch_selection_certificate(
-            sibling_policy_outcome.receipts,
-            verifier_call_count=sibling_policy_outcome.verifier_calls,
-        )
-        branch_certificate_pairs.append((tuple(sibling_policy_outcome.receipts), sibling_policy_branch_certificate))
-        branch_certificate_hashes.append(sibling_policy_branch_certificate.certificate_hash)
-
-        query_policy_certificate = build_context_query_policy_certificate(
-            domain=spec.domain_id,
-            calibration_context_id=calibration_descriptor.context_id,
-            sibling_context_id=sibling_descriptor.context_id,
-            candidate_context_ids=calibration_base_selection.candidate_context_ids,
-            calibration_base_selection=calibration_base_selection,
-            calibration_refined_selection=calibration_refined_selection,
-            sibling_base_selection=sibling_base_selection,
-            sibling_policy_selection=sibling_policy_selection,
-            refinement_certificate=refinement_certificate,
-            counterexample_receipt=calibration_coarse_outcome.receipts[0],
-            stale_top_action=sibling_stale_order[0],
-            policy_top_action=sibling_policy_order[0],
-            committed_target_action=spec.committed_action,
-            stale_outcome=sibling_stale_outcome,
-            policy_outcome=sibling_policy_outcome,
-            policy_transfer_reason="calibration_refinement_applied_to_heldout_sibling_target",
-        )
-        query_policy_certificates.append(query_policy_certificate)
-        query_policy_audits.append(
-            (
-                query_policy_certificate,
-                tuple(sibling_stale_outcome.receipts),
-                tuple(sibling_policy_outcome.receipts),
-                calibration_base_selection,
-                calibration_refined_selection,
-                sibling_base_selection,
-                sibling_policy_selection,
-                refinement_certificate,
-                calibration_coarse_outcome.receipts[0],
-            )
-        )
-
         residual = calibration_coarse_outcome.receipts[0].hard_result.residual
         residual_kind = str(residual.get("kind", "")) if isinstance(residual, Mapping) else ""
-        rows.append(
-            ContextQueryPolicyDomainReport(
-                domain=spec.domain_id,
-                calibration_context=calibration_descriptor.context_id,
-                sibling_context=sibling_descriptor.context_id,
-                candidate_contexts=calibration_base_selection.candidate_context_ids,
-                calibration_coarse_selected_contexts=calibration_base_selection.selected_context_ids,
-                calibration_policy_selected_contexts=calibration_refined_selection.selected_context_ids,
-                sibling_stale_selected_contexts=sibling_base_selection.selected_context_ids,
-                sibling_policy_selected_contexts=sibling_policy_selection.selected_context_ids,
-                calibration_coarse_top_action=calibration_coarse_order[0],
-                sibling_stale_top_action=sibling_stale_order[0],
-                sibling_policy_top_action=sibling_policy_order[0],
-                committed_target_action=spec.committed_action,
-                calibration_coarse_budget_committed=calibration_coarse_outcome.committed,
-                sibling_stale_budget_committed=sibling_stale_outcome.committed,
-                sibling_policy_budget_committed=sibling_policy_outcome.committed,
-                counterexample_receipt_hash=calibration_coarse_outcome.receipts[0].receipt_hash,
-                counterexample_residual_kind=residual_kind,
-                refinement_certificate_hash=refinement_certificate.certificate_hash,
-                query_policy_certificate_hash=query_policy_certificate.certificate_hash,
-                calibration_base_selection_certificate_hash=calibration_base_selection.certificate_hash,
-                calibration_refined_selection_certificate_hash=calibration_refined_selection.certificate_hash,
-                sibling_base_selection_certificate_hash=sibling_base_selection.certificate_hash,
-                sibling_policy_selection_certificate_hash=sibling_policy_selection.certificate_hash,
-                source_receipt_hashes=tuple(receipt.receipt_hash for receipt in source_receipts),
-                calibration_coarse_receipt_hashes=tuple(receipt.receipt_hash for receipt in calibration_coarse_outcome.receipts),
-                sibling_stale_receipt_hashes=tuple(receipt.receipt_hash for receipt in sibling_stale_outcome.receipts),
-                sibling_policy_receipt_hashes=tuple(receipt.receipt_hash for receipt in sibling_policy_outcome.receipts),
-                branch_selection_certificate_hashes=tuple(branch_certificate_hashes),
-                same_budget=query_policy_certificate.same_budget,
+        for sibling_idx, sibling_descriptor in enumerate(sibling_descriptors):
+            sibling_base_selection = build_ancestral_context_selection_certificate(
+                sibling_descriptor,
+                candidate_descriptors,
+                required_tag_keys=(),
             )
-        )
+            sibling_policy_selection = build_ancestral_context_selection_certificate(
+                sibling_descriptor,
+                candidate_descriptors,
+                required_tag_keys=("regime",),
+            )
+            selection_certificates.extend((sibling_base_selection, sibling_policy_selection))
+            sibling_actions = tuple(_with_context(action, sibling_descriptor.context_id) for action in spec.actions)
+            sibling_action_tokens = tuple(str(action["action"]) for action in sibling_actions)
+            sibling_stale_order = tuple(
+                str(action) for action in memory.rank_from_contexts(sibling_base_selection.selected_context_ids, sibling_action_tokens)
+            )
+            sibling_stale_action = _action_by_name(sibling_actions, sibling_stale_order[0])
+            sibling_stale_outcome = runtime.step(
+                state,
+                _make_traces(
+                    spec,
+                    context=sibling_descriptor.context_id,
+                    phase="sibling-stale-query-budget-one",
+                    episode=sibling_idx,
+                    actions=(sibling_stale_action,),
+                ),
+            )
+            sibling_stale_branch_certificate = build_branch_selection_certificate(
+                sibling_stale_outcome.receipts,
+                verifier_call_count=sibling_stale_outcome.verifier_calls,
+            )
+            branch_certificate_pairs.append((tuple(sibling_stale_outcome.receipts), sibling_stale_branch_certificate))
+
+            sibling_policy_order = tuple(
+                str(action) for action in memory.rank_from_contexts(sibling_policy_selection.selected_context_ids, sibling_action_tokens)
+            )
+            sibling_policy_action = _action_by_name(sibling_actions, sibling_policy_order[0])
+            sibling_policy_outcome = runtime.step(
+                state,
+                _make_traces(
+                    spec,
+                    context=sibling_descriptor.context_id,
+                    phase="sibling-query-policy-budget-one",
+                    episode=sibling_idx,
+                    actions=(sibling_policy_action,),
+                ),
+            )
+            state = normalize_state(sibling_policy_outcome.state)
+            sibling_policy_branch_certificate = build_branch_selection_certificate(
+                sibling_policy_outcome.receipts,
+                verifier_call_count=sibling_policy_outcome.verifier_calls,
+            )
+            branch_certificate_pairs.append((tuple(sibling_policy_outcome.receipts), sibling_policy_branch_certificate))
+
+            query_policy_certificate = build_context_query_policy_certificate(
+                domain=spec.domain_id,
+                calibration_context_id=calibration_descriptor.context_id,
+                sibling_context_id=sibling_descriptor.context_id,
+                candidate_context_ids=calibration_base_selection.candidate_context_ids,
+                calibration_base_selection=calibration_base_selection,
+                calibration_refined_selection=calibration_refined_selection,
+                sibling_base_selection=sibling_base_selection,
+                sibling_policy_selection=sibling_policy_selection,
+                refinement_certificate=refinement_certificate,
+                counterexample_receipt=calibration_coarse_outcome.receipts[0],
+                stale_top_action=sibling_stale_order[0],
+                policy_top_action=sibling_policy_order[0],
+                committed_target_action=spec.committed_action,
+                stale_outcome=sibling_stale_outcome,
+                policy_outcome=sibling_policy_outcome,
+                policy_transfer_reason="calibration_refinement_applied_to_heldout_sibling_target",
+            )
+            query_policy_certificates.append(query_policy_certificate)
+            query_policy_audits.append(
+                (
+                    query_policy_certificate,
+                    tuple(sibling_stale_outcome.receipts),
+                    tuple(sibling_policy_outcome.receipts),
+                    calibration_base_selection,
+                    calibration_refined_selection,
+                    sibling_base_selection,
+                    sibling_policy_selection,
+                    refinement_certificate,
+                    calibration_coarse_outcome.receipts[0],
+                )
+            )
+
+            rows.append(
+                ContextQueryPolicyDomainReport(
+                    domain=spec.domain_id,
+                    calibration_context=calibration_descriptor.context_id,
+                    sibling_context=sibling_descriptor.context_id,
+                    candidate_contexts=calibration_base_selection.candidate_context_ids,
+                    calibration_coarse_selected_contexts=calibration_base_selection.selected_context_ids,
+                    calibration_policy_selected_contexts=calibration_refined_selection.selected_context_ids,
+                    sibling_stale_selected_contexts=sibling_base_selection.selected_context_ids,
+                    sibling_policy_selected_contexts=sibling_policy_selection.selected_context_ids,
+                    calibration_coarse_top_action=calibration_coarse_order[0],
+                    sibling_stale_top_action=sibling_stale_order[0],
+                    sibling_policy_top_action=sibling_policy_order[0],
+                    committed_target_action=spec.committed_action,
+                    calibration_coarse_budget_committed=calibration_coarse_outcome.committed,
+                    sibling_stale_budget_committed=sibling_stale_outcome.committed,
+                    sibling_policy_budget_committed=sibling_policy_outcome.committed,
+                    counterexample_receipt_hash=calibration_coarse_outcome.receipts[0].receipt_hash,
+                    counterexample_residual_kind=residual_kind,
+                    refinement_certificate_hash=refinement_certificate.certificate_hash,
+                    query_policy_certificate_hash=query_policy_certificate.certificate_hash,
+                    calibration_base_selection_certificate_hash=calibration_base_selection.certificate_hash,
+                    calibration_refined_selection_certificate_hash=calibration_refined_selection.certificate_hash,
+                    sibling_base_selection_certificate_hash=sibling_base_selection.certificate_hash,
+                    sibling_policy_selection_certificate_hash=sibling_policy_selection.certificate_hash,
+                    source_receipt_hashes=tuple(receipt.receipt_hash for receipt in source_receipts),
+                    calibration_coarse_receipt_hashes=tuple(receipt.receipt_hash for receipt in calibration_coarse_outcome.receipts),
+                    sibling_stale_receipt_hashes=tuple(receipt.receipt_hash for receipt in sibling_stale_outcome.receipts),
+                    sibling_policy_receipt_hashes=tuple(receipt.receipt_hash for receipt in sibling_policy_outcome.receipts),
+                    branch_selection_certificate_hashes=(
+                        *branch_certificate_hashes,
+                        sibling_stale_branch_certificate.certificate_hash,
+                        sibling_policy_branch_certificate.certificate_hash,
+                    ),
+                    same_budget=query_policy_certificate.same_budget,
+                )
+            )
 
     memory_snapshot = memory.snapshot()
     all_receipts = tuple(engine.ledger.rows)
@@ -541,6 +548,7 @@ def run_context_query_policy_transfer_certified_experiment() -> CertifiedContext
         experiment_id="context_query_policy_transfer",
         evidence_grade="G1",
         domain_count=len(DOMAIN_SPECS),
+        held_out_sibling_count=len(rows),
         domains=tuple(spec.domain_id for spec in DOMAIN_SPECS),
         rows=tuple(rows),
         total_receipt_count=len(all_receipts),
@@ -574,8 +582,8 @@ def run_context_query_policy_transfer_certified_experiment() -> CertifiedContext
         sources=CONTEXT_QUERY_POLICY_SOURCES,
         learning=(
             "A failed calibration branch can refine the ancestor query policy once, then the refined "
-            "required-tag policy can improve held-out sibling target exploration against a stale "
-            "coarse-query baseline under the same one-call verifier budget."
+            "required-tag policy can improve multiple held-out sibling target explorations against "
+            "stale coarse-query baselines under the same one-call verifier budget."
         ),
     )
     transfer_certificate = build_context_query_policy_transfer_certificate(
@@ -843,6 +851,7 @@ def build_context_query_policy_transfer_certificate(
         report_schema_version=report.schema_version,
         report_hash=example_report_hash(report),
         domain_count=report.domain_count,
+        held_out_sibling_count=report.held_out_sibling_count,
         domains=report.domains,
         ledger_head=report.ledger_head,
         receipt_hashes=receipt_hashes,
@@ -874,6 +883,10 @@ def validate_context_query_policy_transfer_certificate(
             return False
         if certificate.domain_count <= 0 or certificate.domain_count != len(certificate.domains):
             return False
+        if not isinstance(certificate.held_out_sibling_count, int) or isinstance(certificate.held_out_sibling_count, bool):
+            return False
+        if certificate.held_out_sibling_count <= certificate.domain_count:
+            return False
         if not _is_hash(certificate.report_hash) or not _is_hash(certificate.ledger_head):
             return False
         if not _is_hash(certificate.memory_snapshot_hash):
@@ -891,15 +904,15 @@ def validate_context_query_policy_transfer_certificate(
             return False
         if certificate.sibling_stale_budget_success_count != 0:
             return False
-        if certificate.sibling_policy_budget_success_count != certificate.domain_count:
+        if certificate.sibling_policy_budget_success_count != certificate.held_out_sibling_count:
             return False
-        if certificate.same_budget_query_policy_count != certificate.domain_count:
+        if certificate.same_budget_query_policy_count != certificate.held_out_sibling_count:
             return False
         if len(certificate.context_refinement_certificate_hashes) != certificate.domain_count:
             return False
-        if len(certificate.context_query_policy_certificate_hashes) != certificate.domain_count:
+        if len(certificate.context_query_policy_certificate_hashes) != certificate.held_out_sibling_count:
             return False
-        if len(certificate.context_selection_certificate_hashes) != certificate.domain_count * 4:
+        if len(certificate.context_selection_certificate_hashes) != certificate.domain_count * 2 + certificate.held_out_sibling_count * 2:
             return False
         if not (certificate.replay_audit_ok and certificate.rollback_audit_ok and certificate.ledger_audit_ok):
             return False
@@ -913,6 +926,8 @@ def validate_context_query_policy_transfer_certificate(
             if report.schema_version != certificate.report_schema_version:
                 return False
             if report.domain_count != certificate.domain_count or report.domains != certificate.domains:
+                return False
+            if report.held_out_sibling_count != certificate.held_out_sibling_count:
                 return False
             if report.ledger_head != certificate.ledger_head:
                 return False
@@ -966,7 +981,7 @@ def _build_claim_certificate(
         claim_id="context_query_policy_transfer_g1",
         claim_text=(
             "Rejected calibration branches can refine ancestor query policy, and the refined policy can "
-            "improve held-out sibling exploration under the same verifier budget while hard verification "
+            "improve multiple held-out sibling explorations under the same verifier budget while hard verification "
             "keeps commit authority."
         ),
         evidence_grade="G1",
@@ -988,9 +1003,12 @@ def _build_claim_certificate(
             requirement("memory_snapshot_valid", report.memory_snapshot_valid),
             requirement("calibration_coarse_budget_fails_all_domains", report.calibration_coarse_budget_success_count == 0),
             requirement("sibling_stale_budget_fails_all_domains", report.sibling_stale_budget_success_count == 0),
-            requirement("sibling_policy_budget_succeeds_all_domains", report.sibling_policy_budget_success_count == report.domain_count),
-            requirement("same_budget_query_policy_all_domains", report.same_budget_query_policy_count == report.domain_count),
-            requirement("query_policy_certificates_present", report.query_policy_certificate_count == report.domain_count),
+            requirement(
+                "sibling_policy_budget_succeeds_all_heldouts",
+                report.sibling_policy_budget_success_count == report.held_out_sibling_count,
+            ),
+            requirement("same_budget_query_policy_all_heldouts", report.same_budget_query_policy_count == report.held_out_sibling_count),
+            requirement("query_policy_certificates_present", report.query_policy_certificate_count == report.held_out_sibling_count),
             requirement("all_branch_selection_certificates_valid", report.all_branch_selection_certificates_valid),
             requirement("all_branch_selection_audits_valid", report.all_branch_selection_audits_valid),
             requirement("ledger_replay_rollback_valid", report.replay_audit_ok and report.rollback_audit_ok and report.ledger_audit_ok),
@@ -998,6 +1016,7 @@ def _build_claim_certificate(
         ),
         metrics={
             "domain_count": report.domain_count,
+            "held_out_sibling_count": report.held_out_sibling_count,
             "total_receipt_count": report.total_receipt_count,
             "calibration_coarse_budget_success_count": report.calibration_coarse_budget_success_count,
             "sibling_stale_budget_success_count": report.sibling_stale_budget_success_count,

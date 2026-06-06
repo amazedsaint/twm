@@ -25,18 +25,20 @@ class ContextQueryPolicyTransferExampleTests(unittest.TestCase):
 
         self.assertEqual(report.schema_version, "trwm.example.context_query_policy_transfer.v1")
         self.assertEqual(report.domain_count, 3)
+        self.assertEqual(report.held_out_sibling_count, 6)
         self.assertEqual(report.domains, ("robotics_replan", "molecule_repair", "material_process"))
-        self.assertEqual(report.total_receipt_count, 36)
-        self.assertEqual(report.total_committed_count, 12)
-        self.assertEqual(report.total_rejected_count, 9)
+        self.assertEqual(len(report.rows), 6)
+        self.assertEqual(report.total_receipt_count, 42)
+        self.assertEqual(report.total_committed_count, 15)
+        self.assertEqual(report.total_rejected_count, 12)
         self.assertEqual(report.total_rolled_back_loser_count, 15)
         self.assertEqual(report.calibration_coarse_budget_success_count, 0)
         self.assertEqual(report.sibling_stale_budget_success_count, 0)
-        self.assertEqual(report.sibling_policy_budget_success_count, 3)
-        self.assertEqual(report.same_budget_query_policy_count, 3)
-        self.assertEqual(report.query_policy_certificate_count, 3)
+        self.assertEqual(report.sibling_policy_budget_success_count, 6)
+        self.assertEqual(report.same_budget_query_policy_count, 6)
+        self.assertEqual(report.query_policy_certificate_count, 6)
         self.assertEqual(report.refinement_certificate_count, 3)
-        self.assertEqual(report.context_selection_certificate_count, 12)
+        self.assertEqual(report.context_selection_certificate_count, 18)
         self.assertEqual(report.memory_row_count, 27)
         self.assertTrue(report.memory_snapshot_valid)
         self.assertTrue(report.all_context_selection_certificates_valid)
@@ -55,13 +57,14 @@ class ContextQueryPolicyTransferExampleTests(unittest.TestCase):
         self.assertEqual(evidence.domain, "context_query_policy_branch_transfer")
         self.assertEqual(evidence.receipt_hashes, certificate.receipt_hashes)
         self.assertEqual(len(certificate.receipt_hashes), report.total_receipt_count)
-        self.assertEqual(len(certificate.branch_selection_certificate_hashes), 18)
-        self.assertEqual(len(certificate.context_selection_certificate_hashes), 12)
+        self.assertEqual(certificate.held_out_sibling_count, 6)
+        self.assertEqual(len(certificate.branch_selection_certificate_hashes), 24)
+        self.assertEqual(len(certificate.context_selection_certificate_hashes), 18)
         self.assertEqual(len(certificate.context_refinement_certificate_hashes), 3)
-        self.assertEqual(len(certificate.context_query_policy_certificate_hashes), 3)
-        self.assertEqual(len(result.context_selection_certificates), 12)
+        self.assertEqual(len(certificate.context_query_policy_certificate_hashes), 6)
+        self.assertEqual(len(result.context_selection_certificates), 18)
         self.assertEqual(len(result.context_refinement_certificates), 3)
-        self.assertEqual(len(result.context_query_policy_certificates), 3)
+        self.assertEqual(len(result.context_query_policy_certificates), 6)
         self.assertTrue(all(validate_ancestral_context_selection_certificate(row) for row in result.context_selection_certificates))
         self.assertTrue(all(validate_ancestral_context_refinement_certificate(row) for row in result.context_refinement_certificates))
         self.assertTrue(all(validate_context_query_policy_certificate(row) for row in result.context_query_policy_certificates))
@@ -100,10 +103,11 @@ class ContextQueryPolicyTransferExampleTests(unittest.TestCase):
         report = run_context_query_policy_transfer_experiment()
 
         self.assertEqual(report.domain_count, 3)
+        self.assertEqual(report.held_out_sibling_count, 6)
         self.assertEqual(report.calibration_coarse_budget_success_count, 0)
         self.assertEqual(report.sibling_stale_budget_success_count, 0)
-        self.assertEqual(report.sibling_policy_budget_success_count, 3)
-        self.assertEqual(report.same_budget_query_policy_count, 3)
+        self.assertEqual(report.sibling_policy_budget_success_count, 6)
+        self.assertEqual(report.same_budget_query_policy_count, 6)
 
     def test_tampered_report_hash_fails_certificate(self) -> None:
         result = run_context_query_policy_transfer_certified_experiment()
@@ -120,6 +124,16 @@ class ContextQueryPolicyTransferExampleTests(unittest.TestCase):
         invalid = replace(
             result.context_query_policy_transfer_certificate,
             sibling_stale_budget_success_count=1,
+            certificate_hash="",
+        )
+
+        self.assertFalse(validate_context_query_policy_transfer_certificate(invalid, result.report))
+
+    def test_held_out_sibling_count_mismatch_fails_certificate(self) -> None:
+        result = run_context_query_policy_transfer_certified_experiment()
+        invalid = replace(
+            result.context_query_policy_transfer_certificate,
+            held_out_sibling_count=3,
             certificate_hash="",
         )
 

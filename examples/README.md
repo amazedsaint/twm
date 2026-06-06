@@ -138,17 +138,17 @@ allowed to influence exploration.
 ### Context Query Policy Transfer
 
 `examples.context_query_policy_transfer` keeps the refinement setup but splits
-it into a calibration target and a held-out sibling target. The calibration
+it into a calibration target and two held-out sibling targets. The calibration
 target records the coarse-query counterexample and emits the refinement
-certificate. The sibling target then compares the stale coarse query with the
+certificate. Each sibling target then compares the stale coarse query with the
 refined query policy under the same one-call verifier budget. The stale sibling
-query fails in all three toy domains; the refined query policy commits in all
-three.
+queries fail in all six held-out transfers; the refined query policy commits in
+all six.
 
 Learning: a failed branch can improve the exploration policy itself only when
 the policy update is explicit and replayable. The new
 `trwm.context_query_policy_certificate.v1` binds the counterexample receipt,
-base and refined selection certificates, held-out sibling selections, top
+base and refined selection certificates, each held-out sibling selection, top
 actions, receipt hashes, and same-budget comparison before promoting the claim.
 
 ### Context Retention Transfer
