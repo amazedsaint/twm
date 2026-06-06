@@ -116,7 +116,18 @@ from .transfer import (
     validate_transfer_guard_snapshot,
     validate_transfer_evaluation_certificate,
 )
-from .learning import CounterfactualActionStats, CounterfactualRollbackRanker, HyperdimensionalMemory, ReceiptRanker
+from .learning import (
+    RECEIPT_TRAINED_REVERSIBLE_PROPOSER_SNAPSHOT_SCHEMA,
+    CounterfactualActionStats,
+    CounterfactualRollbackRanker,
+    HyperdimensionalMemory,
+    ReceiptRanker,
+    ReceiptTrainedReversibleProposer,
+    ReceiptTrainedReversibleProposerSnapshot,
+    ReversibleProposerSnapshotRow,
+    receipt_trained_reversible_proposer_snapshot_hash,
+    validate_receipt_trained_reversible_proposer_snapshot,
+)
 from .macro import Macro, MacroMemory, PrefixSafeMacroRuntime
 from .memory import (
     MACRO_MEMORY_ENTRY_SCHEMA,

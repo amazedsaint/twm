@@ -1,10 +1,10 @@
 import { canonicalJson, stableHash } from "./canonical.js";
-                                         
+
 import { Ledger } from "./core.js";
 import { AdditiveCoupling,                 } from "./reversible.js";
 import {
-             
-                
+
+
   defaultGridMacros,
   runPrefixSafeGridSequence,
 } from "./macro.js";
@@ -14,128 +14,128 @@ export const RRLM_PROPOSAL_CERTIFICATE_SCHEMA = "trwm.rrlm_proposal_certificate.
 export const RRLM_TRANSPORT_CERTIFICATE_SCHEMA = "trwm.rrlm_transport_certificate.v1";
 export const RRLM_TRANSPORT_SPEC = "rrlm_integer_additive_coupling.v1";
 
-                                     
-                  
-                
-                        
-                              
- 
 
-                                    
-                                                   
-                     
-                          
-                       
-                        
-                        
-                             
-                                
-                       
- 
 
-                                          
-                                                         
-                  
-                     
-                          
-                       
-                       
-                        
-                        
-                        
-                     
-                           
-                            
-                         
-                           
-                                 
-                           
-                          
-                   
-                            
-                          
- 
 
-                                           
-                                                          
-                                            
-                  
-                     
-                          
-                       
-                                  
-                       
-                        
-                        
-                        
-                         
-                           
-                          
-                              
-                            
-                             
-                           
-                          
- 
 
-                                                    
-                     
-                        
-                
-                           
-                          
-                
-                        
-                              
-                   
- 
 
-                                              
-                  
-                                            
-                                   
-                            
- 
 
-                              
-                        
-                         
-                         
- 
 
-                                                           
 
-                                      
-                       
-                        
-                        
-                 
- 
 
-                                  
-                                           
-                                                 
-                                 
-                                          
-                                                
-                                
-                        
-                                  
-                                
-                         
-                                    
-                                     
-                                                 
-                                               
-                                  
-                                  
-                                   
-                       
-                                  
-                                   
-                       
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class RrlmMacroProposer                 {
   acceptedGain        ;
@@ -875,12 +875,12 @@ async function runRrlmLane(
   episodes        ,
   proposer                             ,
   updateFromReceipts         ,
-)           
-                             
-                                  
-                        
-                        
-                 
+)
+
+
+
+
+
    {
   const ledger = new Ledger();
   let attempts = 0;
@@ -911,11 +911,11 @@ async function runRankerLane(
   episodes        ,
   rank                                                                             ,
   learner                                    ,
-)           
-                             
-                                  
-                        
-                 
+)
+
+
+
+
    {
   const ledger = new Ledger();
   let attempts = 0;
@@ -939,10 +939,10 @@ async function runRankerLane(
 
 function receiptPayload(receipt         )                          {
   const bundle = receipt.replayBundle && typeof receipt.replayBundle === "object"
-    ? receipt.replayBundle                           
+    ? receipt.replayBundle
     : {};
   const payload = bundle.candidatePayload && typeof bundle.candidatePayload === "object"
-    ? bundle.candidatePayload                           
+    ? bundle.candidatePayload
     : {};
   return payload;
 }

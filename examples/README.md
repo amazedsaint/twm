@@ -1268,3 +1268,35 @@ certificates before claim promotion.
   for spending limited verifier cost on promising branches while early-stopping
   weak branches: https://jmlr.org/papers/v18/16-558.html and
   https://arxiv.org/abs/1603.06560
+
+## Receipt-Trained Reversible Proposer Benchmark
+
+Run:
+
+```bash
+python3 -m examples.receipt_trained_reversible_proposer_benchmark
+```
+
+This emits JSON with top-level `report`, `evidence_certificate`,
+`learning_certificate`, and `claim_certificate`.
+
+The example is the first explicit benchmark gate for the current proof target:
+a receipt-trained reversible proposer must reduce hard-verifier calls while
+preserving zero invalid commits on held-out task families. It covers four local
+canaries:
+
+- robotics: signed-distance/collision-free proposal repair,
+- hardware: RVFI-style formal assertion repair,
+- program: triggering-test patch repair,
+- quantum: equivalence-preserving circuit rewrite repair.
+
+The held-out comparison is matched by task family. The static baseline tries a
+known rejected proposal before the repair and spends eight hard-verifier calls
+across four domains. The receipt-trained reversible proposer ranks the repair
+first and spends four hard-verifier calls, while both arms commit all four
+held-out tasks and the ledger records zero invalid commits.
+
+This is still G1 local evidence. The next real-task adapters should target OMPL
+or MotionBenchMaker robotics tasks, `riscv-formal` RVFI instruction checks,
+Defects4J active bug IDs, and MQT Bench/RevLib circuits checked through MQT
+QCEC.

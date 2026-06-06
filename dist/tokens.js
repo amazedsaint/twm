@@ -1,12 +1,12 @@
-                                          
-              
-            
-           
- 
 
-                                          
-                          
- 
+
+
+
+
+
+
+
+
 
 export function applyDelta                                        (state        , token            )         {
   if (!Object.is(state[token.key], token.before)) {

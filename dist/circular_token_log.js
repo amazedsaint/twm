@@ -8,28 +8,28 @@ import {
   validateCircularTokenLogCertificate,
 } from "./token_log.js";
 
-                                         
-                        
-                   
-                          
-                               
-                      
-                              
-                                   
-                            
-                                  
-                               
-                                     
-                                          
-                               
-                            
-                            
-                      
-                          
-                               
-                                  
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export async function runCircularTokenLogBenchmark()                                  {
   const state = demoCircularLogState();

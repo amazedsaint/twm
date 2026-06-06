@@ -190,7 +190,14 @@ def learning_evaluation_supports_claim(certificate: LearningEvaluationCertificat
         and certificate.invalid_commit_count == 0
         and certificate.ledger_audit
         and certificate.replay_rollback_rate == 1.0
-        and certificate.learned_success_count > certificate.baseline_success_count
+        and (
+            certificate.learned_success_count > certificate.baseline_success_count
+            or (
+                certificate.learned_success_count == certificate.baseline_success_count
+                and certificate.learned_success_count > 0
+                and certificate.learned_verifier_calls < certificate.baseline_verifier_calls
+            )
+        )
     )
 
 

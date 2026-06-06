@@ -3,24 +3,24 @@ import { DeltaToken } from "./reversible.js";
 
 export const PARALLEL_REPLAY_CERTIFICATE_SCHEMA = "trwm.parallel_replay_certificate.v1";
 
-                              
-                       
-                        
-                                                                 
-                         
- 
 
-                                            
-                        
-                     
-                     
-                        
-                        
-                      
-                              
-                            
-                          
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export function tokenConflicts(left             , right             )          {
   return intersects(left.writeSet, right.readSet)
@@ -168,11 +168,11 @@ export async function parallelReplayCertificateHash(certificate                 
   return stableHash(withoutHash);
 }
 
-export async function randomizedParallelReplayTrials(options   
-                
-                  
-                    
-                      
+export async function randomizedParallelReplayTrials(options
+
+
+
+
   = {})                                                  {
   const seed = options.seed ?? 11;
   const trials = options.trials ?? 64;

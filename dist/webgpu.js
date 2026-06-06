@@ -1,13 +1,13 @@
 import {
-                            
-                  
+
+
   affineForward,
   affineInverse,
   assertAffineI32Safe,
   i32ArrayToTicks,
 } from "./reversible.js";
 
-                                                      
+
 
 export function webGpuAvailable()          {
   return Boolean(globalThis.navigator?.gpu);

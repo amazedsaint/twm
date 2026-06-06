@@ -4,61 +4,61 @@ export const TRANSFER_EVALUATION_CERTIFICATE_SCHEMA = "trwm.transfer_evaluation_
 export const TRANSFER_EVALUATION_CONCLUSIONS = ["positive_transfer", "negative_transfer", "neutral"]         ;
 export const TRANSFER_GUARD_SNAPSHOT_SCHEMA = "trwm.transfer_guard_snapshot.v1";
 
-                                                                                          
 
-                                                
-                                                               
-                  
-                    
-                              
-                          
-                          
-                                
-                                          
-                       
-                       
-                               
-                               
-                                
-                                
-                            
-                          
-                             
-                       
-                             
-                                      
-                                       
-                       
-                            
-                                           
-                                   
-                          
- 
 
-                                     
-                          
-                       
-                                           
-                          
-                       
-                            
- 
 
-                                        
-                          
-                       
-                    
-                 
-                                                
-                          
-                       
- 
 
-                                        
-                                                       
-                                
-                       
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class TransferGuardMemory {
           entries = new Map                            ();
@@ -139,26 +139,26 @@ export class TransferGuardMemory {
   }
 }
 
-export async function buildTransferEvaluationCertificate(params   
-                  
-                    
-                              
-                          
-                          
-                                
-                                          
-                       
-                       
-                               
-                               
-                                
-                                
-                            
-                          
-                             
-                       
-                             
-                                    
+export async function buildTransferEvaluationCertificate(params
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
  )                                         {
   const sourceDomains = uniqueSorted(params.sourceDomains);
   const targetDomains = uniqueSorted(params.targetDomains);
@@ -195,13 +195,13 @@ export async function buildTransferEvaluationCertificate(params
   return { ...pending, certificateHash: await transferEvaluationCertificateHash(pending) };
 }
 
-export async function buildTransferGuardDecision(params   
-                          
-                       
-                    
-                 
-                                                 
-                           
+export async function buildTransferGuardDecision(params
+
+
+
+
+
+
  )                                 {
   const pending                        = {
     sourceDomains: uniqueSorted(params.sourceDomains),

@@ -1,14 +1,14 @@
 import {
-                          
-               
-                      
+
+
+
   Ledger,
   TransactionEngine,
   makeTrace,
 } from "./core.js";
 import {
-                                   
-                      
+
+
   InventoryReservationAdapter,
   makeReservationCandidate,
 } from "./operations.js";
@@ -19,26 +19,26 @@ import { VerifierReliabilityMemory, validateVerifierReliabilitySnapshot } from "
 export const STRICT_RELIABILITY_PRIMARY_ID = "strict_inventory_primary";
 export const FLAWED_RELIABILITY_PRIMARY_ID = "flawed_inventory_primary";
 
-                                         
-                               
-                          
-                         
-                          
-                         
-                           
-                           
-                      
-                      
-                              
-                                    
-                                      
-                                            
-                                  
-                                       
-                         
-                          
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class StrictInventoryPrimaryAdapter extends InventoryReservationAdapter {
   verifierId = STRICT_RELIABILITY_PRIMARY_ID;
@@ -81,10 +81,10 @@ export async function runReliabilityAuditBenchmark()                            
   const strict = memory.score(STRICT_RELIABILITY_PRIMARY_ID);
   const flawed = memory.score(FLAWED_RELIABILITY_PRIMARY_ID);
   const reliabilityFalsePositive = falsePositiveReceipt(reliabilityReceipts);
-  const reliabilityResidual = reliabilityFalsePositive?.hardResult.residual     
-                 
-                                      
-                                       
+  const reliabilityResidual = reliabilityFalsePositive?.hardResult.residual
+
+
+
    ;
 
   return {

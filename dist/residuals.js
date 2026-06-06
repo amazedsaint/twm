@@ -1,36 +1,36 @@
 import { canonicalJson, stableHash } from "./canonical.js";
-                                         
+
 
 export const RESIDUAL_SCHEMA = "trwm.residual.v1";
 
-                              
-          
-                
-              
-              
-            
-            
-          
-                 
-            
-              
 
-                                 
-                        
-                                          
-               
-                             
-                     
-                          
-                       
-                       
-                   
-                        
-                                      
-                      
-                        
-                     
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const residualCategories = new Set                  ([
   "none",
@@ -161,13 +161,13 @@ export async function residualSignalFromReceipt(receipt         , options       
 
 export async function normalizeResidual(
   residual         ,
-  options   
-                                            
-                       
-                            
-                         
-                           
-                          
+  options
+
+
+
+
+
+
    ,
 )                          {
   let normalized                         ;

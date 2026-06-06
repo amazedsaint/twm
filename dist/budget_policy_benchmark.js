@@ -1,8 +1,8 @@
 import { ReceiptBudgetPolicy,                       validateBudgetPolicySnapshot } from "./budget_policy.js";
 import { TransactionEngine, makeTrace } from "./core.js";
 import {
-                                   
-                      
+
+
   InventoryReservationAdapter,
   makeReservationCandidate,
   normalizeInventoryState,
@@ -11,32 +11,32 @@ import {
 export const BUDGET_POLICY_LIMIT = 3;
 export const BUDGET_POLICY_ORDER = [8, 7, 5, 4]         ;
 
-                                     
-                               
-                 
-                         
-                              
-                                   
-                               
-                               
-                                  
-                              
-                            
-                            
-                                
-                               
-                           
-                                 
-                           
-                            
-                                 
-                                
-                         
-                          
-                       
-                             
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export async function runBudgetPolicyBenchmark()                              {
   const seedState                 = { stock: { widget: 5 }, reserved: { widget: 0 }, committedOrders: [] };

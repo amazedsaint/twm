@@ -1,9 +1,9 @@
 import {
-                          
-               
-                             
-                     
-                      
+
+
+
+
+
   hardAccept,
   hardReject,
   makeCandidate,
@@ -12,17 +12,17 @@ import {
 import { stableHash } from "./canonical.js";
 import { AdditiveCoupling } from "./reversible.js";
 
-                               
 
-                            
-                
- 
 
-                                       
-                
-                     
-               
- 
+
+
+
+
+
+
+
+
+
 
 export function normalizeBoard(board       )        {
   if (board.length === 0) {

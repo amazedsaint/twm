@@ -5,11 +5,13 @@ import {
   HyperdimensionalMemory,
   CounterfactualRollbackRanker,
   ReceiptRanker,
+  ReceiptTrainedReversibleProposer,
   TransactionEngine,
   hardAccept,
   hardReject,
   makeCandidate,
   makeTrace,
+  validateReceiptTrainedReversibleProposerSnapshot,
 } from "../dist/index.js";
 
 class GuessAdapter {
@@ -120,4 +122,30 @@ test("counterfactual ranker penalizes rolled-back accepted losers", async () => 
   assert.equal(ranker.stats("low", "a_slow").rolledBack, 1);
   assert.equal(ranker.stats("low", "c_unsafe").rejected, 1);
   assert.ok(ranker.score("low", "b_fast") > ranker.score("low", "a_slow"));
+});
+
+test("receipt-trained reversible proposer ranks transferable action signatures", async () => {
+  const engine = new TransactionEngine(new GuessAdapter());
+  const proposer = new ReceiptTrainedReversibleProposer();
+  const state = { context: "low", solved: false };
+  for (const [action, defect] of [["unsafe", "repair"], ["repair", "repair"]]) {
+    const outcome = await engine.transact(
+      state,
+      makeTrace({ branchId: `train-${action}`, actions: [action], modelVersion: "reversible.receipt.train.v1" }),
+      makeCandidate({ context: "low", action, guess: action, defect, taskId: "train" }, "guess", "guess.v1"),
+    );
+    await proposer.update(outcome.receipt);
+  }
+
+  const heldout = [
+    makeCandidate({ context: "low", action: "unsafe", guess: "unsafe", defect: "repair", taskId: "heldout" }, "guess", "guess.v1"),
+    makeCandidate({ context: "low", action: "repair", guess: "repair", defect: "repair", taskId: "heldout" }, "guess", "guess.v1"),
+  ];
+  const ranked = proposer.rank("low", heldout);
+  const snapshot = await proposer.snapshot();
+
+  assert.equal(ranked[0].payload.action, "repair");
+  assert.equal(snapshot.learnerId, "receipt_trained_reversible_proposer");
+  assert.equal(snapshot.receiptHashes.length, 2);
+  assert.equal(await validateReceiptTrainedReversibleProposerSnapshot(snapshot), true);
 });

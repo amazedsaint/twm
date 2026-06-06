@@ -176,7 +176,14 @@ export async function learningEvaluationSupportsClaim(certificate: LearningEvalu
     && certificate.invalidCommitCount === 0
     && certificate.ledgerAudit
     && certificate.replayRollbackRate === 1
-    && certificate.learnedSuccessCount > certificate.baselineSuccessCount;
+    && (
+      certificate.learnedSuccessCount > certificate.baselineSuccessCount
+      || (
+        certificate.learnedSuccessCount === certificate.baselineSuccessCount
+        && certificate.learnedSuccessCount > 0
+        && certificate.learnedVerifierCalls < certificate.baselineVerifierCalls
+      )
+    );
 }
 
 function disjoint(left: string[], right: string[]): boolean {

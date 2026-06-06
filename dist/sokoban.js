@@ -1,9 +1,9 @@
 import {
-                          
-                     
-               
-                             
-                      
+
+
+
+
+
   Ledger,
   TransactionEngine,
   hardAccept,
@@ -13,48 +13,48 @@ import {
 } from "./core.js";
 import { stableHash } from "./canonical.js";
 
-                                               
-                                                     
 
-                                
-                 
-                
-                           
-                           
- 
 
-                               
-                           
-                          
- 
 
-                              
-                       
-                              
- 
 
-                                          
-                        
-                            
-                            
-                        
-               
- 
 
-                                       
-                  
-                                   
-                            
-                        
-                        
-                            
-                   
-                             
-                                
-                             
-                       
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const DIRECTIONS                                             = [
   ["U", [-1, 0]],
@@ -63,11 +63,11 @@ const DIRECTIONS                                             = [
   ["R", [0, 1]],
 ];
 
-                      
-                      
-                        
-                
- 
+
+
+
+
+
 
 export function parseSokoban(rows          )                                                 {
   if (rows.length === 0) {

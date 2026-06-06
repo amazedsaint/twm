@@ -1,9 +1,9 @@
 import {
-                          
-                     
-               
-                             
-                      
+
+
+
+
+
   hardAccept,
   hardReject,
   makeCandidate,
@@ -15,32 +15,32 @@ export const VERIFIER_COST_CONTEXT = "verifier-cost-route";
 export const EXPENSIVE_VERIFIER_DOMAIN = "expensive_exact";
 export const CHEAP_VERIFIER_DOMAIN = "cheap_exact";
 
-                                    
-                             
- 
 
-                                      
-                  
-                 
-                   
- 
 
-                                     
-                      
-                                
-                            
-                                 
-                             
-                                           
-                                             
-                                       
-                                         
-                             
-                            
-                       
-                             
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class VerifierCostAdapter                                                                          {
   domainId        ;

@@ -1,9 +1,9 @@
 import { stableHash } from "./canonical.js";
 import {
-                     
-               
-                         
-                      
+
+
+
+
   receiptStaticValid,
 } from "./core.js";
 
@@ -22,165 +22,165 @@ const WORLD_LEARNER_MERGE_BASIS = new Set([
   "delta_common_prefix",
 ]);
 
-                                                 
-                      
-                           
-                                                                                                 
- 
 
-                                                                     
-                       
-                            
-                                                                                                          
- 
 
-                                 
-                     
-                          
-                                                 
-                            
-                       
- 
 
-                                       
-                                                      
-                    
-                         
-                      
-                                
-                        
-                           
-                       
- 
 
-                                               
-                                                               
-                    
-                         
-                                                     
-                     
-                           
-                            
-                             
-                                  
-                          
-                           
-                            
-                             
-                                   
-                        
-                         
-                                
-                                       
-                                        
-                          
-                          
- 
 
-                                          
-                                       
-                                            
- 
 
-                                        
-                       
-                 
-                  
- 
 
-                                               
-                                                               
-                    
-                         
-                                
-                            
-                          
-                           
-                              
-                               
-                       
-                                        
-                           
-                          
- 
 
-                                                 
-                                                                 
-                    
-                         
-                              
-                            
-                             
-                           
-                                 
-                             
-                                
-                                    
-                      
-                          
- 
 
-                                                
-                                                                
-                    
-                         
-                            
-                        
-                     
-                         
-                     
-                         
-                         
-                          
-                                 
-                              
-                               
-                              
-                          
- 
 
-                                            
-                                                            
-                     
-                          
-                      
-                           
-                    
-                         
-                     
-                          
-                            
-                             
-                      
-                        
-                       
-                               
-                                   
-                     
-                         
-                     
-                             
-                           
-                              
-                                       
-                     
-                          
- 
 
-                                                                           
-               
-                     
-                   
-                                         
-                       
-                                     
-                                           
-                                        
-                                                          
-                                                        
-                             
-                 
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class TransactionalWorldModelRuntime                 {
   engine                                   ;
@@ -265,9 +265,9 @@ export class TransactionalWorldModelRuntime                 {
 
 export async function buildWorldLearnerSnapshot(
   learner                            ,
-  params   
-                        
-                                   
+  params
+
+
    ,
 )                                {
   const learnerState = await learnerStateSnapshot(learner);
@@ -287,18 +287,18 @@ export async function buildWorldLearnerSnapshot(
 
 export async function buildWorldModelStepCertificate(
   receipt         ,
-  params   
-                       
-                            
-                        
-                             
-                      
-                           
-                               
-                             
-                                
-                                         
-                       
+  params
+
+
+
+
+
+
+
+
+
+
+
    ,
 )                                     {
   const certificate                            = {
@@ -334,10 +334,10 @@ export async function buildWorldModelStepCertificate(
 
 export async function buildWorldLearnerUpdateCertificate(
   receipt         ,
-  params   
-                                      
-                                       
-                           
+  params
+
+
+
    ,
 )                                         {
   const certificate                                = {
@@ -830,10 +830,10 @@ export async function validateWorldLearnerLineageCertificate(certificate        
 export async function mergeWorldLearnerSnapshots(
   left                      ,
   right                      ,
-  options   
-                                        
-                                                           
-                                                            
+  options
+
+
+
     = {},
 )                                   {
   if (!await validateWorldLearnerSnapshot(left) || !await validateWorldLearnerSnapshot(right)) {
@@ -927,10 +927,10 @@ export async function auditWorldLearnerMerge(
   right                      ,
   merged                      ,
   certificate                              ,
-  options   
-                                        
-                                                           
-                                                            
+  options
+
+
+
     = {},
 )                   {
   try {

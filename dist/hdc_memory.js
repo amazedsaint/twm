@@ -1,6 +1,6 @@
 import {
-               
-                      
+
+
   Ledger,
   TransactionEngine,
   makeCandidate,
@@ -8,23 +8,23 @@ import {
 } from "./core.js";
 import { HyperdimensionalMemory } from "./learning.js";
 import {
-                             
-                          
-                  
+
+
+
   ShapeGuessAdapter,
 } from "./shape.js";
 
-                                  
-                                  
-                                    
-                             
-                              
-                                
-                            
-                          
-                       
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
 
 class ExactContextMemory {
   accepted = new Map                             ();
@@ -179,10 +179,10 @@ function makeShapeCandidate(context        , exactContext        , guess        
 
 function receiptPayload(receipt         )                          {
   const bundle = receipt.replayBundle && typeof receipt.replayBundle === "object"
-    ? receipt.replayBundle                           
+    ? receipt.replayBundle
     : {};
   return bundle.candidatePayload && typeof bundle.candidatePayload === "object"
-    ? bundle.candidatePayload                           
+    ? bundle.candidatePayload
     : {};
 }
 

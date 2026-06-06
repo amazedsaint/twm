@@ -78,6 +78,31 @@ class LearningEvaluationTests(unittest.TestCase):
         self.assertFalse(validate_learning_evaluation_certificate(duplicate))
         self.assertFalse(validate_learning_evaluation_certificate(tampered))
 
+    def test_certificate_supports_call_reduction_when_success_is_preserved(self) -> None:
+        certificate = build_learning_evaluation_certificate(
+            claim_id="test_call_reduction",
+            learner_id="learner",
+            learner_snapshot_hash=HASH_A,
+            training_receipt_hashes=(HASH_B,),
+            evaluation_receipt_hashes=(HASH_C,),
+            baseline_name="baseline",
+            learned_name="learned",
+            baseline_verifier_calls=2,
+            learned_verifier_calls=1,
+            baseline_success_count=1,
+            learned_success_count=1,
+            verifier_budget=1,
+            candidate_count=2,
+            same_case_baseline=True,
+            hard_commit_only=True,
+            invalid_commit_count=0,
+            ledger_audit=True,
+            replay_rollback_rate=1.0,
+        )
+
+        self.assertTrue(validate_learning_evaluation_certificate(certificate))
+        self.assertTrue(learning_evaluation_supports_claim(certificate))
+
     def test_learning_evaluation_benchmark_certifies_budget_policy_claim_boundary(self) -> None:
         report = run_learning_evaluation_benchmark()
 

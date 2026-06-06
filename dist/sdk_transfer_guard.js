@@ -8,41 +8,41 @@ import {
   validateTransferGuardedDomainRoute,
 } from "./sdk.js";
 import {
-                                   
-                      
+
+
   InventoryReservationAdapter,
   makeReservationCandidate,
 } from "./operations.js";
 import { buildTransferEvaluationCertificate, validateTransferGuardSnapshot } from "./transfer.js";
 
-                                         
-                        
-                      
-                         
-                              
-                                 
-                                
-                                   
-                             
-                         
-                                  
-                         
-                            
-                            
-                              
-                                
-                          
-                            
-                                   
-                                
-                    
-                       
-                       
-                          
-                             
-                       
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export async function runSdkTransferGuardBenchmark()                                  {
   const router = new TransferGuardedDomainRouter();

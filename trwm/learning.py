@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from hashlib import sha256
 from math import sqrt
 from typing import Any, Iterable, Mapping
 
-from .core import Receipt, canonical_json
+from .core import Receipt, TypedCandidate, canonical_json, stable_hash
+
+
+RECEIPT_TRAINED_REVERSIBLE_PROPOSER_SNAPSHOT_SCHEMA = "trwm.receipt_trained_reversible_proposer_snapshot.v1"
 
 
 @dataclass(frozen=True)
@@ -15,6 +18,128 @@ class CounterfactualActionStats:
     rolled_back: int = 0
     rejected: int = 0
     abstained: int = 0
+
+
+@dataclass(frozen=True)
+class ReversibleProposerSnapshotRow:
+    context: str
+    action: str
+    committed: int
+    rejected: int
+    observations: int
+    score: float
+
+
+@dataclass(frozen=True)
+class ReceiptTrainedReversibleProposerSnapshot:
+    schema_version: str
+    learner_id: str
+    learner_version: str
+    receipt_hashes: tuple[str, ...]
+    rows: tuple[ReversibleProposerSnapshotRow, ...]
+    snapshot_hash: str = ""
+
+    def __post_init__(self) -> None:
+        if self.schema_version != RECEIPT_TRAINED_REVERSIBLE_PROPOSER_SNAPSHOT_SCHEMA:
+            raise ValueError(f"invalid reversible proposer snapshot schema: {self.schema_version}")
+        object.__setattr__(self, "receipt_hashes", tuple(self.receipt_hashes))
+        object.__setattr__(self, "rows", tuple(sorted(self.rows, key=lambda row: (row.context, row.action))))
+        if not self.snapshot_hash:
+            object.__setattr__(self, "snapshot_hash", receipt_trained_reversible_proposer_snapshot_hash(self))
+
+    def without_hash(self) -> dict[str, Any]:
+        data = asdict(self)
+        data.pop("snapshot_hash", None)
+        return data
+
+
+class ReceiptTrainedReversibleProposer:
+    """Receipt-trained reversible proposal ranker.
+
+    The proposer only reorders typed candidates. It never supplies hard-verifier
+    authority, and its transferable key is the candidate action signature rather
+    than a task id or receipt hash.
+    """
+
+    def __init__(
+        self,
+        *,
+        learner_id: str = "receipt_trained_reversible_proposer",
+        learner_version: str = "1.0",
+        commit_weight: float = 1.0,
+        reject_weight: float = 1.0,
+    ) -> None:
+        if not learner_id or not learner_version:
+            raise ValueError("learner id and version must be non-empty")
+        if commit_weight <= 0 or reject_weight < 0:
+            raise ValueError("weights must be non-negative and commit_weight must be positive")
+        self.learner_id = learner_id
+        self.learner_version = learner_version
+        self.commit_weight = float(commit_weight)
+        self.reject_weight = float(reject_weight)
+        self.committed: defaultdict[str, Counter[str]] = defaultdict(Counter)
+        self.rejected: defaultdict[str, Counter[str]] = defaultdict(Counter)
+        self.receipt_hashes: list[str] = []
+
+    def update(self, receipt: Receipt) -> None:
+        if not receipt.static_valid():
+            raise ValueError("receipt-trained proposer only accepts statically valid receipts")
+        context, action = _receipt_context_action(receipt)
+        if receipt.committed and receipt.hard_result.accepted:
+            self.committed[context][action] += 1
+        elif receipt.hard_result.rejected:
+            self.rejected[context][action] += 1
+        if receipt.receipt_hash and receipt.receipt_hash not in self.receipt_hashes:
+            self.receipt_hashes.append(receipt.receipt_hash)
+
+    def score(self, context: str, candidate: Any) -> float:
+        action = _candidate_action_token(candidate)
+        return (
+            self.commit_weight * self.committed[context][action]
+            - self.reject_weight * self.rejected[context][action]
+        )
+
+    def rank(self, context: str, candidates: Iterable[Any]) -> list[Any]:
+        rows = list(candidates)
+
+        def key(row: tuple[int, Any]) -> tuple[float, int, int, int, str]:
+            index, candidate = row
+            action = _candidate_action_token(candidate)
+            return (
+                -self.score(context, candidate),
+                -self.committed[context][action],
+                self.rejected[context][action],
+                index,
+                action,
+            )
+
+        return [candidate for _, candidate in sorted(enumerate(rows), key=key)]
+
+    def snapshot(self) -> ReceiptTrainedReversibleProposerSnapshot:
+        contexts = set(self.committed) | set(self.rejected)
+        rows: list[ReversibleProposerSnapshotRow] = []
+        for context in sorted(contexts):
+            actions = set(self.committed[context]) | set(self.rejected[context])
+            for action in sorted(actions):
+                committed = self.committed[context][action]
+                rejected = self.rejected[context][action]
+                rows.append(
+                    ReversibleProposerSnapshotRow(
+                        context=context,
+                        action=action,
+                        committed=committed,
+                        rejected=rejected,
+                        observations=committed + rejected,
+                        score=round(self.commit_weight * committed - self.reject_weight * rejected, 12),
+                    )
+                )
+        return ReceiptTrainedReversibleProposerSnapshot(
+            schema_version=RECEIPT_TRAINED_REVERSIBLE_PROPOSER_SNAPSHOT_SCHEMA,
+            learner_id=self.learner_id,
+            learner_version=self.learner_version,
+            receipt_hashes=tuple(self.receipt_hashes),
+            rows=tuple(rows),
+        )
 
 
 class ReceiptRanker:
@@ -189,3 +314,49 @@ def _receipt_context_action(receipt: Receipt) -> tuple[str, str]:
     context = str(bundle.get("context", payload.get("context", "global")))
     action = _token(bundle.get("action", payload.get("action", payload.get("guess", payload))))
     return context, action
+
+
+def receipt_trained_reversible_proposer_snapshot_hash(snapshot: ReceiptTrainedReversibleProposerSnapshot) -> str:
+    return stable_hash(snapshot.without_hash())
+
+
+def validate_receipt_trained_reversible_proposer_snapshot(snapshot: ReceiptTrainedReversibleProposerSnapshot) -> bool:
+    try:
+        if snapshot.schema_version != RECEIPT_TRAINED_REVERSIBLE_PROPOSER_SNAPSHOT_SCHEMA:
+            return False
+        if not snapshot.learner_id or not snapshot.learner_version:
+            return False
+        if any(not _is_hash(receipt_hash) for receipt_hash in snapshot.receipt_hashes):
+            return False
+        if len(set(snapshot.receipt_hashes)) != len(snapshot.receipt_hashes):
+            return False
+        if tuple(sorted(snapshot.rows, key=lambda row: (row.context, row.action))) != snapshot.rows:
+            return False
+        for row in snapshot.rows:
+            if not row.context or not row.action:
+                return False
+            values = (row.committed, row.rejected, row.observations)
+            if any(isinstance(value, bool) or not isinstance(value, int) or value < 0 for value in values):
+                return False
+            if row.observations != row.committed + row.rejected:
+                return False
+            if not isinstance(row.score, float):
+                return False
+        return snapshot.snapshot_hash == receipt_trained_reversible_proposer_snapshot_hash(snapshot)
+    except Exception:
+        return False
+
+
+def _candidate_action_token(candidate: Any) -> str:
+    payload: Any = candidate
+    if isinstance(candidate, TypedCandidate):
+        payload = candidate.payload
+    elif hasattr(candidate, "payload"):
+        payload = getattr(candidate, "payload")
+    if isinstance(payload, Mapping):
+        return _token(payload.get("action", payload.get("proposal_signature", payload.get("guess", payload))))
+    return _token(payload)
+
+
+def _is_hash(value: str) -> bool:
+    return isinstance(value, str) and len(value) == 64 and all(char in "0123456789abcdef" for char in value)

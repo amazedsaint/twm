@@ -1,8 +1,8 @@
 import {
-                          
-               
-                             
-                      
+
+
+
+
   Ledger,
   TransactionEngine,
   hardAccept,
@@ -18,33 +18,33 @@ import {
   validateBranchSelectionCertificate,
 } from "./branch.js";
 
-                                        
-                        
-                      
-                        
-                        
-                         
-                               
-                                
-                     
-                                     
-                               
-                            
-                      
-                          
-                                         
-                                  
-                        
-                             
-                       
-                             
- 
 
-                              
-                
-                
-                    
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class CounterAdapter                                                              {
   verifierId = "branch_counter_oracle";

@@ -1,16 +1,16 @@
 import { canonicalJson } from "./canonical.js";
 
-                          
-                                
-                                                                                               
 
-                                       
-                
-                
-                
-                
-                
- 
+
+
+
+
+
+
+
+
+
+
 
 const I32_MIN = BigInt(-(2 ** 31));
 const I32_MAX = BigInt(2 ** 31 - 1);

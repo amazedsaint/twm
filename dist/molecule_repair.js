@@ -1,8 +1,8 @@
 import {
-                          
-               
-                             
-                      
+
+
+
+
   Ledger,
   TransactionEngine,
   hardAccept,
@@ -16,76 +16,76 @@ export const NORMAL_VALENCE                         = { C: 4, N: 3, O: 2, F: 1, 
 export const DEFAULT_ELEMENTS = ["C", "N", "O", "F", "Cl"]         ;
 export const DEFAULT_BOND_ORDERS = [1, 2, 3]         ;
 
-                               
-                 
-                  
- 
 
-                               
-                 
-                          
-                
- 
 
-                                
-                        
-                        
- 
 
-                                        
-                               
-                                        
-                        
-                        
-                            
-                              
- 
 
-                                      
-                                 
-                  
-                               
- 
 
-                                           
-                  
-                                 
-                       
-                        
-                        
-                  
-                    
-               
- 
 
-                                   
-                                                                 
-                   
-                                                                                         
-                                    
-                                  
-                                                                                                                          
- 
 
-                                        
-                
-                   
-                   
-                            
- 
 
-                                       
-                   
-                             
-                                
-                                
-                     
-                            
-                          
-                             
-                             
-                                               
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class MoleculeGraphAdapter                                                                                 {
   verifierId = "organic_subset_valence_formula_verifier";
@@ -149,10 +149,10 @@ export class MoleculeResidualRepairer {
 
   update(receipt         )       {
     const bundle = receipt.replayBundle && typeof receipt.replayBundle === "object"
-      ? receipt.replayBundle                           
+      ? receipt.replayBundle
       : {};
     const payload = bundle.candidatePayload && typeof bundle.candidatePayload === "object"
-      ? bundle.candidatePayload                                     
+      ? bundle.candidatePayload
       : {};
     if (receipt.hardResult.result === "accept") {
       const key = JSON.stringify({ element: payload.element, bondOrder: payload.bondOrder });

@@ -1,19 +1,19 @@
 import {
-                     
-               
-                      
+
+
+
   Ledger,
   TransactionEngine,
   makeTrace,
 } from "./core.js";
 import { stableHash } from "./canonical.js";
 import {
-             
+
 } from "./macro.js";
 import {
-                         
-                               
-                                
+
+
+
   RrlmMacroProposer,
   buildRrlmProposalCertificate,
   buildRrlmTransportCertificate,
@@ -23,15 +23,15 @@ import {
   validateRrlmTransportCertificate,
 } from "./rrlm.js";
 import {
-                   
-                            
-                          
+
+
+
   ScalarProgramAdapter,
   makeScalarCandidate,
 } from "./repair.js";
 import {
-                            
-                            
+
+
   TransactionalWorldModelRuntime,
   auditWorldLearnerDelta,
   auditWorldLearnerLineage,
@@ -55,14 +55,14 @@ import {
   worldModelStepCertificateHash,
 } from "./world.js";
 import {
-                                        
-                                   
-                                                 
-                               
-                                  
-                            
-                                 
-                                                 
+
+
+
+
+
+
+
+
   auditWorldProgramAdmission,
   auditWorldProgramBundleVerification,
   auditWorldProgramCertificate,
@@ -93,78 +93,78 @@ import {
   validateWorldProgramReplayVerificationCertificate,
 } from "./world_program.js";
 
-                                  
-                        
-                    
-                          
-                           
-                        
-                         
-                             
-                        
-                        
-                                
-                          
-                                        
-                                   
-                                    
-                                            
-                                             
-                                       
-                                             
-                                       
-                                            
-                                      
-                                    
-                                      
-                                          
-                                    
-                                      
-                                        
-                                        
-                                  
-                                        
-                                           
-                                                
-                                                      
-                                                    
-                                      
-                                        
-                                   
-                                    
-                                        
-                                             
-                                              
-                                             
-                                           
-                                   
-                                     
-                                        
-                                  
-                                          
-                                      
-                                            
-                                                 
-                                           
-                                
-                                                         
-                                               
-                                           
-                                                
-                                                          
-                                      
-                                            
-                                          
-                                               
-                                                          
-                                      
-                                            
-                          
-                                         
-                             
-                       
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class ResidualRepairProposer {
   proposerId = "scalar_residual_repair_proposer";
@@ -247,10 +247,10 @@ class ResidualRepairLearner {
   }
 }
 
-                                                        
-                  
-                       
-  
+
+
+
+
 
 class RrlmScalarTraceProposer {
   proposerId = "rrlm_macro_proposer";
@@ -661,31 +661,31 @@ export async function runWorldLoopBenchmark()                           {
   };
 }
 
-async function runRrlmWorldLoop(target        )           
-                                                                            
-                                                                             
-                                   
-                                    
-                                                    
-                                                     
-                                                      
-                                                       
-                               
-                                
-                                        
-                                              
-                                               
-                                                         
-                                             
-                                                                           
-                                           
-                                                                           
-                                                       
-                                                                 
-                     
-                             
-                       
-                             
+async function runRrlmWorldLoop(target        )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
    {
   const proposer = new RrlmScalarTraceProposer(target, 0);
   const projector = new RrlmScalarProgramProjector(target, proposer);
@@ -834,11 +834,11 @@ async function runRrlmWorldLoop(target        )
   };
 }
 
-function buildWorldLoopRuntime(target        , episode        )   
-                                
-                                                                      
-                                                                                    
-                                 
+function buildWorldLoopRuntime(target        , episode        )
+
+
+
+
   {
   const seedState                     = { episode, target, solved: false };
   const proposer = new ResidualRepairProposer(target, 0);

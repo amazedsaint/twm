@@ -1,10 +1,10 @@
 import {
-                      
-                          
-                     
-               
-                         
-                      
+
+
+
+
+
+
   hardAbstain,
   receiptStaticValid,
 } from "./core.js";
@@ -12,42 +12,42 @@ import { stableHash } from "./canonical.js";
 
 export const BRANCH_SELECTION_CERTIFICATE_SCHEMA = "trwm.branch_selection_certificate.v1";
 
-                                                           
-                                                                                                                            
- 
 
-                                                 
-                                                                                                         
- 
 
-                                       
-               
-                     
-                      
-                        
-                                                          
-                       
-                         
- 
 
-                                             
-                                                            
-                      
-                            
-                            
-                            
-                             
-                         
-                               
-                                
-                          
-                                
-                                 
-                                                   
-                            
-                            
-                          
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class LowestCostRanker                                                             {
   choose(verified                                                                              )         {
@@ -282,12 +282,12 @@ export class BudgetedBranchRuntime                          {
   }
 }
 
-                                                  
-                     
-                       
-                                              
-                             
- 
+
+
+
+
+
+
 
 export class DistributedCommitManager                          {
   engine                                            ;

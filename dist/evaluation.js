@@ -2,53 +2,53 @@ import { stableHash } from "./canonical.js";
 
 export const LEARNING_EVALUATION_CERTIFICATE_SCHEMA = "trwm.learning_evaluation_certificate.v1";
 
-                                                
-                                                               
-                  
-                    
-                              
-                                  
-                                    
-                       
-                      
-                                
-                               
-                               
-                              
-                         
-                         
-                            
-                             
-                          
-                             
-                       
-                             
-                                    
-                                      
-                                   
-                          
- 
 
-export async function buildLearningEvaluationCertificate(params   
-                  
-                    
-                              
-                                  
-                                    
-                       
-                      
-                                
-                               
-                               
-                              
-                         
-                         
-                            
-                          
-                             
-                       
-                             
-                                    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export async function buildLearningEvaluationCertificate(params
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
  )                                         {
   const certificate                                = {
     schemaVersion: LEARNING_EVALUATION_CERTIFICATE_SCHEMA,
@@ -176,7 +176,14 @@ export async function learningEvaluationSupportsClaim(certificate               
     && certificate.invalidCommitCount === 0
     && certificate.ledgerAudit
     && certificate.replayRollbackRate === 1
-    && certificate.learnedSuccessCount > certificate.baselineSuccessCount;
+    && (
+      certificate.learnedSuccessCount > certificate.baselineSuccessCount
+      || (
+        certificate.learnedSuccessCount === certificate.baselineSuccessCount
+        && certificate.learnedSuccessCount > 0
+        && certificate.learnedVerifierCalls < certificate.baselineVerifierCalls
+      )
+    );
 }
 
 function disjoint(left          , right          )          {

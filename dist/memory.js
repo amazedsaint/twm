@@ -1,46 +1,46 @@
-                                         
-                                        
+
+
 import { stableHash } from "./canonical.js";
 
 export const MACRO_MEMORY_ENTRY_SCHEMA = "trwm.macro_memory_entry.v1";
 export const MACRO_MEMORY_SNAPSHOT_SCHEMA = "trwm.macro_memory_snapshot.v1";
 
-                                                   
-                        
-                  
-                
-                     
-                        
-                            
-                              
-                         
-                        
-                            
-                
-                            
-                    
- 
 
-                                                      
-                        
-                             
-                       
-                       
-                                         
-                       
- 
 
-                                   
-                  
-                
-                     
-                        
-                            
-                              
-                         
-                        
-                            
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class BoundedMacroMemory                 {
   capacityPerContext        ;
@@ -248,10 +248,10 @@ function entryKey(context        , token        )         {
 
 function receiptPayload(receipt         )                          {
   const bundle = receipt.replayBundle && typeof receipt.replayBundle === "object"
-    ? receipt.replayBundle                           
+    ? receipt.replayBundle
     : {};
   const payload = bundle.candidatePayload && typeof bundle.candidatePayload === "object"
-    ? bundle.candidatePayload                           
+    ? bundle.candidatePayload
     : {};
   return payload;
 }

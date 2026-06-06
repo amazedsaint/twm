@@ -815,3 +815,45 @@ search.
   https://opensmiles.org/opensmiles.html
 - RDKit Book, valence calculation and allowed valences:
   https://rdkit.org/docs/RDKit_Book.html
+
+## Current Proof Target
+
+The next narrow result is not "the learned model is correct." The target is:
+
+```text
+receipt-trained reversible proposer
+  reduces hard-verifier calls
+  while preserving held-out success
+  and preserving zero invalid commits
+```
+
+The first implementation is
+`examples.receipt_trained_reversible_proposer_benchmark`. It deliberately uses
+local deterministic canaries so the metric is auditable before external suites
+are wired in. The learning certificate now supports two evidence modes:
+
+- the learned arm succeeds where the same-case baseline fails,
+- or the learned arm preserves the same held-out success count with fewer
+  hard-verifier calls.
+
+The second mode is the important one for real systems. The learned proposer is
+valuable only if it spends less verifier budget without weakening commit
+authority.
+
+## External Benchmark Anchors
+
+The real-task path should attach adapters in this order:
+
+- robotics: OMPL/MotionBenchMaker-style motion-planning problems with explicit
+  state-validity and collision-checking receipts,
+- hardware: `riscv-formal` RVFI instruction checks over open RISC-V cores,
+- program repair: Defects4J active bug ids with triggering/relevant test
+  receipts,
+- quantum: MQT Bench and RevLib circuits checked with MQT QCEC equivalence
+  receipts.
+
+Until those adapters run, the strongest claim remains G1: the repo now has the
+certificate schema, reversible proposal tokens, held-out split discipline,
+same-case baseline comparison, and zero-invalid-commit gate needed to evaluate
+the target. It does not yet prove real robotics safety, hardware correctness,
+program repair effectiveness, or quantum compilation correctness.

@@ -88,6 +88,7 @@ python3 -m examples.branch_budget_transfer
 python3 -m examples.branch_stop_rule_transfer
 python3 -m examples.branch_composition_transfer
 python3 -m examples.context_retention_transfer
+python3 -m examples.receipt_trained_reversible_proposer_benchmark
 python3 -m examples.branch_history_frontier
 python3 -m examples.programmable_world_model_frontier
 ```
@@ -173,7 +174,10 @@ budget toward a higher-cost repair after a cheap reject probe; the
 branch-stop-rule example uses negative source receipts to record target
 abstentions and avoid verifier calls on a matched no-good family; the
 branch-composition example combines two receipt-bound past branch fragments only
-as a verifier-gated target proposal; the residual-template example turns a
+as a verifier-gated target proposal; the receipt-trained reversible proposer
+benchmark preserves four held-out local canary successes while reducing
+hard-verifier calls from eight to four with zero invalid commits; the
+residual-template example turns a
 source residual/repair pair into a named repair-template proposal without
 transferring commit authority; the boundary-bracket example uses source
 reject/commit endpoints to prioritize a target threshold candidate without
@@ -223,8 +227,9 @@ forty-six branch-memory stages. See `examples/README.md` and
   conclusions before any positive transfer claim can be promoted, plus
   transfer-guard snapshots that admit source evidence only after validated
   positive-transfer certificates.
-- `trwm.learning`: receipt-derived rankers, counterfactual rollback ranking,
-  and hyperdimensional receipt memory.
+- `trwm.learning`: receipt-derived rankers, receipt-trained reversible proposer
+  snapshots, counterfactual rollback ranking, and hyperdimensional receipt
+  memory.
 - `trwm.macro`: prefix-safe macro transactions and macro-memory ranking.
 - `trwm.memory`: bounded macro-memory consolidation, deterministic eviction,
   and hash-checked memory snapshots.

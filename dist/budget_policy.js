@@ -4,47 +4,47 @@ import { wilsonLowerBound } from "./reliability.js";
 
 export const BUDGET_POLICY_SNAPSHOT_SCHEMA = "trwm.budget_policy_snapshot.v1";
 
-                                  
-                
-                    
-                   
-                       
-                            
- 
 
-                                                    
-                
-                
-                                              
-                       
-                 
-                   
- 
 
-                                               
-                 
-                                                     
-                
-                          
- 
 
-                                             
-               
-                     
-                         
-                           
-                            
-                            
-                      
-                                        
- 
 
-                                       
-                        
-                          
-            
-                       
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class ReceiptBudgetPolicy {
   z        ;

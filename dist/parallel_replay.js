@@ -9,24 +9,24 @@ import {
 import { canonicalJson, stableHash } from "./canonical.js";
 import { BlockToken, DeltaToken } from "./reversible.js";
 
-                                       
-                        
-                     
-                     
-                        
-                        
-                      
-                                           
-                                         
-                                    
-                            
-                            
-                      
-                          
-                               
-                                  
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export async function runParallelReplayBenchmark()                                {
   const state = demoState();

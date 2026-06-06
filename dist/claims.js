@@ -4,29 +4,29 @@ export const CLAIM_CERTIFICATE_SCHEMA = "trwm.claim_certificate.v1";
 export const CLAIM_EVIDENCE_GRADES = ["G0", "G1", "G2", "G3"]         ;
 export const CLAIM_STATUSES = ["supported", "rejected"]         ;
 
-                                                                      
-                                                        
 
-                                   
-              
-                  
-                                    
-                 
- 
 
-                                   
-                        
-                  
-                    
-                                    
-                
-                      
-                                   
-                                   
-                   
-                    
-                          
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export function requirement(
   key        ,
@@ -44,15 +44,15 @@ export function requirement(
   };
 }
 
-export async function certifyClaim(params   
-                  
-                    
-                                    
-                
-                                   
-                                    
-                    
-                     
+export async function certifyClaim(params
+
+
+
+
+
+
+
+
  )                            {
   if (new Set(params.requirements.map((row) => row.key)).size !== params.requirements.length) {
     throw new Error("claim requirement keys must be unique");

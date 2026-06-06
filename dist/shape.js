@@ -1,8 +1,8 @@
 import {
-                          
-               
-                             
-                      
+
+
+
+
   Ledger,
   TransactionEngine,
   hardAccept,
@@ -13,48 +13,48 @@ import {
 import { ReceiptRanker, HyperdimensionalMemory } from "./learning.js";
 import { oneHotUpdates, shapeRankPreflight } from "./preflight.js";
 
-                                        
-                  
-                 
-                
-                 
- 
 
-                             
-                 
-                  
-                  
-                 
-                  
- 
 
-                                     
-                
-                   
- 
 
-                              
-                                   
-                                          
-                                      
-                                    
-                                           
-                                       
-                         
-                     
-                          
-                      
-                          
-                           
-                                  
-                                   
-                                     
-                                      
-                       
-                             
- 
 
-                                                                                                        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class ShapeGuessAdapter                                                                     {
   verifierId = "shape_oracle";

@@ -1,8 +1,8 @@
 import {
-                          
-               
-                             
-                      
+
+
+
+
   Ledger,
   TransactionEngine,
   hardAccept,
@@ -12,7 +12,7 @@ import {
 } from "./core.js";
 import { stableHash } from "./canonical.js";
 
-                                                                                          
+
 
 export const DEFAULT_CODE_OPERATORS                 = ["left", "+", "-", "*", "max", "min", "right", "absdiff"];
 export const INITIAL_CODE_OPERATOR               = "left";
@@ -26,79 +26,79 @@ export const DEFAULT_TEST_INPUTS                                = [
   { x: -4, y: -2 },
 ];
 
-                               
-                                 
-                   
- 
 
-                                   
-                   
-                       
-                     
-                     
-                        
-                        
-                  
-                   
-                                   
- 
 
-                            
-                 
-                         
-                   
- 
 
-                                  
-                            
-                  
-                                 
-                              
- 
 
-                                   
-                  
-                            
-                   
-                      
-               
- 
 
-                               
-                                        
-                   
-                     
-                                  
-                    
-                  
-            
-                   
-                           
-                     
-                        
-                         
-           
- 
 
-                                          
-                
-                   
-                   
-                            
- 
 
-                                   
-                   
-                             
-                                
-                                
-                     
-                            
-                          
-                             
-                             
-                                               
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class CodePatchAdapter                                                                     {
   verifierId = "bounded_unit_test_expression_verifier";
@@ -178,10 +178,10 @@ export class CodeResidualRepairer {
 
   update(receipt         )       {
     const bundle = receipt.replayBundle && typeof receipt.replayBundle === "object"
-      ? receipt.replayBundle                           
+      ? receipt.replayBundle
       : {};
     const payload = bundle.candidatePayload && typeof bundle.candidatePayload === "object"
-      ? bundle.candidatePayload                             
+      ? bundle.candidatePayload
       : {};
     if (receipt.hardResult.result === "accept") {
       const operator = payload.patch?.operator ?? "unknown";

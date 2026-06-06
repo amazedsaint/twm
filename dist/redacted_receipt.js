@@ -2,7 +2,7 @@ import { TransactionEngine, makeTrace } from "./core.js";
 import {
   InventoryReservationAdapter,
   makeReservationCandidate,
-                      
+
 } from "./operations.js";
 import {
   REDACTION_SCHEMA,
@@ -20,24 +20,24 @@ export const REDACTION_DEMO_PATHS = [
   "rollbackBundle.preState",
 ];
 
-                                        
-                        
-                              
-                       
-                     
-                            
-                                
-                                
-                           
-                            
-                                 
-                                   
-                          
-                              
-                                      
-                                       
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export async function runRedactedReceiptBenchmark()                                 {
   const state                 = { stock: { widget: 5 }, reserved: {}, committedOrders: [] };

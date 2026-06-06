@@ -1,8 +1,8 @@
 import {
-                          
-               
-                             
-                      
+
+
+
+
   Ledger,
   TransactionEngine,
   hardAccept,
@@ -11,52 +11,52 @@ import {
   makeTrace,
 } from "./core.js";
 
-                                      
 
-                              
-                
-                
- 
 
-                                       
-                  
-                
-                 
-                         
-                 
-                            
- 
 
-                                 
-                       
-                 
-                 
-                
-                      
- 
 
-                                     
-                  
-                 
-                  
-                 
-                          
- 
 
-                                      
-                
-                   
- 
 
-                               
-                                
-                                
-                     
-                            
-                       
-                             
-                                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export function evaluateProgram(steps               , start = 0)         {
   return steps.reduce((value, step) => {
@@ -116,10 +116,10 @@ export class ResidualProgramRepairer {
 
   update(receipt         )       {
     const bundle = receipt.replayBundle && typeof receipt.replayBundle === "object"
-      ? receipt.replayBundle                           
+      ? receipt.replayBundle
       : {};
     const payload = bundle.candidatePayload && typeof bundle.candidatePayload === "object"
-      ? bundle.candidatePayload                                 
+      ? bundle.candidatePayload
       : {};
     const context = String(payload.context ?? "global");
     if (receipt.hardResult.result === "accept") {

@@ -1,8 +1,8 @@
 import {
-                          
-               
-                             
-                      
+
+
+
+
   Ledger,
   TransactionEngine,
   hardAccept,
@@ -12,26 +12,26 @@ import {
 } from "./core.js";
 import { BranchRuntime, DistributedCommitManager,                    } from "./branch.js";
 
-                                           
-                               
-                               
-                     
-                           
-                                     
-                                           
-                             
-                                    
-                                
-                               
-                       
-                             
-                             
- 
 
-                                      
-                
-               
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class DistributedCounterAdapter                                                               {
   verifierId = "counter_limit";

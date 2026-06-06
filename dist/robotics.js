@@ -1,8 +1,8 @@
 import {
-                          
-               
-                             
-                      
+
+
+
+
   Ledger,
   TransactionEngine,
   hardAccept,
@@ -16,78 +16,78 @@ export const ROBOT_EPSILON = 1e-9;
 export const DEFAULT_DETOUR_Y = [0.5, 0.46, 0.54, 0.42, 0.58, 0.34, 0.66, 0.22, 0.78, 0.12, 0.88];
 export const DEFAULT_EFFECTIVE_RADII = [0.16, 0.20, 0.24, 0.28, 0.31];
 
-                         
-            
-            
- 
 
-                                 
-                     
-                 
-                 
- 
 
-                                         
-                
-               
-                              
-                      
-                    
-                  
-                                           
-                           
- 
 
-                                       
-                                  
-                  
-                               
- 
 
-                                         
-                  
-                                  
-                       
-                  
-               
- 
 
-                                
-                                                              
-                   
-                        
-                    
-                   
-                      
-                            
-                       
-            
-                    
-                         
-                         
-                       
-           
- 
 
-                                               
-                
-                   
-                   
-                            
- 
 
-                                        
-                   
-                             
-                                
-                                
-                     
-                            
-                          
-                             
-                             
-                                               
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class RobotTrajectoryAdapter                                                                                {
   verifierId = "point_robot_trajectory_tube_verifier";
@@ -156,10 +156,10 @@ export class RobotResidualRepairer {
 
   update(receipt         )       {
     const bundle = receipt.replayBundle && typeof receipt.replayBundle === "object"
-      ? receipt.replayBundle                           
+      ? receipt.replayBundle
       : {};
     const payload = bundle.candidatePayload && typeof bundle.candidatePayload === "object"
-      ? bundle.candidatePayload                                   
+      ? bundle.candidatePayload
       : {};
     if (receipt.hardResult.result === "accept") {
       const key = String(payload.detourY ?? "unknown");

@@ -756,3 +756,37 @@ statistical exploration algorithm, regret guarantee, MCTS implementation,
 automatic similarity metric, CEGAR system, CDCL solver, novelty-search result,
 MAP-Elites implementation, Hyperband implementation, options-framework result,
 contextual-bandit result, curriculum-learning result, homotopy-optimization result, Hindsight Experience Replay result, causal-inference result, do-calculus result, Bayesian experimental-design result, active-learning result, query-by-committee result, version-space learning result, safe Bayesian optimization result, group-equivariant neural network, automatic symmetry-search system, CSP solver, arc-consistency algorithm, statistical validation, production calibration, multiobjective optimizer, Pareto-front approximation guarantee, case-based reasoning system, genetic algorithm, program synthesizer, Shapley-value computation, propensity-score estimator, covariate-balance proof, treatment-effect estimate, reinforcement-learning credit-assignment result, robust optimization, worst-case guarantee, distributional robustness, neural-network calibration, statistical calibration, probability estimation, model reliability assurance, conformal prediction, distribution-free coverage, conditional coverage, uncertainty quantification, active-subspace discovery, dimensionality-reduction performance, sensitivity-analysis algorithm, elementary-effects screening result, SPSA gradient estimate, derivative estimate, gradient-estimation guarantee, shield synthesis, runtime assurance, safe reinforcement learning, temporal-logic enforcement, controller switching, A* search, admissible heuristic proof, shortest-path optimality, potential-based reward shaping, policy-invariance proof, reinforcement learning, pattern-database search, optimization result, numerical continuation, homotopy continuation, nonlinear root finding, path-following performance, partial-order reduction algorithm, model-checking correctness proof, dynamic partial-order reduction result, concurrency verification result, state-space reduction guarantee, bifurcation analysis, branch-switching algorithm performance, transposition-table performance, Zobrist-hashing implementation, duplicate-detection algorithm, graph-search scalability, RANSAC implementation, robust estimator, outlier-detection guarantee, Byzantine fault-tolerant protocol, consensus algorithm, security proof, or cross-domain scientific discovery result.
+
+## Receipt-Trained Reversible Proposer Gate
+
+The new receipt-trained reversible proposer benchmark makes the next target
+explicit. The proposer learns only from statically valid receipts, stores a
+hash-stable snapshot, and ranks candidates by transferable action signatures
+rather than held-out task ids. The candidates are reversible delta-token
+programs, so each proposal has a checked forward/inverse cycle before it can
+support the claim.
+
+Across the local robotics, hardware, program, and quantum canaries:
+
+- training records one rejected proposal and one committed repair per domain,
+- the static held-out baseline spends two verifier calls per domain,
+- the receipt-trained proposer spends one verifier call per domain,
+- both held-out arms commit all four tasks,
+- invalid commits remain zero,
+- replay, rollback, ledger, evidence, learning, and claim certificates validate.
+
+The practical learning is sharper than the earlier branch-history examples:
+the next frontier metric is not just "learned ordering succeeds." It is
+"learned ordering preserves success while reducing hard-verifier calls." That
+is the right measurement for expensive real-task verifiers.
+
+The next substrate requirements are now concrete:
+
+- external task manifests with fixed train/held-out splits,
+- receipt-bound verifier-cost accounting,
+- real-domain replay/rollback adapters,
+- no learned-verifier commit authority,
+- benchmark certificates that bind baseline receipts as well as learned
+  evaluation receipts,
+- aggregate reports that fail if any domain has an invalid commit or loses
+  held-out success.

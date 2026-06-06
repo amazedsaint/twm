@@ -9,31 +9,31 @@ import { GENESIS_HEAD, TransactionEngine, captureState, makeTrace } from "./core
 import {
   InventoryReservationAdapter,
   makeReservationCandidate,
-                                   
-                      
+
+
 } from "./operations.js";
 
 export const CHECKPOINT_COMPACTION_END_INDEX = 3;
 
-                                             
-                        
-                       
-                         
-                                 
-                                   
-                             
-                            
-                                  
-                           
-                               
-                          
-                           
-                          
-                          
-                               
-                               
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export async function runCheckpointCompactionBenchmark()                                      {
   const [seedState, finalState, engine] = await makeCheckpointLedger();

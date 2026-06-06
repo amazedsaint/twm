@@ -3,38 +3,38 @@ import { compareCodePoint, stableHash } from "./canonical.js";
 export const PROJECTION_CONTRACT_SCHEMA = "trwm.projection_contract.v1";
 export const PROJECTION_MANIFEST_SCHEMA = "trwm.projection_manifest.v1";
 
-                                     
-                           
-                     
-                                                   
- 
 
-                                     
-                      
-                           
-                     
-                          
-                                      
-                         
-                                                   
- 
 
-                                  
-                    
-                          
-                        
-                               
-                        
-                              
-             
-                                          
-                            
-                          
-                                 
-                          
-                                
-    
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export function makeProjectionContract(
   requiredFields          ,
@@ -185,13 +185,13 @@ export async function fieldValueHash(field        , value         )             
   return stableHash({ field: String(field), value });
 }
 
-async function projectionManifestHash(manifest   
-                        
-                      
-                           
-                     
-                          
-                                      
+async function projectionManifestHash(manifest
+
+
+
+
+
+
  )                  {
   return stableHash({
     schemaVersion: manifest.schemaVersion,

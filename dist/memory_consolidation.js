@@ -3,8 +3,8 @@ import {
   GridMacroAdapter,
   PrefixSafeMacroRuntime,
   defaultGridState,
-                
-             
+
+
 } from "./macro.js";
 import {
   MACRO_MEMORY_SNAPSHOT_SCHEMA,
@@ -13,24 +13,24 @@ import {
   validateMacroMemorySnapshot,
 } from "./memory.js";
 
-                                            
-                        
-                             
-                          
-                           
-                       
-                            
-                                  
-                                        
-                               
-                   
-                     
-                         
-                              
-                          
-                       
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export async function runMemoryConsolidationBenchmark()                                     {
   const context = "grid-3x3";

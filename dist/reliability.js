@@ -1,27 +1,27 @@
 import { stableHash } from "./canonical.js";
-                                         
+
 
 export const RELIABILITY_SNAPSHOT_SCHEMA = "trwm.reliability_snapshot.v1";
 
-                                         
-                    
-                           
-                          
-                         
-                       
-                        
-                           
-                    
- 
 
-                                              
-                        
-                                 
-                       
-                       
-            
-                       
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class VerifierReliabilityMemory {
   priorSuccess        ;

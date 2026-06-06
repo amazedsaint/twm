@@ -1,8 +1,8 @@
 import {                       ReceiptBudgetPolicy } from "./budget_policy.js";
 import {               TransactionEngine, makeTrace } from "./core.js";
 import {
-                                   
-                      
+
+
   InventoryReservationAdapter,
   makeReservationCandidate,
 } from "./operations.js";
@@ -16,30 +16,30 @@ import {
 
 export const TRANSFER_GUARD_BUDGET = 1;
 
-                                      
-                        
-                         
-                         
-                                   
-                                 
-                              
-                            
-                           
-                              
-                              
-                                
-                            
-                            
-                                     
-                                   
-                                
-                          
-                       
-                          
-                             
-                       
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export async function runTransferGuardBenchmark()                               {
   const sourceState                 = { stock: { widget: 5 }, reserved: { widget: 0 }, committedOrders: [] };

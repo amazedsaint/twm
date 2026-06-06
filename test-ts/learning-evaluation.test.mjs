@@ -81,6 +81,32 @@ test("learning evaluation certificate rejects overlap, duplicate, and tamper", a
   assert.equal(await validateLearningEvaluationCertificate(tampered), false);
 });
 
+test("learning evaluation certificate supports call reduction when success is preserved", async () => {
+  const certificate = await buildLearningEvaluationCertificate({
+    claimId: "test_call_reduction",
+    learnerId: "learner",
+    learnerSnapshotHash: HASH_A,
+    trainingReceiptHashes: [HASH_B],
+    evaluationReceiptHashes: [HASH_C],
+    baselineName: "baseline",
+    learnedName: "learned",
+    baselineVerifierCalls: 2,
+    learnedVerifierCalls: 1,
+    baselineSuccessCount: 1,
+    learnedSuccessCount: 1,
+    verifierBudget: 1,
+    candidateCount: 2,
+    sameCaseBaseline: true,
+    hardCommitOnly: true,
+    invalidCommitCount: 0,
+    ledgerAudit: true,
+    replayRollbackRate: 1,
+  });
+
+  assert.equal(await validateLearningEvaluationCertificate(certificate), true);
+  assert.equal(await learningEvaluationSupportsClaim(certificate), true);
+});
+
 test("learning evaluation benchmark certifies budget-policy claim boundary", async () => {
   const report = await runLearningEvaluationBenchmark();
 

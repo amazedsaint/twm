@@ -1,8 +1,8 @@
 import { ReceiptBudgetPolicy,                      } from "./budget_policy.js";
 import {               TransactionEngine, makeTrace } from "./core.js";
 import {
-                                   
-                      
+
+
   InventoryReservationAdapter,
   makeReservationCandidate,
 } from "./operations.js";
@@ -14,34 +14,34 @@ import {
 } from "./evaluation.js";
 import { BUDGET_POLICY_LIMIT, BUDGET_POLICY_ORDER } from "./budget_policy_benchmark.js";
 
-                                           
-                        
-                            
-                                    
-                  
-                               
-                                 
-                             
-                            
-                       
-                      
-                               
-                              
-                                
-                               
-                         
-                         
-                                    
-                                      
-                          
-                             
-                       
-                             
-                              
-                          
-                          
-                           
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export async function runLearningEvaluationBenchmark()                                    {
   const state                 = { stock: { widget: 5 }, reserved: { widget: 0 }, committedOrders: [] };

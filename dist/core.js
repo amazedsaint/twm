@@ -4,100 +4,100 @@ export const GENESIS_HEAD = "0".repeat(64);
 export const RUNTIME_SCHEMA = "trwm.browser.runtime.v1";
 export const RECEIPT_SCHEMA = "trwm.browser.receipt.v1";
 
-                                                             
-                            
-            
-                 
-                  
-                      
-                       
-                          
-                           
-                   
-                  
-                         
-                       
-                                         
 
-                                             
-           
-                        
-                    
- 
 
-                                
-                   
-                     
-                          
-                   
-                       
- 
 
-                                              
-             
-                   
-                        
-                                 
- 
 
-                                     
-                         
-                     
-                          
-                     
-                                    
- 
 
-                                  
-                 
-                  
-                         
-                    
-                    
-                       
-                         
- 
 
-                          
-                    
-                     
-                       
-                               
-                                   
-                   
-                            
-                             
-                                 
-                                 
-                     
-                                   
-                        
-                          
-                                     
-                        
-                       
-                                  
-                                         
-                        
-                      
-                      
- 
 
-                                                                 
-                     
-                          
-                                                                                                        
-                                                                                                 
-                                                                 
-                                                                   
- 
 
-                                            
-               
-                   
-                     
-                         
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export function hardAccept(verifierId        , verifierVersion        , metadata                          = {})                     {
   return { result: "accept", verifierId, verifierVersion, metadata };
@@ -446,19 +446,19 @@ export class TransactionEngine                                    {
     return result.verifierId === this.adapter.verifierId && result.verifierVersion === this.adapter.verifierVersion;
   }
 
-          async makeReceipt(params   
-                              
-                         
-                                                
-                                   
-                              
-                                 
-                                     
-                          
-                            
-                                       
-                                   
-                       
+          async makeReceipt(params
+
+
+
+
+
+
+
+
+
+
+
+
    )                   {
     return {
       receiptId: crypto.randomUUID(),

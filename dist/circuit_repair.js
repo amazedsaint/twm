@@ -1,8 +1,8 @@
 import {
-                          
-               
-                             
-                      
+
+
+
+
   Ledger,
   TransactionEngine,
   hardAccept,
@@ -12,8 +12,8 @@ import {
 } from "./core.js";
 import { stableHash } from "./canonical.js";
 
-                                       
-                                   
+
+
 
 export const OP_NAMES                         = {
   0: "FALSE",
@@ -34,75 +34,75 @@ export const OP_NAMES                         = {
   15: "TRUE",
 };
 
-                              
-                 
-                 
-                           
- 
 
-                                 
-                   
-                       
-                    
- 
 
-                           
-                              
-                       
- 
 
-                                       
-                                  
-                          
-                        
-                       
- 
 
-                                     
-                                
-                  
-                                  
- 
 
-                                          
-                  
-                                
-                          
-                        
-                 
-                 
-               
- 
 
-                                  
-                                                
-                   
-               
-                               
-                         
-                       
-                                                                     
- 
 
-                                       
-                
-                   
-                   
-                            
- 
 
-                                      
-                   
-                  
-                                
-                                
-                     
-                            
-                          
-                             
-                             
-                                               
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class BooleanCircuitAdapter                                                                               {
   verifierId = "boolean_circuit_truth_table_verifier";
@@ -174,10 +174,10 @@ export class CircuitResidualRepairer {
 
   update(receipt         )       {
     const bundle = receipt.replayBundle && typeof receipt.replayBundle === "object"
-      ? receipt.replayBundle                           
+      ? receipt.replayBundle
       : {};
     const payload = bundle.candidatePayload && typeof bundle.candidatePayload === "object"
-      ? bundle.candidatePayload                                    
+      ? bundle.candidatePayload
       : {};
     if (receipt.hardResult.result === "accept") {
       const key = String(payload.opMask ?? "unknown");

@@ -12,6 +12,8 @@ from trwm import (
     CounterfactualRollbackRanker,
     HyperdimensionalMemory,
     ReceiptRanker,
+    ReceiptTrainedReversibleProposer,
+    validate_receipt_trained_reversible_proposer_snapshot,
 )
 from trwm.core import HardVerifierResult, ProposalTrace, TransactionEngine, TypedCandidate
 
@@ -40,6 +42,7 @@ class LearningTests(unittest.TestCase):
         self.assertIsNotNone(ReceiptRanker)
         self.assertIsNotNone(CounterfactualRollbackRanker)
         self.assertIsNotNone(HyperdimensionalMemory)
+        self.assertIsNotNone(ReceiptTrainedReversibleProposer)
         self.assertIsNotNone(AncestralBranchMemory)
         self.assertIsNotNone(AncestralContextDescriptor)
         self.assertIsNotNone(AncestralContextRefinementCertificate)
@@ -127,6 +130,42 @@ class LearningTests(unittest.TestCase):
         self.assertEqual(ranker.stats("objects", "a_slow").rolled_back, 1)
         self.assertEqual(ranker.stats("objects", "c_unsafe").rejected, 1)
         self.assertGreater(ranker.score("objects", "b_fast"), ranker.score("objects", "a_slow"))
+
+    def test_receipt_trained_reversible_proposer_ranks_transferable_action_signatures(self) -> None:
+        engine = TransactionEngine(ObjectActionAdapter())
+        proposer = ReceiptTrainedReversibleProposer()
+        state = {"context": "objects", "solved": False}
+        for action, defect in (("unsafe", "repair"), ("repair", "repair")):
+            outcome = engine.transact(
+                state,
+                ProposalTrace(branch_id=f"train-{action}", actions=(action,), model_version="reversible.receipt.train.v1"),
+                TypedCandidate(
+                    payload={"context": "objects", "action": action, "defect": defect, "task_id": "train"},
+                    type_name="object.action",
+                    schema_version="object.action.v1",
+                ),
+            )
+            proposer.update(outcome.receipt)
+
+        heldout = (
+            TypedCandidate(
+                payload={"context": "objects", "action": "unsafe", "defect": "repair", "task_id": "heldout"},
+                type_name="object.action",
+                schema_version="object.action.v1",
+            ),
+            TypedCandidate(
+                payload={"context": "objects", "action": "repair", "defect": "repair", "task_id": "heldout"},
+                type_name="object.action",
+                schema_version="object.action.v1",
+            ),
+        )
+        ranked = proposer.rank("objects", heldout)
+        snapshot = proposer.snapshot()
+
+        self.assertEqual(ranked[0].payload["action"], "repair")
+        self.assertEqual(snapshot.learner_id, "receipt_trained_reversible_proposer")
+        self.assertEqual(len(snapshot.receipt_hashes), 2)
+        self.assertTrue(validate_receipt_trained_reversible_proposer_snapshot(snapshot))
 
 
 if __name__ == "__main__":

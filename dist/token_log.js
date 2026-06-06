@@ -3,22 +3,22 @@ import { BlockToken, DeltaToken } from "./reversible.js";
 
 export const CIRCULAR_TOKEN_LOG_CERTIFICATE_SCHEMA = "trwm.circular_token_log_certificate.v1";
 
-                                              
-                        
-                   
-                          
-                               
-                      
-                              
-                                
-                             
-                        
-                             
-                         
-                             
-                          
-                          
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class CircularTokenLog {
   capacity        ;
@@ -28,13 +28,13 @@ export class CircularTokenLog {
   compactedTokens              ;
   suffixTokens              ;
 
-  constructor(params   
-                     
-                                       
-                             
-                                  
-                                   
-                                
+  constructor(params
+
+
+
+
+
+
    ) {
     if (!positiveInteger(params.capacity)) {
       throw new RangeError("circular token log capacity must be a positive integer");
@@ -247,12 +247,12 @@ export async function tokenSequenceHash(tokens                      )           
   return stableHash(Array.from(tokens));
 }
 
-export async function randomizedCircularTokenLogTrials(options   
-                
-                  
-                    
-                      
-                    
+export async function randomizedCircularTokenLogTrials(options
+
+
+
+
+
   = {})                                                  {
   const seed = options.seed ?? 17;
   const trials = options.trials ?? 64;

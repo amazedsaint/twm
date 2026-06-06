@@ -1,7 +1,7 @@
 import { makeTrace } from "./core.js";
 import {
-                
-                 
+
+
   GridMacroAdapter,
   defaultGridMacros,
   defaultGridState,
@@ -57,35 +57,35 @@ import {
   makeRobotTrajectoryProblem,
 } from "./robotics.js";
 
-                                       
-                           
-                           
-                       
-                             
-                             
-                          
-                        
-                        
-                           
-                              
-                         
-                           
-                            
-                        
-                         
-                         
-                          
-                                                             
-                                                           
-                                                              
-                                                                 
-                                                            
-                                                              
-                                                               
-                                                           
-                                                            
-                                                            
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export async function runMultiDomainSdkBenchmark()                                {
   const substrate = new ProgrammableSubstrate();

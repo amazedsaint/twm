@@ -3,13 +3,13 @@ import { TransactionEngine, makeTrace,              } from "./core.js";
 import {
   InventoryReservationAdapter,
   makeReservationCandidate,
-                      
+
 } from "./operations.js";
 import {
   ProjectionContractProjector,
   ProjectionGuardAdapter,
   makeProjectionContractTraces,
-                            
+
 } from "./projection_contract.js";
 import {
   VERIFIER_BUDGET_LIMIT,
@@ -26,27 +26,27 @@ import {
   validateResidualSignal,
 } from "./residuals.js";
 
-                                         
-                      
-                        
-                                     
-                      
-                       
-                       
-                     
-                           
-                           
-                         
-                                
-                                    
-                         
-                                     
-                                       
-                                   
-                          
-                       
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export async function runResidualTaxonomyBenchmark()                                  {
   const [stockReceipt, stockAudit, stockInvalid] = await stockShortageReceipt();

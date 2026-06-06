@@ -1,28 +1,28 @@
 import {
-                     
-               
-                         
-                      
+
+
+
+
   makeTrace,
 } from "./core.js";
 import {                      ResidualTaxonomyMemory } from "./residuals.js";
 
-                                                         
-                
-                                              
-                     
-                   
- 
 
-                                             
-               
-                     
-                         
-                            
-                      
-                        
-                                       
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class ResidualTopKSubmitter                          {
   engine                                            ;
@@ -50,11 +50,11 @@ export class ResidualTopKSubmitter                          {
   async submit(
     state       ,
     options                                               ,
-    params   
-                   
-                          
-                                             
-                            
+    params
+
+
+
+
      ,
   )                                      {
     if (!Number.isInteger(params.topK) || params.topK < 0) {

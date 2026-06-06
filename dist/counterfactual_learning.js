@@ -1,9 +1,9 @@
 import {
-                          
-                     
-               
-                             
-                      
+
+
+
+
+
   Ledger,
   TransactionEngine,
   hardAccept,
@@ -16,32 +16,32 @@ import { CounterfactualRollbackRanker, ReceiptRanker } from "./learning.js";
 
 export const COUNTERFACTUAL_CONTEXT = "counterfactual-route";
 
-                                              
-                  
-                 
-               
-               
- 
 
-                                            
-                             
- 
 
-                                               
-                   
-                         
-                          
-                          
-                                 
-                                  
-                                  
-                                   
-                               
-                          
-                       
-                             
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export const DEFAULT_COUNTERFACTUAL_ACTIONS                                = [
   { context: COUNTERFACTUAL_CONTEXT, action: "a_slow", cost: 2, risk: 0.10 },

@@ -27,7 +27,7 @@ for (const file of await collectTsFiles(srcDir)) {
   const rel = relative(srcDir, file).replace(/\.ts$/, ".js");
   const outFile = join(distDir, rel);
   const source = await readFile(file, "utf8");
-  const js = stripTypeScriptTypes(source, { mode: "strip" });
+  const js = trimTrailingWhitespace(stripTypeScriptTypes(source, { mode: "strip" }));
   await mkdir(dirname(outFile), { recursive: true });
   await writeFile(outFile, js, "utf8");
 }
@@ -38,3 +38,6 @@ await writeFile(
   "utf8",
 );
 
+function trimTrailingWhitespace(source) {
+  return source.split("\n").map((line) => line.trimEnd()).join("\n");
+}

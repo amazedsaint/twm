@@ -1,105 +1,105 @@
 import {
-                     
-               
-                             
-                          
-                      
+
+
+
+
+
   Ledger,
   TransactionEngine,
 } from "./core.js";
 import { stableHash } from "./canonical.js";
 import {
-                                     
-                             
-                          
-                             
+
+
+
+
   TransferGuardMemory,
 } from "./transfer.js";
 
 export const SDK_DOMAIN_MANIFEST_SCHEMA = "trwm.sdk_domain_manifest.v1";
 export const TRANSFER_GUARDED_DOMAIN_ROUTE_SCHEMA = "trwm.transfer_guarded_domain_route.v1";
 
-                                                                    
-                   
-                                                 
-                 
-                            
- 
 
-                                                        
-                   
-                                     
-                            
-                     
-                   
- 
 
-                              
-                   
-                       
-                                 
-                               
-                             
-              
- 
 
-                                            
-                                                   
-                   
-                      
-                     
-                          
-                               
-                                     
-                          
-                                  
-                       
-                        
-                        
-                         
-                         
-                            
-                       
-                             
-                     
-                       
-                          
-                       
- 
 
-                                             
-                                                             
-                  
-                          
-                       
-                           
-                                
-                            
-                             
-                         
-                            
-                       
-                    
-                      
-                         
- 
 
-                                    
-                   
-                   
-                    
-                       
-                
-                                  
-                                    
-                         
- 
 
-                               
-                                                                    
-                                                       
-                                                                                    
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class ReceiptDomainRouter {
   accepted = new Map                             ();
@@ -254,10 +254,10 @@ export class TransferGuardedDomainRouter                         {
       ...baseRanked.filter((domainId) => !blockedSet.has(domainId)),
       ...baseRanked.filter((domainId) => blockedSet.has(domainId)),
     ];
-    const pending                                                                                     
-                        
-                          
-                             
+    const pending
+
+
+
       = {
       schemaVersion: TRANSFER_GUARDED_DOMAIN_ROUTE_SCHEMA,
       context: String(context),
@@ -576,13 +576,13 @@ function getCount(table                                  , context        , doma
   return table.get(context)?.get(domainId) ?? 0;
 }
 
-                                    
-                   
-                   
-                    
-                       
-                
- 
+
+
+
+
+
+
+
 
 export function verifierCostUnits(receipt         , defaultVerifierCost = 1)                                        {
   const spentValue = receipt.hardResult.metadata.verifier_cost_spent ?? receipt.hardResult.metadata.verifierCostSpent;
@@ -623,7 +623,7 @@ function integerMetadata(value         )                {
 
 function receiptCandidateType(receipt         )         {
   const bundle = receipt.replayBundle && typeof receipt.replayBundle === "object"
-    ? receipt.replayBundle                           
+    ? receipt.replayBundle
     : {};
   return String(bundle.candidateType ?? bundle.candidate_type ?? "unknown");
 }

@@ -1,40 +1,40 @@
 import { stableHash } from "./canonical.js";
-                                         
+
 
 export const REDACTION_SCHEMA = "trwm.redacted_receipt.v1";
 export const REDACTION_POLICY_SCHEMA = "trwm.redaction_policy.v1";
 export const REDACTION_COMMITMENT_SCHEMA = "trwm.redaction_commitment.v1";
 export const REDACTION_MARKER_SCHEMA = "trwm.redaction_marker.v1";
 
-                                  
-                        
-                   
-                  
- 
 
-                                      
-                        
-               
-                         
-                     
- 
 
-                                  
-                        
-                 
-               
-                         
- 
 
-                                      
-                        
-                              
-                                   
-                     
-                                           
-                                     
-                       
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const disallowedRedactionPaths = new Set([
   "receipt_hash",

@@ -2,9 +2,9 @@ import { chainHash, stableHash } from "./canonical.js";
 import {
   GENESIS_HEAD,
   receiptStaticValid,
-                     
-               
-                      
+
+
+
 } from "./core.js";
 import {
   auditWorldLearnerDelta,
@@ -14,11 +14,11 @@ import {
   validateWorldLearnerSnapshot,
   validateWorldLearnerUpdateCertificate,
   validateWorldModelStepCertificate,
-                                    
-                            
-                                     
-                                 
-                            
+
+
+
+
+
 } from "./world.js";
 
 export const WORLD_PROGRAM_MANIFEST_SCHEMA = "trwm.world_program_manifest.v1";
@@ -32,184 +32,184 @@ export const WORLD_PROGRAM_REPLAY_PACKAGE_SCHEMA = "trwm.world_program_replay_pa
 export const WORLD_PROGRAM_REPLAY_VERIFICATION_CERTIFICATE_SCHEMA = "trwm.world_program_replay_verification_certificate.v1";
 export const WORLD_PROGRAM_BUILD_TYPE = "trwm.world_program_execution.v1";
 
-                                       
-                                                      
-                    
-                         
-                                             
-                     
-                          
-                      
-                           
-                    
-                         
-                     
-                          
-                      
-                          
-                                              
-                                 
-                       
- 
 
-                                          
-                                                         
-                    
-                         
-                       
-                    
-                         
-                        
-                             
-                                  
-                          
-                                   
-                     
-                             
-                             
-                                               
-                          
- 
 
-                                              
-                                                              
-                   
-                        
-                              
-                              
-                                   
-                               
-                                
-                              
-                               
-                                
-                                    
-                                 
-                                 
-                       
-                            
-                           
-                                
-                                
-                     
- 
 
-                                                   
-                                                                   
-                   
-                        
-                     
-                       
-                                   
-                    
-                         
-                                 
-                                 
-                                 
-                           
-                               
-                               
-                    
-                          
- 
 
-                                             
-                                                             
-                   
-                        
-                                 
-                                                
-                                               
-                                                         
-                                  
-                          
-                                   
-                                               
-                               
-                     
- 
 
-                                                            
-                                                                             
-                     
-                     
-                          
-                     
-                       
-                                   
-                                   
-                                   
-                           
-                               
-                               
-                    
-                          
- 
 
-                                         
-                                                         
-                    
-                       
-                            
-                   
-                                         
-                                           
-                                        
-                                                          
-                                                        
-                   
- 
 
-                                            
-                                                            
-                    
-                         
-                                             
-                                  
-                       
-                                  
-                          
-                                           
-                                          
-                                   
-                     
-                          
-                      
- 
 
-                                                            
-                                                                             
-                      
-                             
-                     
-                          
-                          
-                     
-                                   
-                       
-                                  
-                          
-                                           
-                                          
-                           
-                               
-                               
-                          
-                          
- 
 
-export async function buildWorldProgramManifest(params   
-                    
-                         
-                    
-                     
-                    
-                     
-                          
-                      
-                          
-                                               
-                                  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export async function buildWorldProgramManifest(params
+
+
+
+
+
+
+
+
+
+
+
  )                                {
   const pending                       = {
     schemaVersion: WORLD_PROGRAM_MANIFEST_SCHEMA,
@@ -233,25 +233,25 @@ export async function buildWorldProgramManifest(params
   return { ...pending, manifestHash: await worldProgramManifestHash(pending) };
 }
 
-export async function buildWorldProgramAdmissionPolicy(params   
-                   
-                        
-                               
-                               
-                                    
-                                
-                                 
-                               
-                                
-                                 
-                                     
-                                  
-                                  
-                        
-                             
-                            
-                                 
-                                 
+export async function buildWorldProgramAdmissionPolicy(params
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
  )                                       {
   const pending                              = {
     schemaVersion: WORLD_PROGRAM_ADMISSION_POLICY_SCHEMA,
@@ -281,10 +281,10 @@ export async function buildWorldProgramAdmissionPolicy(params
 export async function buildWorldProgramCertificate(
   manifest                      ,
   steps                             ,
-  params   
-                       
-                               
-                               
+  params
+
+
+
    ,
 )                                   {
   if (steps.length === 0) {
@@ -355,10 +355,10 @@ export async function buildWorldProgramEvidenceBundle(
   executionCertificate                         ,
   admissionPolicy                             ,
   admissionCertificate                                  ,
-  params   
-                      
-                           
-                                  
+  params
+
+
+
     = {},
 )                                      {
   const pending                             = {
@@ -381,9 +381,9 @@ export async function buildWorldProgramEvidenceBundle(
 
 export async function buildWorldProgramBundleVerificationCertificate(
   bundle                            ,
-  params   
-                        
-                             
+  params
+
+
     = {},
 )                                                     {
   const { passed, failed } = await evaluateWorldProgramBundleVerification(bundle);
@@ -429,9 +429,9 @@ export async function buildWorldProgramReplayStep(
 export async function buildWorldProgramReplayPackage(
   evidenceBundle                            ,
   steps                                                      ,
-  params   
-                       
-                            
+  params
+
+
     = {},
 )                                     {
   if (steps.length === 0) {
@@ -465,9 +465,9 @@ export async function buildWorldProgramReplayPackage(
 
 export async function buildWorldProgramReplayVerificationCertificate(
   replayPackage                           ,
-  params   
-                        
-                             
+  params
+
+
     = {},
 )                                                     {
   const { passed, failed } = await evaluateWorldProgramReplayVerification(replayPackage);
@@ -498,10 +498,10 @@ export async function auditWorldProgramCertificate(
   manifest                      ,
   steps                             ,
   certificate                         ,
-  params   
-                       
-                               
-                               
+  params
+
+
+
    ,
 )                   {
   try {
@@ -981,10 +981,10 @@ export async function validateWorldProgramBundleVerificationCertificate(
 
 export async function validateWorldProgramReplayStep(
   step                        ,
-  options   
-                           
-                        
-                                                   
+  options
+
+
+
     = {},
 )                   {
   try {

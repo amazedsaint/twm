@@ -1,8 +1,8 @@
 import {
   GENESIS_HEAD,
-              
-               
-                             
+
+
+
   captureState,
   receiptStaticValid,
   receiptHash,
@@ -11,30 +11,30 @@ import { chainHash, stableHash } from "./canonical.js";
 
 export const CHECKPOINT_SCHEMA = "trwm.checkpoint.v1";
 
-                                                         
-                        
-                   
-                         
-                     
-                   
-                          
-                                   
-                       
-                         
-                    
-                         
-                    
-                         
-                             
-                          
- 
 
-                                                          
-               
-               
-                             
-                               
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export async function checkpointCertificateHash(checkpoint                                                 )                  {
   const { certificateHash: _certificateHash, ...withoutHash } = checkpoint                           ;

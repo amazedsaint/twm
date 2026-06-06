@@ -1,9 +1,9 @@
 import {
-                          
-                     
-               
-                             
-                      
+
+
+
+
+
   Ledger,
   TransactionEngine,
   hardAccept,
@@ -13,7 +13,7 @@ import {
 } from "./core.js";
 import { BranchRuntime } from "./branch.js";
 import {
-                          
+
   buildProjectionManifest,
   makeProjectionContract,
   normalizeProjectionManifest,
@@ -27,37 +27,37 @@ export const STOPPING_PROJECTION_CONTRACT                     = makeProjectionCo
   { contractId: "stopping_distance.safety_fields" },
 );
 
-                                       
-                             
-                     
-                          
-                           
- 
 
-                                         
-               
-                
-               
-                                              
-                              
-                      
-                           
- 
 
-                                           
-                         
-                        
-                                         
-                                  
-                                       
-                             
-                          
-                                
-                              
-                       
-                             
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class ProjectionGuardAdapter                                                                                {
   verifierId = "projection_contract_guard";

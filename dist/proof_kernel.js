@@ -1,8 +1,8 @@
 import {
-                          
-               
-                             
-                      
+
+
+
+
   Ledger,
   TransactionEngine,
   hardAccept,
@@ -12,66 +12,66 @@ import {
 } from "./core.js";
 import { stableHash } from "./canonical.js";
 
-                            
-                 
-                     
-                     
- 
 
-                               
-                       
-                     
-               
- 
 
-                             
-                        
-                  
-                    
-                  
- 
 
-                                        
-                  
-                        
-                   
-               
- 
 
-                                     
-                
-                   
-                   
-                            
- 
 
-                                    
-                   
-                    
-                                
-                                
-                     
-                            
-                          
-                             
-                             
-                                               
- 
 
-                                  
-                 
-                     
- 
 
-                                
-                                                                                   
-                  
-                
-                     
-                
-                     
-                                  
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class HornProofAdapter                                                                     {
   verifierId = "horn_proof_kernel";
@@ -150,10 +150,10 @@ export class ProofResidualRepairer {
 
   update(receipt         )       {
     const bundle = receipt.replayBundle && typeof receipt.replayBundle === "object"
-      ? receipt.replayBundle                           
+      ? receipt.replayBundle
       : {};
     const payload = bundle.candidatePayload && typeof bundle.candidatePayload === "object"
-      ? bundle.candidatePayload                                  
+      ? bundle.candidatePayload
       : {};
     if (receipt.hardResult.result === "accept") {
       const key = JSON.stringify(payload.script ?? []);

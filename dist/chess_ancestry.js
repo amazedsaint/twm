@@ -1,8 +1,8 @@
 import {
-                          
-               
-                             
-                      
+
+
+
+
   Ledger,
   TransactionEngine,
   hardAccept,
@@ -12,81 +12,81 @@ import {
 } from "./core.js";
 import { stableHash } from "./canonical.js";
 
-                                           
-                                  
+
+
 
 export const CHESS_FILES = "abcdefgh";
 export const CHESS_RANKS = "12345678";
 
-                             
-                  
-                    
-                  
-                 
- 
 
-                             
-                       
-                         
- 
 
-                            
-                  
-                     
-                   
-                                    
- 
 
-                                       
-                          
-                       
-                   
- 
 
-                                     
-                                
-                         
- 
 
-                                        
-                  
-                                
-                          
-                  
-               
- 
 
-                                
-                                                                                                                   
-                   
-            
-                            
-                    
-                            
-           
- 
 
-                                             
-                
-                   
-                   
-                            
- 
 
-                                      
-                             
-                       
-                           
-                        
-                                   
-                                
-                                
-                     
-                       
-                             
-                             
-                                               
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class ChessAncestryAdapter                                                                             {
   verifierId = "bounded_rook_king_last_move_verifier";
@@ -147,10 +147,10 @@ export class ChessResidualRepairer {
 
   update(receipt         )       {
     const bundle = receipt.replayBundle && typeof receipt.replayBundle === "object"
-      ? receipt.replayBundle                           
+      ? receipt.replayBundle
       : {};
     const payload = bundle.candidatePayload && typeof bundle.candidatePayload === "object"
-      ? bundle.candidatePayload                                  
+      ? bundle.candidatePayload
       : {};
     if (receipt.hardResult.result === "accept") {
       const move = payload.move;

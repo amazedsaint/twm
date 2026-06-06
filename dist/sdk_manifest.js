@@ -14,28 +14,28 @@ import {
   validateDomainManifest,
 } from "./sdk.js";
 
-                                    
-                        
-                      
-                             
-                             
-                                 
-                                  
-                           
-                         
-                             
-                           
-                            
-                        
-                        
-                            
-                            
-                                
-                          
-                             
-                       
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export async function runSdkManifestBenchmark()                             {
   const substrate = new ProgrammableSubstrate();

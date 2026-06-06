@@ -1,8 +1,8 @@
 import {
-                          
-               
-                             
-                      
+
+
+
+
   Ledger,
   TransactionEngine,
   hardAccept,
@@ -12,28 +12,28 @@ import {
 } from "./core.js";
 import { canonicalJson } from "./canonical.js";
 
-                                        
-                  
-                
-                  
-                       
- 
 
-                                      
-               
-                     
-                   
-                 
-                       
-                                
- 
 
-                                                                  
-                                                          
-                                             
-                                                                              
-                                                                                                         
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class PrefixSafeMacroRuntime                                {
   engine                                            ;
@@ -118,10 +118,10 @@ export class MacroMemory                 {
 
   update(receipt         )       {
     const bundle = receipt.replayBundle && typeof receipt.replayBundle === "object"
-      ? receipt.replayBundle                           
+      ? receipt.replayBundle
       : {};
     const payload = bundle.candidatePayload && typeof bundle.candidatePayload === "object"
-      ? bundle.candidatePayload                           
+      ? bundle.candidatePayload
       : {};
     const context = String(payload.context ?? "global");
     const token = tokenFromUnknown(payload.macro ?? []);
@@ -150,41 +150,41 @@ export class MacroMemory                 {
   }
 }
 
-                                             
-                                         
 
-                            
-                      
-                  
-                    
-                     
-                  
-                   
- 
 
-                                   
-                  
-                  
-                    
-                   
-                  
-                   
-                    
-                     
-               
- 
 
-                                  
-                                      
-                                    
-                                        
-                                         
-                            
-                                   
-                         
-                       
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class GridMacroAdapter                                                                      {
   verifierId = "grid_macro_oracle";

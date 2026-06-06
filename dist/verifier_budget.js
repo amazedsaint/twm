@@ -1,9 +1,9 @@
 import {
-                          
-                     
-               
-                             
-                      
+
+
+
+
+
   hardAccept,
   hardReject,
   makeCandidate,
@@ -18,37 +18,37 @@ export const EXPENSIVE_BUDGET_SOLUTION = "expensive_solution";
 export const CHEAP_BUDGET_DECOY = "cheap_decoy";
 export const CHEAP_BUDGET_SOLUTION = "cheap_solution";
 
-                                      
-                             
- 
 
-                                        
-                  
-                 
-                   
-                       
-                    
- 
 
-                                       
-                         
-                 
-                                  
-                                    
-                        
-                       
-                         
-                          
-                        
-                                 
-                             
-                                
-                                         
-                             
-                       
-                             
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class VerifierBudgetAdapter                                                                              {
   verifierId = "verifier_budget_oracle";

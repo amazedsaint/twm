@@ -1,12 +1,12 @@
 import { TransactionEngine, makeTrace } from "./core.js";
 import {
-                      
+
   InventoryReservationAdapter,
   makeReservationCandidate,
   normalizeInventoryState,
 } from "./operations.js";
 import {
-                      
+
   ResidualTaxonomyMemory,
   residualSignalFromReceipt,
 } from "./residuals.js";
@@ -15,23 +15,23 @@ import {                            ResidualTopKSubmitter } from "./topk.js";
 export const RESIDUAL_TOPK_ORDER = [8, 7, 5, 4]         ;
 export const RESIDUAL_TOPK_LIMIT = 2;
 
-                                     
-                               
-                            
-                         
-               
-                              
-                             
-                                
-                                    
-                                   
-                                       
-                                      
-                            
-                       
-                             
-                             
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export async function runResidualTopKBenchmark()                              {
   const seedState                 = { stock: { widget: 5 }, reserved: { widget: 0 }, committedOrders: [] };

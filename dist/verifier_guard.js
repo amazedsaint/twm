@@ -1,20 +1,20 @@
 import {
-                          
-               
-                             
-                      
+
+
+
+
   hardAccept,
   hardAbstain,
   hardReject,
 } from "./core.js";
 
-                                                        
-                     
-                          
-                                                                                                        
- 
 
-export class VerifierAgreementAdapter                         
+
+
+
+
+
+export class VerifierAgreementAdapter
                                                           {
   verifierId        ;
   verifierVersion        ;

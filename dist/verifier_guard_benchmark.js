@@ -1,9 +1,9 @@
 import {
-                          
-                     
-               
-                             
-                      
+
+
+
+
+
   hardAccept,
   hardReject,
   makeTrace,
@@ -12,8 +12,8 @@ import {
 import { BranchRuntime,                      } from "./branch.js";
 import { VerifierAgreementAdapter } from "./verifier_guard.js";
 import {
-                                   
-                      
+
+
   InventoryReservationAdapter,
   makeReservationCandidate,
   normalizeInventoryState,
@@ -23,27 +23,27 @@ export const VERIFIER_GUARD_SKU = "widget";
 export const UNSAFE_GUARD_ORDER = "unsafe-large";
 export const SAFE_GUARD_ORDER = "safe-small";
 
-                                      
-                      
-                                   
-                              
-                                  
-                                
-                                      
-                                      
-                                 
-                            
-                                      
-                             
-                       
-                     
-                                    
-                            
-                                    
-                              
-                                    
-                                    
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class FlawedInventoryPrimaryAdapter
                                                                               {
@@ -150,10 +150,10 @@ export async function runVerifierGuardBenchmark()                               
   const guardedState = normalizeInventoryState(guarded.state);
   const guardedReceipts = guarded.receipts             ;
   const falsePositiveReceipt = falsePositiveReceiptFrom(guardedReceipts);
-  const falsePositiveResidual = falsePositiveReceipt.hardResult.residual     
-                 
-                                      
-                                       
+  const falsePositiveResidual = falsePositiveReceipt.hardResult.residual
+
+
+
    ;
 
   return {
@@ -194,13 +194,13 @@ export function applyPermissiveInventoryReservation(
   };
 }
 
-export function normalizeGuardPayload(payload                         )   
-                  
-                  
-              
-                    
-                   
-               
+export function normalizeGuardPayload(payload                         )
+
+
+
+
+
+
   {
   const orderId = String(payload.orderId ?? payload.order_id ?? "");
   if (!orderId) {
@@ -256,9 +256,9 @@ function orderId(receipt         )         {
 }
 
 async function replayRollbackRate(
-  engine   
-                                                               
-                                                                 
+  engine
+
+
    ,
   seedState                ,
 )                  {
