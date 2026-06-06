@@ -43,6 +43,7 @@ python3 -m examples.robotic_safety_envelope
 python3 -m examples.molecular_dynamics_verlet
 python3 -m examples.material_lattice_metropolis
 python3 -m examples.ancestral_branch_exploration
+python3 -m examples.branch_counterfactual_transfer
 python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
@@ -61,6 +62,8 @@ Each example uses transactional hard verification, receipts, replay audit, and
 rollback audit. The domain examples now emit `report`, `evidence_certificate`,
 and `claim_certificate` JSON; the ancestral branch example adds an
 `exploration_certificate` for past-branch-guided proposal ordering; the
+branch-counterfactual example certifies accepted-but-rolled-back loser receipts
+as target proposal evidence when an old winner is stale; the
 analogical branch example tests explicit ancestor-context reuse and misleading
 ancestor rejection; the context-selection example certifies which ancestor
 contexts may influence target exploration; the context-refinement example uses
@@ -81,7 +84,7 @@ future proposal evidence for a sibling target and
 certifies the memory query that ranks the sibling proposals against a
 same-budget static sibling baseline; the frontier example aggregates the three
 physical certified domains, while the branch-history frontier aggregates the
-eleven branch-memory stages. See `examples/README.md` and
+twelve branch-memory stages. See `examples/README.md` and
 `docs/experiment_learnings.md`.
 
 ## Package Layout

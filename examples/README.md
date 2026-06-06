@@ -13,6 +13,7 @@ python3 -m examples.robotic_safety_envelope
 python3 -m examples.molecular_dynamics_verlet
 python3 -m examples.material_lattice_metropolis
 python3 -m examples.ancestral_branch_exploration
+python3 -m examples.branch_counterfactual_transfer
 python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
@@ -30,7 +31,11 @@ python3 -m examples.programmable_world_model_frontier
 Each command emits JSON. The three domain commands now include top-level
 `report`, `evidence_certificate`, and `claim_certificate` objects. The
 ancestral branch command adds an `exploration_certificate` that binds past
-branch receipts to later budgeted proposal ordering. The analogical branch
+branch receipts to later budgeted proposal ordering. The branch-counterfactual
+command adds
+`trwm.branch_counterfactual_certificate.v1` artifacts showing that
+accepted-but-rolled-back branch losers can become proposal evidence when the
+old winner is stale in a target context. The analogical branch
 command adds an `analogical_certificate` that binds explicit ancestor-context
 reuse and misleading-ancestor rejection. The context-selection command adds
 descriptor-level `trwm.ancestral_context_selection_certificate.v1` artifacts
@@ -66,9 +71,9 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the eleven branch-memory stages into one bounded G1 report. The physical frontier
-command aggregates the three physical certified examples into a cross-domain
-report and bounded G1 claim certificate.
+the twelve branch-memory stages into one bounded G1 report. The physical
+frontier command aggregates the three physical certified examples into a
+cross-domain report and bounded G1 claim certificate.
 
 ## Experiments
 
@@ -118,6 +123,22 @@ Learning: branches of the past can improve exploration by changing which
 candidate gets scarce verifier budget first. They do not become authority: the
 candidate still has to pass the domain hard gate, branch-selection certificate,
 ledger audit, replay audit, and rollback audit.
+
+### Branch Counterfactual Transfer
+
+`examples.branch_counterfactual_transfer` tests accepted-but-rolled-back
+branch losers. Each domain records a source branch with one hard reject, one
+committed winner, and one accepted loser that is rolled back because it was not
+selected. The target then makes the old winner stale: the one-call stale-winner
+baseline fails, while the one-call counterfactual branch commits the previously
+rolled-back accepted action after hard verification.
+
+Learning: counterfactual branch evidence should be reusable only through its
+own certificate. `trwm.branch_counterfactual_certificate.v1` binds source
+winner receipts, rolled-back accepted loser receipts, stale target rejects,
+counterfactual target commits, branch-selection certificates, and the
+same-budget comparison before claiming that counterfactual reuse improved
+exploration.
 
 ### Analogical Branch Transfer
 
@@ -279,22 +300,24 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the eleven branch-history experiments and
+`examples.branch_history_frontier` runs the twelve branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
-ordering through conflict-aware query-policy transfer, drift quarantine,
-receipt-bound branch pruning, diversity-certified family coverage, branch
-budget allocation, branch composition, and retained-memory influence.
+ordering through accepted-loser counterfactual reuse, conflict-aware
+query-policy transfer, drift quarantine, receipt-bound branch pruning,
+diversity-certified family coverage, branch budget allocation, branch
+composition, and retained-memory influence.
 
 Learning: the current branch-history direction is only coherent when every
 stage validates: raw past branches reorder proposals, explicit ancestor reuse is
-bounded, context selection is certified, failed branches refine retrieval,
-conflicts are certificate-bound, drift is quarantined, rejected branches prune
-known-dead target candidates, same-family failures force coverage only through a
-certificate, verifier budget is allocated only through a cost-bound
-certificate, branch fragments compose only through a certificate, and retained
-memory is compared against a same-budget baseline.
+bounded, accepted losers are reused only through a counterfactual certificate,
+context selection is certified, failed branches refine retrieval, conflicts are
+certificate-bound, drift is quarantined, rejected branches prune known-dead
+target candidates, same-family failures force coverage only through a
+certificate, verifier budget is allocated only through a cost-bound certificate,
+branch fragments compose only through a certificate, and retained memory is
+compared against a same-budget baseline.
 
 ### Programmable World Model Frontier
 

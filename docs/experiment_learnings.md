@@ -102,6 +102,19 @@ The next programmable transactional world model substrate therefore needs:
 - claim promotion gates that prove exploration improvement under the same
   verifier budget.
 
+The branch-counterfactual transfer example isolates accepted but rolled-back
+losers. Each domain records a source branch with one hard reject, one committed
+winner, and one accepted loser that is rolled back because it was not selected.
+The target then makes the prior winner stale. A stale-winner one-call baseline
+fails in all three domains, while the counterfactual one-call branch commits
+the previously rolled-back accepted action in all three domains. The new
+`trwm.branch_counterfactual_certificate.v1` artifact binds source winner
+receipts, accepted-loser rollback receipts, stale target rejects,
+counterfactual target commits, branch-selection certificates, and the
+same-budget comparison. The substrate implication is that rollback is not just
+undo machinery: accepted losers are reusable counterfactual evidence, but only
+after a certificate separates them from committed authority.
+
 The analogical branch transfer example adds one more design constraint:
 cross-context reuse must name its ancestor contexts explicitly. For each toy
 domain, two positive ancestor contexts reorder the target budget-one search
@@ -247,14 +260,14 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the eleven local branch-memory
+The branch-history frontier report now aggregates the twelve local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
-receipt-bound ordering, analogical ancestor reuse, certified context selection,
-counterexample refinement, conflict-aware query-policy transfer, drift
-quarantine, receipt-bound branch pruning, diversity-certified family coverage,
-receipt-bound budget allocation, branch composition, and retained memory
-influence.
+receipt-bound ordering, accepted-loser counterfactual reuse, analogical
+ancestor reuse, certified context selection, counterexample refinement,
+conflict-aware query-policy transfer, drift quarantine, receipt-bound branch
+pruning, diversity-certified family coverage, receipt-bound budget allocation,
+branch composition, and retained memory influence.
 This changes the design posture from isolated demos to a staged substrate map:
 each branch-history capability must expose its own certificate, and later
 stages are only meaningful if earlier evidence still validates.
