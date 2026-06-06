@@ -85,6 +85,10 @@ This repository currently targets `G1` evidence:
   static target rejects, contingent target commits, selected/rejected source
   contexts, and same-budget verifier-call evidence before past branches can be
   reused through a context-feature switchpoint,
+- branch-hindsight-relabel certificates that bind rejected source receipts,
+  intended goals, achieved/relabeled goals, static target rejects, relabeled
+  target commits, and same-budget verifier-call evidence before rejected
+  branches can guide a new target-goal proposal,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can

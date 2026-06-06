@@ -153,6 +153,19 @@ same-budget comparison. The substrate implication is that branch memory needs
 conditional reuse certificates: a past branch may be useful only under a typed
 target-context feature, and stale unconditional reuse should fail closed.
 
+The branch-hindsight relabel transfer example adds goal labels to rejected
+branch evidence. Each domain records a source branch that is physically valid
+but misses its intended goal while exposing a different achieved goal. The
+target static branch spends one verifier call on a direct proposal and fails.
+The hindsight-relabeled target spends the same one verifier call on the achieved
+goal branch, and it commits only after fresh target hard verification. The new
+`trwm.branch_hindsight_relabel_certificate.v1` artifact binds source reject
+receipts, intended goals, achieved/relabeled goals, static target rejects,
+relabeled target commits, branch-selection certificates, and the same-budget
+comparison. The substrate implication is that rejected receipts can suggest new
+exploration goals, but relabeling is proposal evidence only; it must be
+separated from commit authority by a fresh target receipt.
+
 The analogical branch transfer example adds one more design constraint:
 cross-context reuse must name its ancestor contexts explicitly. For each toy
 domain, two positive ancestor contexts reorder the target budget-one search
@@ -298,16 +311,16 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the fifteen local branch-memory
+The branch-history frontier report now aggregates the sixteen local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
 receipt-bound ordering, accepted-loser counterfactual reuse, option-family
 abstraction, stateful prerequisite ordering, regime-conditioned contingency
-reuse, analogical ancestor reuse, certified context selection, counterexample
-refinement, conflict-aware query-policy transfer, drift quarantine,
-receipt-bound branch pruning, diversity-certified family coverage,
-receipt-bound budget allocation, branch composition, and retained memory
-influence.
+reuse, hindsight goal relabeling, analogical ancestor reuse, certified context
+selection, counterexample refinement, conflict-aware query-policy transfer,
+drift quarantine, receipt-bound branch pruning, diversity-certified family
+coverage, receipt-bound budget allocation, branch composition, and retained
+memory influence.
 This changes the design posture from isolated demos to a staged substrate map:
 each branch-history capability must expose its own certificate, and later
 stages are only meaningful if earlier evidence still validates.
@@ -316,9 +329,10 @@ The boundary remains narrow. This is a deterministic G1 canary inspired by
 experience replay, counterfactual regret evidence, and selective tree-search
 sampling plus nogood-style pruning, diversity pressure, and recombinable
 building-block search plus successive resource allocation and temporal
-abstraction plus contextual bandits with side information; it is not a
+abstraction plus contextual bandits with side information and hindsight
+experience replay; it is not a
 statistical exploration algorithm, regret guarantee, MCTS implementation,
 automatic similarity metric, CEGAR system, CDCL solver, novelty-search result,
 MAP-Elites implementation, Hyperband implementation, options-framework result,
-contextual-bandit result, genetic algorithm, program synthesizer, or
+contextual-bandit result, Hindsight Experience Replay result, genetic algorithm, program synthesizer, or
 cross-domain scientific discovery result.

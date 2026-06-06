@@ -17,6 +17,7 @@ python3 -m examples.branch_counterfactual_transfer
 python3 -m examples.branch_abstraction_transfer
 python3 -m examples.branch_prerequisite_transfer
 python3 -m examples.branch_contingency_transfer
+python3 -m examples.branch_hindsight_relabel_transfer
 python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
@@ -48,6 +49,10 @@ The branch-contingency command adds
 `trwm.branch_contingency_certificate.v1` artifacts showing that a target
 context can select the source branch with the matching regime tag when stale
 unconditional reuse fails under the same one-call budget.
+The branch-hindsight-relabel command adds
+`trwm.branch_hindsight_relabel_certificate.v1` artifacts showing that rejected
+source branches can suggest an achieved target goal, but the relabeled target
+branch commits only after fresh hard verification.
 The analogical branch
 command adds an `analogical_certificate` that binds explicit ancestor-context
 reuse and misleading-ancestor rejection. The context-selection command adds
@@ -84,7 +89,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the fifteen branch-memory stages into one bounded G1 report. The physical
+the sixteen branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -199,6 +204,21 @@ source receipts, static target rejects, contingent target commits,
 branch-selection certificates, the selected source context, the rejected source
 context, and the same-budget comparison before claiming that regime-conditioned
 reuse improved exploration.
+
+### Branch Hindsight Relabel Transfer
+
+`examples.branch_hindsight_relabel_transfer` tests goal relabeling from a
+rejected branch. Each domain records a source branch that is physically valid
+but misses its intended goal while exposing a different achieved goal. The
+target static pass spends one verifier call on a bad direct proposal and fails.
+The hindsight-relabeled pass spends the same one verifier call on the achieved
+goal branch and commits only after the target hard verifier accepts it.
+
+Learning: rejected receipts can improve exploration without becoming authority.
+`trwm.branch_hindsight_relabel_certificate.v1` binds the source reject receipt,
+intended goal, achieved/relabeled goal, static target reject, relabeled target
+commit, branch-selection certificates, and same-budget comparison before
+claiming that hindsight relabeling improved exploration.
 
 ### Analogical Branch Transfer
 
@@ -360,15 +380,17 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the fifteen branch-history experiments and
+`examples.branch_history_frontier` runs the sixteen branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
 ordering through accepted-loser counterfactual reuse, option-family
 abstraction, prerequisite ordering, regime-conditioned contingency reuse,
-conflict-aware query-policy transfer, drift quarantine, receipt-bound branch
-pruning, diversity-certified family coverage, branch budget allocation, branch
-composition, and retained-memory influence.
+hindsight goal relabeling, analogical ancestor reuse, certified context
+selection, counterexample refinement, conflict-aware query-policy transfer,
+drift quarantine, receipt-bound branch pruning, diversity-certified family
+coverage, branch budget allocation, branch composition, and retained-memory
+influence.
 
 Learning: the current branch-history direction is only coherent when every
 stage validates: raw past branches reorder proposals, explicit ancestor reuse is
@@ -376,9 +398,10 @@ bounded, accepted losers are reused only through a counterfactual certificate,
 option families adapt exact actions only through an abstraction certificate,
 prerequisite order is admitted only through a stateful prerequisite certificate,
 regime-conditioned reuse is admitted only through a contingency certificate,
-context selection is certified, failed branches refine retrieval, conflicts are
-certificate-bound, drift is quarantined, rejected branches prune known-dead
-target candidates, same-family failures force coverage only through a
+hindsight relabeling is admitted only through a goal/reverification
+certificate, context selection is certified, failed branches refine retrieval,
+conflicts are certificate-bound, drift is quarantined, rejected branches prune
+known-dead target candidates, same-family failures force coverage only through a
 certificate, verifier budget is allocated only through a cost-bound certificate,
 branch fragments compose only through a certificate, and retained memory is
 compared against a same-budget baseline.
@@ -422,6 +445,9 @@ certificates before claim promotion.
 - Contextual bandits with side information are the analogy for conditioning a
   branch choice on observable target context:
   https://papers.nips.cc/paper/3178-the-epoch-greedy-algorithm-for-multi-armed-bandits-with-side-information
+- Hindsight Experience Replay is the goal-relabeling analogy for learning from
+  outcomes that missed the originally intended goal:
+  https://papers.neurips.cc/paper/7090-hindsight-experience-replay
 - Holland's adaptive-system work is the design analogy for treating useful
   past branch fragments as recombinable proposal building blocks:
   https://direct.mit.edu/books/monograph/2574/Adaptation-in-Natural-and-Artificial-SystemsAn

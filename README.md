@@ -47,6 +47,7 @@ python3 -m examples.branch_counterfactual_transfer
 python3 -m examples.branch_abstraction_transfer
 python3 -m examples.branch_prerequisite_transfer
 python3 -m examples.branch_contingency_transfer
+python3 -m examples.branch_hindsight_relabel_transfer
 python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
@@ -73,6 +74,8 @@ the branch-prerequisite example certifies prerequisite-before-final ordering
 under the same verifier-call budget; the branch-contingency example certifies a
 regime-conditioned switchpoint where stale unconditional reuse fails but a
 matched-source branch commits under the same one-call budget; the
+hindsight-relabel example certifies that a rejected source branch may guide a
+new target goal only after fresh target hard verification commits it; the
 analogical branch example tests explicit ancestor-context reuse and misleading
 ancestor rejection; the context-selection example certifies which ancestor
 contexts may influence target exploration; the context-refinement example uses
@@ -93,7 +96,7 @@ future proposal evidence for a sibling target and
 certifies the memory query that ranks the sibling proposals against a
 same-budget static sibling baseline; the frontier example aggregates the three
 physical certified domains, while the branch-history frontier aggregates the
-fifteen branch-memory stages. See `examples/README.md` and
+sixteen branch-memory stages. See `examples/README.md` and
 `docs/experiment_learnings.md`.
 
 ## Package Layout
