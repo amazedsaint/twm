@@ -383,6 +383,19 @@ certificates, not only unary action scores: a past branch can shape which
 combinations are worth trying, but the surviving combination still needs its
 own target hard-verifier receipt before commit.
 
+The branch-confidence transfer example adds support-strength evidence. Each
+domain records one thin optimistic source commit and three better-supported
+source commits. The static target spends one verifier call on the thin
+optimistic action and fails; the confidence-guided target spends the same
+verifier call on the better-supported action and commits. The new
+`trwm.branch_confidence_certificate.v1` artifact binds the source support
+counts, source receipt hashes, fixed Wilson-style lower bounds, target baseline
+reject, target confidence commit, branch-selection certificates, and the
+same-budget comparison. The substrate implication is that branch memory needs
+support certificates before sparse successes can influence exploration:
+thin positive evidence is still only proposal evidence, and the selected target
+branch still needs its own hard-verifier receipt before commit.
+
 The branch-pruning transfer example adds negative-evidence admission. Each
 domain records a source branch with two hard-rejected actions and one committed
 winner. The unpruned target spends the same two-call verifier budget on the
@@ -480,7 +493,7 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the twenty-nine local branch-memory
+The branch-history frontier report now aggregates the thirty local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
 receipt-bound ordering, accepted-loser counterfactual reuse, option-family
@@ -490,7 +503,7 @@ receipt-bound diagnostic probing, residual-template repair, boundary
 bracketing, source consensus, contrastive invariant transfer, trust-region radius transfer, analogical
 ancestor reuse, certified context selection, counterexample refinement,
 conflict-aware query-policy transfer,
-drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, receipt-bound branch pruning, diversity-certified family
+drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, receipt-bound branch pruning, diversity-certified family
 coverage, receipt-bound budget allocation, no-good stop-rule abstention, branch composition, and retained
 memory influence.
 This changes the design posture from isolated demos to a staged substrate map:
@@ -512,10 +525,11 @@ plus discounted/sliding-window non-stationary bandits as a freshness analogy
 plus heavy-tailed SAT/CSP search and random restarts as a backtracking analogy
 plus group equivariance as a typed symmetry-transform analogy
 plus network consistency as a pairwise constraint-propagation analogy
+plus Wilson-style proportion intervals as a support-confidence analogy
 plus nogood learning and backjumping as a stop-rule analogy;
 it is not a
 statistical exploration algorithm, regret guarantee, MCTS implementation,
 automatic similarity metric, CEGAR system, CDCL solver, novelty-search result,
 MAP-Elites implementation, Hyperband implementation, options-framework result,
-contextual-bandit result, curriculum-learning result, homotopy-optimization result, Hindsight Experience Replay result, causal-inference result, do-calculus result, Bayesian experimental-design result, active-learning result, query-by-committee result, version-space learning result, safe Bayesian optimization result, group-equivariant neural network, automatic symmetry-search system, CSP solver, arc-consistency algorithm, case-based reasoning system, genetic algorithm, program synthesizer, or
+contextual-bandit result, curriculum-learning result, homotopy-optimization result, Hindsight Experience Replay result, causal-inference result, do-calculus result, Bayesian experimental-design result, active-learning result, query-by-committee result, version-space learning result, safe Bayesian optimization result, group-equivariant neural network, automatic symmetry-search system, CSP solver, arc-consistency algorithm, statistical validation, production calibration, case-based reasoning system, genetic algorithm, program synthesizer, or
 cross-domain scientific discovery result.

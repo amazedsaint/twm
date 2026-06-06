@@ -65,6 +65,7 @@ python3 -m examples.branch_recency_weight_transfer
 python3 -m examples.branch_restart_transfer
 python3 -m examples.branch_symmetry_transfer
 python3 -m examples.branch_constraint_transfer
+python3 -m examples.branch_confidence_transfer
 python3 -m examples.branch_pruning_transfer
 python3 -m examples.branch_diversity_transfer
 python3 -m examples.branch_budget_transfer
@@ -111,7 +112,9 @@ one-call budget; the branch-symmetry example uses a typed transform to map a
 committed source action into a target action when exact source replay fails
 under the same one-call budget; the branch-constraint example uses source
 reject/commit receipts to avoid an incompatible pair and try a compatible pair
-under the same one-call budget; the branch-pruning example uses rejected branch
+under the same one-call budget; the branch-confidence example uses a fixed
+support lower bound to avoid over-promoting thin optimistic source evidence;
+the branch-pruning example uses rejected branch
 receipts to remove known-dead target candidates before verifier-budget allocation; the
 branch-diversity example uses same-family rejects to force coverage of a
 distinct candidate family under the same verifier budget; the
@@ -136,7 +139,7 @@ future proposal evidence for a sibling target and
 certifies the memory query that ranks the sibling proposals against a
 same-budget static sibling baseline; the frontier example aggregates the three
 physical certified domains, while the branch-history frontier aggregates the
-twenty-nine branch-memory stages. See `examples/README.md` and
+thirty branch-memory stages. See `examples/README.md` and
 `docs/experiment_learnings.md`.
 
 ## Package Layout

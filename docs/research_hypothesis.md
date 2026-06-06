@@ -137,6 +137,10 @@ This repository currently targets `G1` evidence:
   pairs, source reject/commit receipts, static and constraint-guided target
   receipts, and same-budget verifier-call evidence before past branches can
   shape combinatorial target exploration,
+- branch-confidence certificates that bind source support counts, source
+  receipt hashes, fixed lower-bound calculations, static and confidence-guided
+  target receipts, and same-budget verifier-call evidence before sparse past
+  successes can influence target exploration,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can
@@ -607,6 +611,8 @@ search.
   https://arxiv.org/abs/1602.07576
 - Mackworth, Consistency in Networks of Relations:
   https://doi.org/10.1016/0004-3702(77)90007-8
+- NIST/SEMATECH e-Handbook, Wilson confidence intervals for proportions:
+  https://itl.nist.gov/div898/handbook/prc/section2/prc241.htm
 - El-Yaniv and Wiener, On the Foundations of Noise-free Selective
   Classification: https://jmlr.csail.mit.edu/papers/v11/el-yaniv10a.html
 - NASA NTRS, A Formal Verification Framework for Runtime Assurance:
