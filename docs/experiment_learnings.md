@@ -35,3 +35,26 @@ The current examples suggest the next hardening step: promote a shared example
 report/certificate shape so every domain can publish the same fields for
 receipt hashes, verifier identity, replay status, rollback status, residual
 kinds, and claim boundary.
+
+## Certified Evidence Layer
+
+The examples now use `trwm.example_evidence_certificate.v1` to bind each local
+report to verifier identity, ledger head, receipt hashes, replay/rollback
+status, invalid-commit count, hard-gate keys, residual kinds, claim boundary,
+and source URLs. This moves the examples from narrative reports to bounded G1
+claim artifacts.
+
+The aggregate frontier report confirms the same substrate requirements across
+all three domains:
+
+- typed physical state,
+- hard law verifier,
+- receipt-bound randomness or dynamics parameters,
+- replay/rollback adapter,
+- residual repair surface,
+- evidence certificate before claim promotion.
+
+This is still a local G1 result. It improves claim discipline and implementation
+shape, but it is not a robotics safety case, production molecular-dynamics
+validation, materials discovery evidence, or proof of broad scientific
+autonomy.

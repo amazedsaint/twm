@@ -12,7 +12,13 @@ Run them from the repository root:
 python3 -m examples.robotic_safety_envelope
 python3 -m examples.molecular_dynamics_verlet
 python3 -m examples.material_lattice_metropolis
+python3 -m examples.programmable_world_model_frontier
 ```
+
+Each command emits JSON. The three domain commands now include top-level
+`report`, `evidence_certificate`, and `claim_certificate` objects. The frontier
+command aggregates the three certified examples into a cross-domain report and
+bounded G1 claim certificate.
 
 ## Experiments
 
@@ -47,6 +53,19 @@ matches the exact Ising delta.
 Learning: material-science proposal systems need receipts that bind the
 Hamiltonian, delta-energy arithmetic, acceptance randomness, and replayable
 configuration update.
+
+### Programmable World Model Frontier
+
+`examples.programmable_world_model_frontier` runs all three certified examples,
+validates their evidence and claim certificates, and emits
+`trwm.example.programmable_world_model_frontier.v1`. The report compares the
+verifier law, rejected proposal type, residual kind, committed repair, and next
+substrate requirement for each domain.
+
+Learning: the shared path toward a programmable transactional world model is
+typed physical state plus hard domain-law verification, receipt-bound parameters
+or randomness, replay/rollback adapters, residual repair surfaces, and evidence
+certificates before claim promotion.
 
 ## Source Math Pointers
 

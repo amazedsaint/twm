@@ -41,10 +41,14 @@ robotics, molecular dynamics, and material lattice dynamics:
 python3 -m examples.robotic_safety_envelope
 python3 -m examples.molecular_dynamics_verlet
 python3 -m examples.material_lattice_metropolis
+python3 -m examples.programmable_world_model_frontier
 ```
 
 Each example uses transactional hard verification, receipts, replay audit, and
-rollback audit. See `examples/README.md` and `docs/experiment_learnings.md`.
+rollback audit. The domain examples now emit `report`, `evidence_certificate`,
+and `claim_certificate` JSON; the frontier example aggregates the three
+certified domains. See `examples/README.md` and
+`docs/experiment_learnings.md`.
 
 ## Package Layout
 
