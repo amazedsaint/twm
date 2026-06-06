@@ -35,19 +35,22 @@ Open `http://localhost:8765/html/` for the standalone browser demos.
 ## Examples
 
 The `examples/` folder contains executable true-substrate experiments for
-robotics, molecular dynamics, and material lattice dynamics:
+robotics, molecular dynamics, material lattice dynamics, and branch-history
+guided exploration:
 
 ```sh
 python3 -m examples.robotic_safety_envelope
 python3 -m examples.molecular_dynamics_verlet
 python3 -m examples.material_lattice_metropolis
+python3 -m examples.ancestral_branch_exploration
 python3 -m examples.programmable_world_model_frontier
 ```
 
 Each example uses transactional hard verification, receipts, replay audit, and
 rollback audit. The domain examples now emit `report`, `evidence_certificate`,
-and `claim_certificate` JSON; the frontier example aggregates the three
-certified domains. See `examples/README.md` and
+and `claim_certificate` JSON; the ancestral branch example adds an
+`exploration_certificate` for past-branch-guided proposal ordering; the frontier
+example aggregates the three physical certified domains. See `examples/README.md` and
 `docs/experiment_learnings.md`.
 
 ## Package Layout

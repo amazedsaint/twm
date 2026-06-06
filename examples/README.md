@@ -12,12 +12,15 @@ Run them from the repository root:
 python3 -m examples.robotic_safety_envelope
 python3 -m examples.molecular_dynamics_verlet
 python3 -m examples.material_lattice_metropolis
+python3 -m examples.ancestral_branch_exploration
 python3 -m examples.programmable_world_model_frontier
 ```
 
 Each command emits JSON. The three domain commands now include top-level
-`report`, `evidence_certificate`, and `claim_certificate` objects. The frontier
-command aggregates the three certified examples into a cross-domain report and
+`report`, `evidence_certificate`, and `claim_certificate` objects. The
+ancestral branch command adds an `exploration_certificate` that binds past
+branch receipts to later budgeted proposal ordering. The frontier command
+aggregates the three physical certified examples into a cross-domain report and
 bounded G1 claim certificate.
 
 ## Experiments
@@ -54,6 +57,21 @@ Learning: material-science proposal systems need receipts that bind the
 Hamiltonian, delta-energy arithmetic, acceptance randomness, and replayable
 configuration update.
 
+### Ancestral Branch Exploration
+
+`examples.ancestral_branch_exploration` runs three toy domains: robot replanning,
+molecule repair, and material-process selection. Each domain first records past
+branches with one hard reject, one accepted-but-rolled-back loser, and one
+committed winner. A budget-one static exploration pass tries the old first
+proposal and fails in all three domains; the past-branch-guided pass replays the
+receipt evidence, ranks the committed branch first, and commits in all three
+domains after hard verification.
+
+Learning: branches of the past can improve exploration by changing which
+candidate gets scarce verifier budget first. They do not become authority: the
+candidate still has to pass the domain hard gate, branch-selection certificate,
+ledger audit, replay audit, and rollback audit.
+
 ### Programmable World Model Frontier
 
 `examples.programmable_world_model_frontier` runs all three certified examples,
@@ -77,3 +95,10 @@ certificates before claim promotion.
 - Metropolis acceptance for statistical mechanics proposals traces to
   Metropolis, Rosenbluth, Rosenbluth, Teller, and Teller, J. Chem. Phys. 21,
   1087 (1953), doi:10.1063/1.1699114.
+- Experience replay and planning as speedup mechanisms are discussed in Lin,
+  Machine Learning 8, 293-321 (1992), doi:10.1007/BF00992699.
+- Counterfactual regret is the design analogy for separating "what could have
+  happened" evidence from committed outcomes:
+  https://papers.nips.cc/paper/3306-regret-minimization-in-games-with-incomplete-information
+- UCT/MCTS is the planning analogy for spending samples selectively:
+  https://doi.org/10.1007/11871842_29

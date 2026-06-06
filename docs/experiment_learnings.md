@@ -58,3 +58,41 @@ This is still a local G1 result. It improves claim discipline and implementation
 shape, but it is not a robotics safety case, production molecular-dynamics
 validation, materials discovery evidence, or proof of broad scientific
 autonomy.
+
+## Branches Of The Past
+
+The ancestral branch exploration example adds the next substrate lesson:
+exploration itself should be replayable. Across the robotics-replan,
+molecule-repair, and material-process toy domains, each training episode
+records three branch outcomes:
+
+- a hard-rejected attractive proposal,
+- an accepted but rolled-back loser,
+- a committed winner.
+
+The later budget-one static pass spends its only verifier call on the old first
+proposal and fails in all three domains. The past-branch-guided pass ranks the
+previously committed branch first and commits in all three domains, still only
+after the hard verifier and replay/rollback checks pass.
+
+This evolves the design in one concrete way: "branch of past" data should be a
+first-class proposal-ordering input with its own certificate, not an informal
+memory side channel. The new `trwm.ancestral_branch_exploration_certificate.v1`
+binds report hash, ledger head, receipt hashes, branch-selection certificate
+hashes, static versus learned exploration success, winner-rank improvement,
+hard-gate keys, residual kinds, replay/rollback status, and claim boundary.
+
+The next programmable transactional world model substrate therefore needs:
+
+- ancestral branch retrieval keyed by typed context,
+- branch-selection certificate replay before learned ordering is trusted,
+- budget-aware proposal ordering separate from commit authority,
+- residual categories that distinguish unsafe rejects from safe dominated
+  losers,
+- claim promotion gates that prove exploration improvement under the same
+  verifier budget.
+
+The boundary remains narrow. This is a deterministic G1 canary inspired by
+experience replay, counterfactual regret evidence, and selective tree-search
+sampling; it is not a statistical exploration algorithm, regret guarantee,
+MCTS implementation, or cross-domain scientific discovery result.
