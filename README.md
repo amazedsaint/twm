@@ -63,6 +63,7 @@ python3 -m examples.context_query_policy_transfer
 python3 -m examples.context_drift_quarantine
 python3 -m examples.branch_recency_weight_transfer
 python3 -m examples.branch_restart_transfer
+python3 -m examples.branch_symmetry_transfer
 python3 -m examples.branch_pruning_transfer
 python3 -m examples.branch_diversity_transfer
 python3 -m examples.branch_budget_transfer
@@ -105,8 +106,10 @@ evidence before reuse; the branch-recency example uses recent reject/commit
 receipts to override older stale commits before a target spends its one-call
 verifier budget; the branch-restart example uses source local-dead-end and
 restart-anchor receipts to abandon a target local continuation under the same
-one-call budget; the branch-pruning example uses rejected branch receipts
-to remove known-dead target candidates before verifier-budget allocation; the
+one-call budget; the branch-symmetry example uses a typed transform to map a
+committed source action into a target action when exact source replay fails
+under the same one-call budget; the branch-pruning example uses rejected branch
+receipts to remove known-dead target candidates before verifier-budget allocation; the
 branch-diversity example uses same-family rejects to force coverage of a
 distinct candidate family under the same verifier budget; the
 branch-budget example uses past receipt costs to allocate a fixed verifier
@@ -130,7 +133,7 @@ future proposal evidence for a sibling target and
 certifies the memory query that ranks the sibling proposals against a
 same-budget static sibling baseline; the frontier example aggregates the three
 physical certified domains, while the branch-history frontier aggregates the
-twenty-seven branch-memory stages. See `examples/README.md` and
+twenty-eight branch-memory stages. See `examples/README.md` and
 `docs/experiment_learnings.md`.
 
 ## Package Layout

@@ -129,6 +129,10 @@ This repository currently targets `G1` evidence:
   restart-anchor commits, static target rejects, restart target commits, and
   same-budget verifier-call evidence before past branches can tell target
   exploration to backtrack or restart,
+- branch-symmetry certificates that bind typed transform ids, source commits,
+  failed exact target replay, transformed target commits, and same-budget
+  verifier-call evidence before past branches can map source actions across a
+  mirrored target,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can
@@ -595,6 +599,8 @@ search.
 - Gomes, Selman, Crato, and Kautz, Heavy-Tailed Phenomena in Satisfiability
   and Constraint Satisfaction Problems:
   https://doi.org/10.1023/A:1006314320276
+- Cohen and Welling, Group Equivariant Convolutional Networks:
+  https://arxiv.org/abs/1602.07576
 - El-Yaniv and Wiener, On the Foundations of Noise-free Selective
   Classification: https://jmlr.csail.mit.edu/papers/v11/el-yaniv10a.html
 - NASA NTRS, A Formal Verification Framework for Runtime Assurance:

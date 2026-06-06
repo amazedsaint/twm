@@ -33,6 +33,7 @@ python3 -m examples.context_query_policy_transfer
 python3 -m examples.context_drift_quarantine
 python3 -m examples.branch_recency_weight_transfer
 python3 -m examples.branch_restart_transfer
+python3 -m examples.branch_symmetry_transfer
 python3 -m examples.branch_pruning_transfer
 python3 -m examples.branch_diversity_transfer
 python3 -m examples.branch_budget_transfer
@@ -116,7 +117,10 @@ same one-call target budget before freshness overrides cumulative history. The
 branch-restart command adds `trwm.branch_restart_certificate.v1` artifacts that
 bind source local dead-end rejects, restart-anchor commits, static target
 rejects, and same-budget restart target commits before abandoning local
-continuation. The
+continuation. The branch-symmetry command adds
+`trwm.branch_symmetry_certificate.v1` artifacts that bind a typed symmetry
+transform, source commit, failed exact target replay, and same-budget
+symmetry-mapped target commit. The
 branch-pruning command adds `trwm.branch_pruning_certificate.v1` artifacts
 showing that rejected source branch receipts can prune known-dead target
 candidates before scarce verifier budget is spent. The
@@ -142,7 +146,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the twenty-seven branch-memory stages into one bounded G1 report. The physical
+the twenty-eight branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -506,6 +510,23 @@ source restart-anchor commit, static target reject, restart target commit,
 branch-selection certificates, and same-budget comparison before claiming
 restart-guided exploration lift.
 
+### Branch Symmetry Transfer
+
+`examples.branch_symmetry_transfer` tests typed transform evidence. Each domain
+records a source branch where one side of a mirrored or reflected structure
+commits. Exact replay of the same source action in the target spends one
+verifier call and fails. The symmetry-guided target spends the same one
+verifier call on the transformed action and commits only after fresh hard
+verification.
+
+Learning: branches of the past can improve exploration by carrying a typed
+transform, not just a reusable action token. `trwm.branch_symmetry_certificate.v1`
+binds the transform id, source commit, failed exact replay, transformed target
+commit, branch-selection certificates, and same-budget comparison before
+claiming symmetry-guided exploration lift. Group-equivariant networks are only
+the symmetry/equivariance analogy here; this is not a neural-network or
+automatic symmetry-search claim: https://arxiv.org/abs/1602.07576
+
 ### Branch Pruning Transfer
 
 `examples.branch_pruning_transfer` tests negative branch evidence. Each domain
@@ -607,7 +628,7 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the twenty-seven branch-history experiments and
+`examples.branch_history_frontier` runs the twenty-eight branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
@@ -618,7 +639,7 @@ diagnostic probing, residual-template repair, boundary bracketing, source
 consensus, contrastive invariant transfer, trust-region radius transfer, analogical ancestor reuse, certified context selection,
 counterexample refinement,
 conflict-aware query-policy transfer,
-drift quarantine, recency-weighted source freshness, restart-anchor backtracking, receipt-bound branch pruning, diversity-certified family
+drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, receipt-bound branch pruning, diversity-certified family
 coverage, branch budget allocation, no-good stop-rule abstention, branch composition, and retained-memory
 influence.
 
@@ -638,7 +659,7 @@ receipts and fresh target verification, source consensus is admitted only
 through majority receipts plus fresh target verification, contrastive invariants
 are admitted only through positive/negative source receipts plus fresh target
 verification, context selection is certified, failed branches refine retrieval,
-conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, rejected branches prune
+conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, rejected branches prune
 known-dead target candidates, same-family failures force coverage only through
 a certificate, verifier budget is allocated only through a cost-bound
 certificate, branch fragments compose
