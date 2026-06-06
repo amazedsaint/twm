@@ -150,6 +150,10 @@ This repository currently targets `G1` evidence:
   replay target rejects, filtered target commits, and same-budget verifier-call
   evidence before anomalous committed source branches can influence target
   exploration,
+- branch-provenance-guard certificates that bind trusted source ids,
+  quarantined source-valid receipts, static quarantined-source target rejects,
+  guarded target commits, and same-budget verifier-call evidence before
+  source-valid but target-untrusted branches can influence target exploration,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can
@@ -581,6 +585,8 @@ search.
   https://doi.org/10.1109/4235.996017
 - Fischler and Bolles, Random Sample Consensus:
   https://doi.org/10.1145/358669.358692
+- Lamport, Shostak, and Pease, The Byzantine Generals Problem:
+  https://doi.org/10.1145/357172.357176
 - Zinkevich et al., Counterfactual Regret Minimization:
   https://papers.nips.cc/paper/3306-regret-minimization-in-games-with-incomplete-information
 - Gray and Lamport, Consensus on Transaction Commit:

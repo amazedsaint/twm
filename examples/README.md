@@ -38,6 +38,7 @@ python3 -m examples.branch_constraint_transfer
 python3 -m examples.branch_confidence_transfer
 python3 -m examples.branch_pareto_transfer
 python3 -m examples.branch_outlier_filter_transfer
+python3 -m examples.branch_provenance_guard_transfer
 python3 -m examples.branch_pruning_transfer
 python3 -m examples.branch_diversity_transfer
 python3 -m examples.branch_budget_transfer
@@ -139,6 +140,10 @@ branch-outlier-filter command adds
 `trwm.branch_outlier_filter_certificate.v1` artifacts that bind source inlier
 feature values, anomalous source-valid outlier receipts, failed outlier target
 replay, and same-budget inlier-filtered target commit. The
+branch-provenance-guard command adds
+`trwm.branch_provenance_guard_certificate.v1` artifacts that bind trusted
+source ids, a quarantined source-valid branch, failed quarantined-source target
+replay, and same-budget provenance-guarded target commit. The
 branch-pruning command adds `trwm.branch_pruning_certificate.v1` artifacts
 showing that rejected source branch receipts can prune known-dead target
 candidates before scarce verifier budget is spent. The
@@ -164,7 +169,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the thirty-two branch-memory stages into one bounded G1 report. The physical
+the thirty-three branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -618,6 +623,25 @@ RANSAC is only the robust-inlier analogy here; this is not a RANSAC
 implementation, robust estimator, or outlier-detection guarantee:
 https://doi.org/10.1145/358669.358692
 
+### Branch Provenance-Guard Transfer
+
+`examples.branch_provenance_guard_transfer` tests source-id provenance
+admission. Each domain records two trusted source commits and one source-valid
+quarantined commit. The static target spends one verifier call replaying the
+quarantined-source branch and fails. The provenance-guarded target spends the
+same one verifier call on a trusted-source branch and commits only after fresh
+hard verification.
+
+Learning: branches of the past can improve exploration only when source
+validity is separated from target admissibility. The new
+`trwm.branch_provenance_guard_certificate.v1` binds trusted source ids,
+quarantined source id, trusted/quarantined source receipts, static target
+reject, guarded target commit, branch-selection certificates, and same-budget
+comparison before claiming provenance-guarded exploration lift. Byzantine
+Generals is only the faulty-source analogy here; this is not a Byzantine
+fault-tolerant protocol, consensus algorithm, or security proof:
+https://doi.org/10.1145/357172.357176
+
 ### Branch Pruning Transfer
 
 `examples.branch_pruning_transfer` tests negative branch evidence. Each domain
@@ -719,7 +743,7 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the thirty-two branch-history experiments and
+`examples.branch_history_frontier` runs the thirty-three branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
@@ -730,7 +754,7 @@ diagnostic probing, residual-template repair, boundary bracketing, source
 consensus, contrastive invariant transfer, trust-region radius transfer, analogical ancestor reuse, certified context selection,
 counterexample refinement,
 conflict-aware query-policy transfer,
-drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, receipt-bound branch pruning, diversity-certified family
+drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, receipt-bound branch pruning, diversity-certified family
 coverage, branch budget allocation, no-good stop-rule abstention, branch composition, and retained-memory
 influence.
 
@@ -750,7 +774,7 @@ receipts and fresh target verification, source consensus is admitted only
 through majority receipts plus fresh target verification, contrastive invariants
 are admitted only through positive/negative source receipts plus fresh target
 verification, context selection is certified, failed branches refine retrieval,
-conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, Pareto dominance is certificate-bound, outlier filtering is certificate-bound, rejected branches prune
+conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, Pareto dominance is certificate-bound, outlier filtering is certificate-bound, source provenance is certificate-bound, rejected branches prune
 known-dead target candidates, same-family failures force coverage only through
 a certificate, verifier budget is allocated only through a cost-bound
 certificate, branch fragments compose
