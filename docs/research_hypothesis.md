@@ -183,6 +183,11 @@ This repository currently targets `G1` evidence:
   receipts, source orthogonal rejects, static target rejects, active-subspace
   target commits, and same-budget verifier-call evidence before low-rank source
   directions can filter target proposals,
+- branch-sensitivity certificates that bind parameter ids, baseline values,
+  perturbation deltas, negative and positive source perturbation receipts,
+  static wrong-direction target rejects, sensitivity-guided target commits,
+  and same-budget verifier-call evidence before one-factor direction evidence
+  can filter target proposals,
 - branch-continuation certificates that bind lambda schedules, max path steps,
   source continuation receipts, source direct-jump rejects, static direct-jump
   target rejects, continuation target commits, and same-budget verifier-call
@@ -728,6 +733,11 @@ search.
   https://arxiv.org/abs/1604.04173
 - Constantine, Active Subspaces: Emerging Ideas for Dimension Reduction in
   Parameter Studies: https://doi.org/10.1137/1.9781611973860
+- Morris, Factorial Sampling Plans for Preliminary Computational Experiments:
+  https://doi.org/10.1080/00401706.1991.10484804
+- Spall, Multivariate Stochastic Approximation Using a Simultaneous
+  Perturbation Gradient Approximation:
+  https://doi.org/10.1109/9.119632
 - Allgower and Georg, Introduction to Numerical Continuation Methods:
   https://doi.org/10.1137/1.9780898719154
 - Willems and Wolper, Partial-Order Methods for Model Checking:

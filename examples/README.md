@@ -45,6 +45,7 @@ python3 -m examples.branch_robustness_transfer
 python3 -m examples.branch_calibration_transfer
 python3 -m examples.branch_conformal_transfer
 python3 -m examples.branch_active_subspace_transfer
+python3 -m examples.branch_sensitivity_transfer
 python3 -m examples.branch_continuation_transfer
 python3 -m examples.branch_commutativity_transfer
 python3 -m examples.branch_switch_transfer
@@ -183,6 +184,10 @@ branch-active-subspace command adds
 orthogonal basis vectors, projection threshold, source active-direction
 commits, source orthogonal reject, failed orthogonal target replay, and
 same-budget active-direction target commit. The
+branch-sensitivity command adds
+`trwm.branch_sensitivity_certificate.v1` artifacts that bind one-factor
+negative and positive perturbation receipts, failed wrong-direction target
+replay, and same-budget sensitivity-guided target commit. The
 branch-continuation command adds
 `trwm.branch_continuation_certificate.v1` artifacts that bind lambda schedules,
 max path step, source continuation commits, source direct-jump reject, failed
@@ -224,7 +229,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the forty-three branch-memory stages into one bounded G1 report. The physical
+the forty-four branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -818,6 +823,29 @@ here; this is not active-subspace discovery, dimensionality-reduction
 performance, optimization, or uncertainty quantification:
 https://doi.org/10.1137/1.9781611973860
 
+### Branch Sensitivity Transfer
+
+`examples.branch_sensitivity_transfer` tests receipt-bound one-factor
+perturbation evidence for source branch reuse. Each domain records a source
+negative perturbation that rejects and a source positive perturbation that
+commits. The static target spends one verifier call on the wrong perturbation
+direction and fails. The sensitivity-guided target spends the same one verifier
+call on the useful perturbation direction and commits only after fresh hard
+verification.
+
+Learning: branches of the past can improve exploration only when parameter
+direction evidence is certificate-bound and remains separate from commit
+authority. `trwm.branch_sensitivity_certificate.v1` binds the parameter id,
+baseline value, perturbation delta, source negative and positive receipts,
+failed wrong-direction target receipt, sensitivity-guided target commit,
+branch-selection certificates, and same-budget comparison before claiming
+sensitivity-guided exploration lift. Morris elementary effects and SPSA are
+only sensitivity and perturbation analogies here; this is not a sensitivity
+analysis algorithm, elementary-effects screening result, SPSA implementation,
+finite-difference accuracy claim, derivative estimate, or gradient-estimation
+guarantee: https://doi.org/10.1080/00401706.1991.10484804 and
+https://doi.org/10.1109/9.119632
+
 ### Branch Continuation Transfer
 
 `examples.branch_continuation_transfer` tests receipt-bound continuation paths
@@ -1004,7 +1032,7 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the forty-three branch-history experiments and
+`examples.branch_history_frontier` runs the forty-four branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
@@ -1015,7 +1043,7 @@ diagnostic probing, residual-template repair, boundary bracketing, source
 consensus, contrastive invariant transfer, trust-region radius transfer, analogical ancestor reuse, certified context selection,
 counterexample refinement,
 conflict-aware query-policy transfer,
-drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, confidence calibration, conformal transfer, active-subspace transfer, continuation transfer, commutativity transfer, branch-switch transfer, transposition transfer, receipt-bound branch pruning, diversity-certified family
+drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, confidence calibration, conformal transfer, active-subspace transfer, sensitivity transfer, continuation transfer, commutativity transfer, branch-switch transfer, transposition transfer, receipt-bound branch pruning, diversity-certified family
 coverage, branch budget allocation, no-good stop-rule abstention, branch composition, and retained-memory
 influence.
 
@@ -1035,7 +1063,7 @@ receipts and fresh target verification, source consensus is admitted only
 through majority receipts plus fresh target verification, contrastive invariants
 are admitted only through positive/negative source receipts plus fresh target
 verification, context selection is certified, failed branches refine retrieval,
-conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, Pareto dominance is certificate-bound, outlier filtering is certificate-bound, source provenance is certificate-bound, source-fragment credit is certificate-bound, source-context matching is certificate-bound, uncertainty-set coverage is certificate-bound, confidence-bin calibration is certificate-bound, nonconformity quantiles are certificate-bound, active-subspace directions are certificate-bound, continuation paths are certificate-bound, commutative orders are certificate-bound, switchpoints are certificate-bound, canonical transpositions are certificate-bound, rejected branches prune
+conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, Pareto dominance is certificate-bound, outlier filtering is certificate-bound, source provenance is certificate-bound, source-fragment credit is certificate-bound, source-context matching is certificate-bound, uncertainty-set coverage is certificate-bound, confidence-bin calibration is certificate-bound, nonconformity quantiles are certificate-bound, active-subspace directions are certificate-bound, sensitivity axes are certificate-bound, continuation paths are certificate-bound, commutative orders are certificate-bound, switchpoints are certificate-bound, canonical transpositions are certificate-bound, rejected branches prune
 known-dead target candidates, same-family failures force coverage only through
 a certificate, verifier budget is allocated only through a cost-bound
 certificate, branch fragments compose
@@ -1088,6 +1116,11 @@ certificates before claim promotion.
 - Active subspaces are the low-rank direction analogy for branch-active-subspace
   transfer, not an optimization or dimension-reduction guarantee:
   https://doi.org/10.1137/1.9781611973860
+- Morris elementary effects and SPSA are the one-factor perturbation analogies
+  for branch-sensitivity transfer, not sensitivity-analysis or gradient
+  guarantees:
+  https://doi.org/10.1080/00401706.1991.10484804 and
+  https://doi.org/10.1109/9.119632
 - Numerical continuation is the path-following analogy for branch-continuation
   transfer, not a continuation-method guarantee:
   https://doi.org/10.1137/1.9780898719154
