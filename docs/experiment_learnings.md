@@ -176,6 +176,21 @@ can improve exploration by shaping verifier-budget allocation, but pruning is
 only an admission filter; surviving candidates still need hard-verifier
 receipts before commit.
 
+The branch-diversity transfer example adds coverage pressure. Each domain
+records two same-family source rejects and one committed repair. The repeated
+family target baseline spends two verifier calls on the same saturated failure
+family and commits nothing. The diversity-certified target spends the same two
+verifier calls across a distinct failure family and the repair family, then
+commits after hard verification. The new
+`trwm.branch_diversity_certificate.v1` artifact binds the saturated family id,
+candidate action families, source reject receipts, source commit receipts,
+target repeated-family receipts, target diverse-family receipts,
+branch-selection certificates, and same-budget comparison. The substrate
+implication is that exploration memory needs coverage certificates in addition
+to ranking and pruning certificates: a failed family should be able to force a
+budgeted search to cover a different family, but that pressure is not commit
+authority.
+
 The branch-composition transfer example adds a proposal-construction check.
 Each domain records two source branches whose committed receipts stand for
 distinct hard-gate fragments. A static target branch fails under one verifier
@@ -219,20 +234,21 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the nine local branch-memory
+The branch-history frontier report now aggregates the ten local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
 receipt-bound ordering, analogical ancestor reuse, certified context selection,
 counterexample refinement, conflict-aware query-policy transfer, drift
-quarantine, receipt-bound branch pruning, branch composition, and retained
-memory influence.
+quarantine, receipt-bound branch pruning, diversity-certified family coverage,
+branch composition, and retained memory influence.
 This changes the design posture from isolated demos to a staged substrate map:
 each branch-history capability must expose its own certificate, and later
 stages are only meaningful if earlier evidence still validates.
 
 The boundary remains narrow. This is a deterministic G1 canary inspired by
 experience replay, counterfactual regret evidence, and selective tree-search
-sampling plus nogood-style pruning and recombinable building-block search; it
-is not a statistical exploration algorithm, regret guarantee, MCTS
-implementation, automatic similarity metric, CEGAR system, CDCL solver, genetic
-algorithm, program synthesizer, or cross-domain scientific discovery result.
+sampling plus nogood-style pruning, diversity pressure, and recombinable
+building-block search; it is not a statistical exploration algorithm, regret
+guarantee, MCTS implementation, automatic similarity metric, CEGAR system, CDCL
+solver, novelty-search result, MAP-Elites implementation, genetic algorithm,
+program synthesizer, or cross-domain scientific discovery result.

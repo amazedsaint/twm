@@ -73,6 +73,10 @@ This repository currently targets `G1` evidence:
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can
   shape verifier-budget allocation,
+- branch-diversity certificates that bind saturated failure families,
+  candidate family ids, source and target receipt hashes, and same-budget
+  verifier-call evidence before past same-family failures can force coverage
+  of distinct candidate families,
 - branch-composition certificates that bind two source branch fragments,
   source and target receipt hashes, static/component/composed target
   comparisons, and same-budget verifier-call evidence before a composed

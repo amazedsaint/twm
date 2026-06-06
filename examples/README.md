@@ -19,6 +19,7 @@ python3 -m examples.context_refinement_transfer
 python3 -m examples.context_query_policy_transfer
 python3 -m examples.context_drift_quarantine
 python3 -m examples.branch_pruning_transfer
+python3 -m examples.branch_diversity_transfer
 python3 -m examples.branch_composition_transfer
 python3 -m examples.context_retention_transfer
 python3 -m examples.branch_history_frontier
@@ -45,6 +46,9 @@ old-epoch branch evidence quarantine before target reuse. The
 branch-pruning command adds `trwm.branch_pruning_certificate.v1` artifacts
 showing that rejected source branch receipts can prune known-dead target
 candidates before scarce verifier budget is spent. The
+branch-diversity command adds `trwm.branch_diversity_certificate.v1` artifacts
+showing that same-family rejects can force coverage of distinct candidate
+families under the same verifier budget. The
 branch-composition command adds `trwm.branch_composition_certificate.v1`
 artifacts showing that two receipt-bound source fragments can be combined into
 a target proposal only after static and single-fragment branches fail under the
@@ -58,7 +62,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the nine branch-memory stages into one bounded G1 report. The physical frontier
+the ten branch-memory stages into one bounded G1 report. The physical frontier
 command aggregates the three physical certified examples into a cross-domain
 report and bounded G1 claim certificate.
 
@@ -201,6 +205,21 @@ baseline rejects, pruned target receipts, branch-selection certificates, and
 same-budget comparison, but the surviving candidate still needs hard
 verification before commit.
 
+### Branch Diversity Transfer
+
+`examples.branch_diversity_transfer` tests coverage pressure. Each domain first
+records two same-family source rejects and one committed repair. The repeated
+family target baseline spends two verifier calls on the same saturated failure
+family and commits nothing. The diversity-certified target spends the same two
+verifier calls across a distinct failure family and the repair family, then
+commits after hard verification.
+
+Learning: past failures can improve exploration by shaping coverage, not only
+by pruning or ranking. `trwm.branch_diversity_certificate.v1` binds source
+reject families, target baseline families, diverse target families, receipt
+hashes, branch-selection certificates, and same-budget comparison before
+claiming that diversity pressure improved exploration.
+
 ### Branch Composition Transfer
 
 `examples.branch_composition_transfer` tests whether branches of the past can
@@ -240,20 +259,20 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the nine branch-history experiments and
+`examples.branch_history_frontier` runs the ten branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
 ordering through conflict-aware query-policy transfer, drift quarantine,
-receipt-bound branch pruning, branch composition, and retained-memory
-influence.
+receipt-bound branch pruning, diversity-certified family coverage, branch
+composition, and retained-memory influence.
 
 Learning: the current branch-history direction is only coherent when every
 stage validates: raw past branches reorder proposals, explicit ancestor reuse is
 bounded, context selection is certified, failed branches refine retrieval,
 conflicts are certificate-bound, drift is quarantined, rejected branches prune
-known-dead target candidates, branch fragments compose only through a
-certificate, and retained memory is compared against a
+known-dead target candidates, same-family failures force coverage only through a
+certificate, branch fragments compose only through a certificate, and retained memory is compared against a
 same-budget baseline.
 
 ### Programmable World Model Frontier
@@ -306,3 +325,7 @@ certificates before claim promotion.
   conflicts to avoid repeating failed branches:
   https://digitalcommons.unl.edu/csetechreports/158/ and
   https://users.aalto.fi/~tjunttil/2020-DP-AUT/notes-sat/cdcl.html
+- Novelty search and MAP-Elites are the diversity-search analogies for using
+  behavior or feature coverage as an exploration pressure:
+  https://pubmed.ncbi.nlm.nih.gov/20868264/ and
+  https://arxiv.org/abs/1504.04909
