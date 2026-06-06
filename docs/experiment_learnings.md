@@ -332,6 +332,20 @@ current target commits, selected/quarantined context ids, and the quarantine
 reason. The substrate implication is that memory needs explicit validity scope:
 old branches should not influence exploration just because they once committed.
 
+The branch-recency weight transfer example adds a freshness check inside valid
+branch history. Each domain records two older source commits for a stale action,
+then a recent source branch where that stale action is rejected and an adapted
+action commits. The cumulative-history target spends one verifier call on the
+stale action and fails; the recency-window target spends the same one verifier
+call on the adapted action and commits. The new
+`trwm.branch_recency_certificate.v1` artifact binds old stale commit receipts,
+recent stale reject receipts, recent adapted commit receipts, static target
+rejects, recency target commits, branch-selection certificates, and the
+same-budget comparison. The substrate implication is that memory needs
+receipt-freshness policy in addition to validity scope: recent verified
+counterevidence should be able to override older cumulative support, but only
+through a certificate and fresh target verification.
+
 The branch-pruning transfer example adds negative-evidence admission. Each
 domain records a source branch with two hard-rejected actions and one committed
 winner. The unpruned target spends the same two-call verifier budget on the
@@ -429,7 +443,7 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the twenty-five local branch-memory
+The branch-history frontier report now aggregates the twenty-six local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
 receipt-bound ordering, accepted-loser counterfactual reuse, option-family
@@ -439,7 +453,7 @@ receipt-bound diagnostic probing, residual-template repair, boundary
 bracketing, source consensus, contrastive invariant transfer, trust-region radius transfer, analogical
 ancestor reuse, certified context selection, counterexample refinement,
 conflict-aware query-policy transfer,
-drift quarantine, receipt-bound branch pruning, diversity-certified family
+drift quarantine, recency-weighted source freshness, receipt-bound branch pruning, diversity-certified family
 coverage, receipt-bound budget allocation, no-good stop-rule abstention, branch composition, and retained
 memory influence.
 This changes the design posture from isolated demos to a staged substrate map:
@@ -457,6 +471,7 @@ reuse/revise as a residual-template analogy plus safe exploration as a
 boundary-bracketing analogy plus query-by-committee as a source-consensus
 analogy plus version-space learning as a positive/negative invariant analogy
 plus trust-region methods as a proposal-radius analogy
+plus discounted/sliding-window non-stationary bandits as a freshness analogy
 plus nogood learning and backjumping as a stop-rule analogy;
 it is not a
 statistical exploration algorithm, regret guarantee, MCTS implementation,

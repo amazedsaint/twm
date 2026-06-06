@@ -32,6 +32,10 @@ from examples.branch_contingency_transfer import (
     run_branch_contingency_transfer_certified_experiment,
     validate_branch_contingency_transfer_certificate,
 )
+from examples.branch_recency_weight_transfer import (
+    run_branch_recency_weight_transfer_certified_experiment,
+    validate_branch_recency_transfer_certificate,
+)
 from examples.branch_consensus_transfer import (
     run_branch_consensus_transfer_certified_experiment,
     validate_branch_consensus_transfer_certificate,
@@ -137,6 +141,7 @@ BRANCH_HISTORY_FRONTIER_SOURCES = (
     "https://www.sciencedirect.com/science/article/pii/0004370290900463",
     "https://icml.cc/2009/papers/119.pdf",
     "https://proceedings.mlr.press/v202/lin23n.html",
+    "https://arxiv.org/abs/0805.3415",
 )
 BRANCH_HISTORY_FRONTIER_CLAIM_BOUNDARY = (
     "G1 aggregate over local deterministic branch-history examples only. It shows a staged evidence "
@@ -144,7 +149,7 @@ BRANCH_HISTORY_FRONTIER_CLAIM_BOUNDARY = (
     "prerequisite ordering, curriculum sequencing, regime-conditioned contingency reuse, hindsight goal relabeling, receipt-bound "
     "field intervention, diagnostic probing, residual-template repair, boundary bracketing, source consensus, "
     "contrastive invariant transfer, context selection, retrieval refinement, query-policy reuse, conflict resolution, "
-    "drift quarantine, branch pruning, branch diversity, budget allocation, trust-region radius transfer, "
+    "drift quarantine, recency-weighted source freshness, branch pruning, branch diversity, budget allocation, trust-region radius transfer, "
     "stop-rule abstention, branch composition, and retained-memory influence. "
     "It is not a statistical exploration algorithm, regret guarantee, MCTS result, contextual-bandit "
     "result, Hindsight Experience Replay result, causal inference result, do-calculus result, Bayesian "
@@ -214,6 +219,8 @@ class BranchHistoryFrontierReport:
     query_policy_certificate_count: int
     drift_quarantine_certificate_count: int
     quarantined_context_count: int
+    branch_recency_certificate_count: int
+    recency_success_count: int
     branch_pruning_certificate_count: int
     pruned_action_count: int
     branch_diversity_certificate_count: int
@@ -258,6 +265,7 @@ def run_branch_history_frontier_experiment() -> BranchHistoryFrontierResult:
             run_context_refinement_transfer_certified_experiment(),
             run_context_query_policy_transfer_certified_experiment(),
             run_context_drift_quarantine_certified_experiment(),
+            run_branch_recency_weight_transfer_certified_experiment(),
             run_branch_pruning_transfer_certified_experiment(),
             run_branch_diversity_transfer_certified_experiment(),
             run_branch_budget_transfer_certified_experiment(),
@@ -322,6 +330,8 @@ def build_branch_history_frontier_result(
         query_policy_certificate_count=_metric(children, "query_policy_certificate_count"),
         drift_quarantine_certificate_count=_metric(children, "drift_quarantine_certificate_count"),
         quarantined_context_count=_metric(children, "quarantined_context_count"),
+        branch_recency_certificate_count=_metric(children, "branch_recency_certificate_count"),
+        recency_success_count=_metric_for(children, "branch_recency_weight_transfer", "recency_success_count"),
         branch_pruning_certificate_count=_metric(children, "branch_pruning_certificate_count"),
         pruned_action_count=_metric(children, "pruned_action_count"),
         branch_diversity_certificate_count=_metric(children, "branch_diversity_certificate_count"),
@@ -343,10 +353,10 @@ def build_branch_history_frontier_result(
             "residual-template repair tenth, boundary bracketing eleventh, source consensus twelfth, contrastive "
             "invariant transfer thirteenth, trust-region radius transfer fourteenth, explicit ancestor reuse fifteenth, "
             "certified context selection sixteenth, counterexample-driven refinement seventeenth, reusable query-policy "
-            "and conflict-resolution certificates eighteenth, drift quarantine nineteenth, receipt-bound branch pruning "
-            "twentieth, diversity-certified family coverage twenty-first, budget-allocation transfer twenty-second, "
-            "no-good stop-rule abstention twenty-third, branch composition twenty-fourth, and retained-memory influence "
-            "with matched ablation twenty-fifth."
+            "and conflict-resolution certificates eighteenth, drift quarantine nineteenth, recency-weighted source freshness "
+            "twentieth, receipt-bound branch pruning twenty-first, diversity-certified family coverage twenty-second, "
+            "budget-allocation transfer twenty-third, no-good stop-rule abstention twenty-fourth, branch composition "
+            "twenty-fifth, and retained-memory influence with matched ablation twenty-sixth."
         ),
     )
     claim = certify_claim(
@@ -354,7 +364,7 @@ def build_branch_history_frontier_result(
         claim_text=(
             "The certified branch-history examples identify a local G1 substrate path where branches of "
             "the past improve exploration only through audited proposal ordering, selection, refinement, "
-            "query-policy, conflict-resolution, drift-quarantine, pruning, diversity, budget-allocation, "
+            "query-policy, conflict-resolution, drift-quarantine, recency weighting, pruning, diversity, budget-allocation, "
             "counterfactual accepted-loser reuse, option-family abstraction, prerequisite ordering, "
             "regime-conditioned contingency reuse, hindsight goal relabeling, field intervention, diagnostic "
             "probing, residual-template repair, boundary bracketing, source consensus, contrastive invariant transfer, "
@@ -363,7 +373,7 @@ def build_branch_history_frontier_result(
         evidence_grade="G1",
         scope="branch_history_frontier",
         requirements=(
-            requirement("exactly_twenty_five_branch_history_stages", report.stage_count == 25),
+            requirement("exactly_twenty_six_branch_history_stages", report.stage_count == 26),
             requirement(
                 "expected_child_experiments",
                 set(report.child_experiment_ids)
@@ -387,6 +397,7 @@ def build_branch_history_frontier_result(
                     "context_refinement_transfer",
                     "context_query_policy_transfer",
                     "context_drift_quarantine",
+                    "branch_recency_weight_transfer",
                     "branch_pruning_transfer",
                     "branch_diversity_transfer",
                     "branch_budget_transfer",
@@ -453,6 +464,10 @@ def build_branch_history_frontier_result(
                 "drift_quarantine_certificates_present",
                 report.drift_quarantine_certificate_count == 3 and report.quarantined_context_count == 3,
             ),
+            requirement(
+                "branch_recency_certificates_present",
+                report.branch_recency_certificate_count == 3 and report.recency_success_count == 3,
+            ),
             requirement("branch_pruning_certificates_present", report.branch_pruning_certificate_count == 3 and report.pruned_action_count == 6),
             requirement("branch_diversity_certificates_present", report.branch_diversity_certificate_count == 3 and report.diverse_family_count == 3),
             requirement("branch_budget_certificates_present", report.branch_budget_certificate_count == 3 and report.static_abstain_count == 3),
@@ -500,6 +515,8 @@ def build_branch_history_frontier_result(
             "query_policy_certificate_count": report.query_policy_certificate_count,
             "drift_quarantine_certificate_count": report.drift_quarantine_certificate_count,
             "quarantined_context_count": report.quarantined_context_count,
+            "branch_recency_certificate_count": report.branch_recency_certificate_count,
+            "recency_success_count": report.recency_success_count,
             "branch_pruning_certificate_count": report.branch_pruning_certificate_count,
             "pruned_action_count": report.pruned_action_count,
             "branch_diversity_certificate_count": report.branch_diversity_certificate_count,
@@ -593,6 +610,8 @@ def _primary_certificate(child: CertifiedExampleResult) -> Any:
         return child.context_query_policy_transfer_certificate
     if experiment_id == "context_drift_quarantine":
         return child.context_drift_quarantine_transfer_certificate
+    if experiment_id == "branch_recency_weight_transfer":
+        return child.branch_recency_transfer_certificate
     if experiment_id == "branch_pruning_transfer":
         return child.branch_pruning_transfer_certificate
     if experiment_id == "branch_diversity_transfer":
@@ -648,6 +667,8 @@ def _primary_certificate_valid(child: CertifiedExampleResult) -> bool:
         return validate_context_query_policy_transfer_certificate(child.context_query_policy_transfer_certificate, child.report)
     if experiment_id == "context_drift_quarantine":
         return validate_context_drift_quarantine_transfer_certificate(child.context_drift_quarantine_transfer_certificate, child.report)
+    if experiment_id == "branch_recency_weight_transfer":
+        return validate_branch_recency_transfer_certificate(child.branch_recency_transfer_certificate, child.report)
     if experiment_id == "branch_pruning_transfer":
         return validate_branch_pruning_transfer_certificate(child.branch_pruning_transfer_certificate, child.report)
     if experiment_id == "branch_diversity_transfer":
@@ -836,6 +857,15 @@ def _stage_fields(child: CertifiedExampleResult) -> tuple[str, str, str, str, bo
             f"quarantined contexts {report.quarantined_context_count}",
             True,
             "validity-scoped branch memory and drift quarantine certificates",
+        )
+    if experiment_id == "branch_recency_weight_transfer":
+        return (
+            "recency_weighted_source_freshness",
+            f"cumulative stale target commits {report.static_success_count}/{report.domain_count}",
+            f"recent-window target commits {report.recency_success_count}/{report.domain_count}",
+            f"recency certificates {report.branch_recency_certificate_count}",
+            True,
+            "receipt-freshness certificates before overriding cumulative stale source commits",
         )
     if experiment_id == "branch_composition_transfer":
         return (

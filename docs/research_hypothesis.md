@@ -121,6 +121,10 @@ This repository currently targets `G1` evidence:
   proposal-radius fields, trusted radius caps, static target rejects,
   trust-region target commits, and same-budget verifier-call evidence before
   past branches can size target proposal steps,
+- branch-recency certificates that bind older stale source commits, recent
+  stale source rejects, recent adapted source commits, static target rejects,
+  recency target commits, and same-budget verifier-call evidence before
+  receipt freshness can override cumulative branch-history support,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can
@@ -581,6 +585,9 @@ search.
   https://doi.org/10.1609/aaai.v27i1.8637
 - Auer et al., Finite-time Analysis of the Multiarmed Bandit Problem:
   https://doi.org/10.1023/A:1013689704352
+- Garivier and Moulines, On Upper-Confidence Bound Policies for
+  Non-Stationary Bandit Problems:
+  https://arxiv.org/abs/0805.3415
 - El-Yaniv and Wiener, On the Foundations of Noise-free Selective
   Classification: https://jmlr.csail.mit.edu/papers/v11/el-yaniv10a.html
 - NASA NTRS, A Formal Verification Framework for Runtime Assurance:
