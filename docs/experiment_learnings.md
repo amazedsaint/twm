@@ -166,6 +166,20 @@ comparison. The substrate implication is that rejected receipts can suggest new
 exploration goals, but relabeling is proposal evidence only; it must be
 separated from commit authority by a fresh target receipt.
 
+The branch-intervention transfer example adds typed field edits to branch
+evidence. Each domain records a source branch with one hard reject and one
+committed repair that differ in a verifier-critical field: robot clearance,
+molecular strain, or material thermal gradient. The target static branch spends
+one verifier call on the unedited candidate and fails. The intervention target
+spends the same one verifier call on the field-edited candidate and commits
+only after fresh target hard verification. The new
+`trwm.branch_intervention_certificate.v1` artifact binds source reject/commit
+receipts, source and target before/after values, static target rejects,
+intervened target commits, branch-selection certificates, and the same-budget
+comparison. The substrate implication is that branches of the past can propose
+which typed variable to edit, but the edit is not a causal-inference result or
+commit authority.
+
 The analogical branch transfer example adds one more design constraint:
 cross-context reuse must name its ancestor contexts explicitly. For each toy
 domain, two positive ancestor contexts reorder the target budget-one search
@@ -311,13 +325,14 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the sixteen local branch-memory
+The branch-history frontier report now aggregates the seventeen local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
 receipt-bound ordering, accepted-loser counterfactual reuse, option-family
 abstraction, stateful prerequisite ordering, regime-conditioned contingency
-reuse, hindsight goal relabeling, analogical ancestor reuse, certified context
-selection, counterexample refinement, conflict-aware query-policy transfer,
+reuse, hindsight goal relabeling, receipt-bound field intervention, analogical
+ancestor reuse, certified context selection, counterexample refinement,
+conflict-aware query-policy transfer,
 drift quarantine, receipt-bound branch pruning, diversity-certified family
 coverage, receipt-bound budget allocation, branch composition, and retained
 memory influence.
@@ -330,9 +345,9 @@ experience replay, counterfactual regret evidence, and selective tree-search
 sampling plus nogood-style pruning, diversity pressure, and recombinable
 building-block search plus successive resource allocation and temporal
 abstraction plus contextual bandits with side information and hindsight
-experience replay; it is not a
+experience replay plus intervention notation as a variable-edit analogy; it is not a
 statistical exploration algorithm, regret guarantee, MCTS implementation,
 automatic similarity metric, CEGAR system, CDCL solver, novelty-search result,
 MAP-Elites implementation, Hyperband implementation, options-framework result,
-contextual-bandit result, Hindsight Experience Replay result, genetic algorithm, program synthesizer, or
+contextual-bandit result, Hindsight Experience Replay result, causal-inference result, do-calculus result, genetic algorithm, program synthesizer, or
 cross-domain scientific discovery result.

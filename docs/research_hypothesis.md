@@ -89,6 +89,10 @@ This repository currently targets `G1` evidence:
   intended goals, achieved/relabeled goals, static target rejects, relabeled
   target commits, and same-budget verifier-call evidence before rejected
   branches can guide a new target-goal proposal,
+- branch-intervention certificates that bind source reject/commit receipts,
+  typed verifier-field before/after values, static target rejects, intervened
+  target commits, and same-budget verifier-call evidence before past branches
+  can suggest target field edits,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can

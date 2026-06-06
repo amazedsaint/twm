@@ -28,6 +28,10 @@ from examples.branch_hindsight_relabel_transfer import (
     run_branch_hindsight_relabel_transfer_certified_experiment,
     validate_branch_hindsight_relabel_transfer_certificate,
 )
+from examples.branch_intervention_transfer import (
+    run_branch_intervention_transfer_certified_experiment,
+    validate_branch_intervention_transfer_certificate,
+)
 from examples.branch_prerequisite_transfer import (
     run_branch_prerequisite_transfer_certified_experiment,
     validate_branch_prerequisite_transfer_certificate,
@@ -92,15 +96,17 @@ BRANCH_HISTORY_FRONTIER_SOURCES = (
     "https://doi.org/10.1016/S0004-3702(99)00052-1",
     "https://papers.nips.cc/paper/3178-the-epoch-greedy-algorithm-for-multi-armed-bandits-with-side-information",
     "https://papers.neurips.cc/paper/7090-hindsight-experience-replay",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC2836213/",
 )
 BRANCH_HISTORY_FRONTIER_CLAIM_BOUNDARY = (
     "G1 aggregate over local deterministic branch-history examples only. It shows a staged evidence "
     "path for proposal ordering, counterfactual accepted-loser reuse, option-family abstraction, "
-    "prerequisite ordering, regime-conditioned contingency reuse, hindsight goal relabeling, context "
-    "selection, retrieval refinement, query-policy reuse, conflict resolution, drift quarantine, branch "
-    "pruning, branch diversity, budget allocation, branch composition, and retained-memory influence. "
+    "prerequisite ordering, regime-conditioned contingency reuse, hindsight goal relabeling, receipt-bound "
+    "field intervention, context selection, retrieval refinement, query-policy reuse, conflict resolution, "
+    "drift quarantine, branch pruning, branch diversity, budget allocation, branch composition, and retained-memory influence. "
     "It is not a statistical exploration algorithm, regret guarantee, MCTS result, contextual-bandit "
-    "result, Hindsight Experience Replay result, automatic similarity metric, or scientific-discovery claim."
+    "result, Hindsight Experience Replay result, causal inference result, do-calculus result, automatic "
+    "similarity metric, or scientific-discovery claim."
 )
 
 
@@ -142,6 +148,8 @@ class BranchHistoryFrontierReport:
     matched_source_context_count: int
     branch_hindsight_relabel_certificate_count: int
     relabeled_goal_count: int
+    branch_intervention_certificate_count: int
+    intervention_success_count: int
     branch_conflict_certificate_count: int
     counterfactual_certificate_count: int
     rolled_back_counterfactual_count: int
@@ -176,6 +184,7 @@ def run_branch_history_frontier_experiment() -> BranchHistoryFrontierResult:
             run_branch_prerequisite_transfer_certified_experiment(),
             run_branch_contingency_transfer_certified_experiment(),
             run_branch_hindsight_relabel_transfer_certified_experiment(),
+            run_branch_intervention_transfer_certified_experiment(),
             run_analogical_branch_transfer_certified_experiment(),
             run_context_selection_transfer_certified_experiment(),
             run_context_refinement_transfer_certified_experiment(),
@@ -221,6 +230,8 @@ def build_branch_history_frontier_result(
         matched_source_context_count=_metric_for(children, "branch_contingency_transfer", "selected_context_count"),
         branch_hindsight_relabel_certificate_count=_metric(children, "branch_hindsight_relabel_certificate_count"),
         relabeled_goal_count=_metric_for(children, "branch_hindsight_relabel_transfer", "relabeled_goal_count"),
+        branch_intervention_certificate_count=_metric(children, "branch_intervention_certificate_count"),
+        intervention_success_count=_metric_for(children, "branch_intervention_transfer", "intervention_success_count"),
         branch_conflict_certificate_count=_metric(children, "branch_conflict_certificate_count"),
         counterfactual_certificate_count=_metric(children, "counterfactual_certificate_count"),
         rolled_back_counterfactual_count=_metric(children, "rolled_back_counterfactual_count"),
@@ -241,11 +252,11 @@ def build_branch_history_frontier_result(
             "The branch-history evidence path is now staged: receipt-bound ordering first, explicit "
             "accepted-loser counterfactual reuse second, option-family abstraction third, explicit "
             "prerequisite ordering fourth, regime-conditioned contingency reuse fifth, hindsight goal "
-            "relabeling sixth, explicit ancestor reuse seventh, certified context selection "
-            "eighth, counterexample-driven refinement ninth, reusable query-policy and conflict-resolution "
-            "certificates tenth, drift quarantine eleventh, receipt-bound branch pruning twelfth, "
-            "diversity-certified family coverage thirteenth, budget-allocation transfer fourteenth, "
-            "branch composition fifteenth, and retained-memory influence with matched ablation sixteenth."
+            "relabeling sixth, receipt-bound field intervention seventh, explicit ancestor reuse eighth, "
+            "certified context selection ninth, counterexample-driven refinement tenth, reusable query-policy "
+            "and conflict-resolution certificates eleventh, drift quarantine twelfth, receipt-bound branch "
+            "pruning thirteenth, diversity-certified family coverage fourteenth, budget-allocation transfer "
+            "fifteenth, branch composition sixteenth, and retained-memory influence with matched ablation seventeenth."
         ),
     )
     claim = certify_claim(
@@ -261,7 +272,7 @@ def build_branch_history_frontier_result(
         evidence_grade="G1",
         scope="branch_history_frontier",
         requirements=(
-            requirement("exactly_sixteen_branch_history_stages", report.stage_count == 16),
+            requirement("exactly_seventeen_branch_history_stages", report.stage_count == 17),
             requirement(
                 "expected_child_experiments",
                 set(report.child_experiment_ids)
@@ -272,6 +283,7 @@ def build_branch_history_frontier_result(
                     "branch_prerequisite_transfer",
                     "branch_contingency_transfer",
                     "branch_hindsight_relabel_transfer",
+                    "branch_intervention_transfer",
                     "analogical_branch_transfer",
                     "context_selection_transfer",
                     "context_refinement_transfer",
@@ -303,6 +315,10 @@ def build_branch_history_frontier_result(
                 "branch_hindsight_relabel_certificates_present",
                 report.branch_hindsight_relabel_certificate_count == 3 and report.relabeled_goal_count == 3,
             ),
+            requirement(
+                "branch_intervention_certificates_present",
+                report.branch_intervention_certificate_count == 3 and report.intervention_success_count == 3,
+            ),
             requirement("query_policy_conflict_certificates_present", report.branch_conflict_certificate_count == 6),
             requirement(
                 "drift_quarantine_certificates_present",
@@ -326,6 +342,8 @@ def build_branch_history_frontier_result(
             "matched_source_context_count": report.matched_source_context_count,
             "branch_hindsight_relabel_certificate_count": report.branch_hindsight_relabel_certificate_count,
             "relabeled_goal_count": report.relabeled_goal_count,
+            "branch_intervention_certificate_count": report.branch_intervention_certificate_count,
+            "intervention_success_count": report.intervention_success_count,
             "counterfactual_certificate_count": report.counterfactual_certificate_count,
             "rolled_back_counterfactual_count": report.rolled_back_counterfactual_count,
             "branch_conflict_certificate_count": report.branch_conflict_certificate_count,
@@ -396,6 +414,8 @@ def _primary_certificate(child: CertifiedExampleResult) -> Any:
         return child.branch_contingency_transfer_certificate
     if experiment_id == "branch_hindsight_relabel_transfer":
         return child.branch_hindsight_relabel_transfer_certificate
+    if experiment_id == "branch_intervention_transfer":
+        return child.branch_intervention_transfer_certificate
     if experiment_id == "analogical_branch_transfer":
         return child.analogical_certificate
     if experiment_id == "context_selection_transfer":
@@ -433,6 +453,8 @@ def _primary_certificate_valid(child: CertifiedExampleResult) -> bool:
         return validate_branch_contingency_transfer_certificate(child.branch_contingency_transfer_certificate, child.report)
     if experiment_id == "branch_hindsight_relabel_transfer":
         return validate_branch_hindsight_relabel_transfer_certificate(child.branch_hindsight_relabel_transfer_certificate, child.report)
+    if experiment_id == "branch_intervention_transfer":
+        return validate_branch_intervention_transfer_certificate(child.branch_intervention_transfer_certificate, child.report)
     if experiment_id == "analogical_branch_transfer":
         return validate_analogical_branch_transfer_certificate(child.analogical_certificate, child.report)
     if experiment_id == "context_selection_transfer":
@@ -512,6 +534,15 @@ def _stage_fields(child: CertifiedExampleResult) -> tuple[str, str, str, str, bo
             f"hindsight relabel certificates {report.branch_hindsight_relabel_certificate_count}",
             True,
             "goal-labeled rejected receipts plus fresh target verification before relabeled reuse",
+        )
+    if experiment_id == "branch_intervention_transfer":
+        return (
+            "receipt_bound_field_intervention",
+            f"static target commits {report.static_success_count}/{report.domain_count}",
+            f"field-intervention target commits {report.intervention_success_count}/{report.domain_count}",
+            f"intervention certificates {report.branch_intervention_certificate_count}",
+            True,
+            "reject/commit field-intervention certificates before adapting target candidates",
         )
     if experiment_id == "analogical_branch_transfer":
         return (

@@ -18,6 +18,7 @@ python3 -m examples.branch_abstraction_transfer
 python3 -m examples.branch_prerequisite_transfer
 python3 -m examples.branch_contingency_transfer
 python3 -m examples.branch_hindsight_relabel_transfer
+python3 -m examples.branch_intervention_transfer
 python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
@@ -53,6 +54,11 @@ The branch-hindsight-relabel command adds
 `trwm.branch_hindsight_relabel_certificate.v1` artifacts showing that rejected
 source branches can suggest an achieved target goal, but the relabeled target
 branch commits only after fresh hard verification.
+The branch-intervention command adds
+`trwm.branch_intervention_certificate.v1` artifacts showing that a source
+reject/commit pair can identify a typed verifier-field edit for a target
+candidate, but the intervened target branch commits only after fresh hard
+verification.
 The analogical branch
 command adds an `analogical_certificate` that binds explicit ancestor-context
 reuse and misleading-ancestor rejection. The context-selection command adds
@@ -89,7 +95,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the sixteen branch-memory stages into one bounded G1 report. The physical
+the seventeen branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -219,6 +225,23 @@ Learning: rejected receipts can improve exploration without becoming authority.
 intended goal, achieved/relabeled goal, static target reject, relabeled target
 commit, branch-selection certificates, and same-budget comparison before
 claiming that hindsight relabeling improved exploration.
+
+### Branch Intervention Transfer
+
+`examples.branch_intervention_transfer` tests receipt-bound field intervention.
+Each domain records a source branch with one hard reject and one committed
+repair that differs in a single verifier field: robot clearance, molecular
+strain, or material thermal gradient. The target static pass spends one
+verifier call on the unedited target candidate and fails. The intervention pass
+spends the same one verifier call on the field-edited target candidate and
+commits only after fresh hard verification.
+
+Learning: branches of the past can suggest which typed field to edit, but that
+edit is proposal evidence rather than a causal claim or commit authority.
+`trwm.branch_intervention_certificate.v1` binds the source reject/commit
+receipts, source and target before/after field values, static target reject,
+intervened target commit, branch-selection certificates, and same-budget
+comparison before claiming intervention-guided exploration lift.
 
 ### Analogical Branch Transfer
 
@@ -380,14 +403,15 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the sixteen branch-history experiments and
+`examples.branch_history_frontier` runs the seventeen branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
 ordering through accepted-loser counterfactual reuse, option-family
 abstraction, prerequisite ordering, regime-conditioned contingency reuse,
-hindsight goal relabeling, analogical ancestor reuse, certified context
-selection, counterexample refinement, conflict-aware query-policy transfer,
+hindsight goal relabeling, receipt-bound field intervention, analogical
+ancestor reuse, certified context selection, counterexample refinement,
+conflict-aware query-policy transfer,
 drift quarantine, receipt-bound branch pruning, diversity-certified family
 coverage, branch budget allocation, branch composition, and retained-memory
 influence.
@@ -399,12 +423,14 @@ option families adapt exact actions only through an abstraction certificate,
 prerequisite order is admitted only through a stateful prerequisite certificate,
 regime-conditioned reuse is admitted only through a contingency certificate,
 hindsight relabeling is admitted only through a goal/reverification
-certificate, context selection is certified, failed branches refine retrieval,
-conflicts are certificate-bound, drift is quarantined, rejected branches prune
-known-dead target candidates, same-family failures force coverage only through a
-certificate, verifier budget is allocated only through a cost-bound certificate,
-branch fragments compose only through a certificate, and retained memory is
-compared against a same-budget baseline.
+certificate, field intervention is admitted only through a reject/commit
+certificate and fresh target verification, context selection is certified,
+failed branches refine retrieval, conflicts are certificate-bound, drift is
+quarantined, rejected branches prune known-dead target candidates, same-family
+failures force coverage only through a certificate, verifier budget is
+allocated only through a cost-bound certificate, branch fragments compose only
+through a certificate, and retained memory is compared against a same-budget
+baseline.
 
 ### Programmable World Model Frontier
 
@@ -442,6 +468,9 @@ certificates before claim promotion.
 - The options framework is the temporal-abstraction analogy for treating a
   reusable branch family separately from an exact primitive action:
   https://doi.org/10.1016/S0004-3702(99)00052-1
+- Pearl's intervention language is the analogy for explicit variable edits in
+  the branch-intervention example; this repo does not claim causal inference:
+  https://pmc.ncbi.nlm.nih.gov/articles/PMC2836213/
 - Contextual bandits with side information are the analogy for conditioning a
   branch choice on observable target context:
   https://papers.nips.cc/paper/3178-the-epoch-greedy-algorithm-for-multi-armed-bandits-with-side-information
