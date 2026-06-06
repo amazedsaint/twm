@@ -11,6 +11,7 @@ from .core import Receipt, canonical_json, stable_hash
 ANCESTRAL_BRANCH_MEMORY_SNAPSHOT_SCHEMA = "trwm.ancestral_branch_memory_snapshot.v1"
 ANCESTRAL_CONTEXT_DESCRIPTOR_SCHEMA = "trwm.ancestral_context_descriptor.v1"
 ANCESTRAL_CONTEXT_SELECTION_CERTIFICATE_SCHEMA = "trwm.ancestral_context_selection_certificate.v1"
+ANCESTRAL_CONTEXT_REFINEMENT_CERTIFICATE_SCHEMA = "trwm.ancestral_context_refinement_certificate.v1"
 
 
 @dataclass(frozen=True)
@@ -78,6 +79,55 @@ class AncestralContextSelectionCertificate:
         object.__setattr__(self, "rejected_reasons", {str(key): str(value) for key, value in self.rejected_reasons.items()})
         if not self.certificate_hash:
             object.__setattr__(self, "certificate_hash", ancestral_context_selection_certificate_hash(self))
+
+    def without_hash(self) -> dict[str, Any]:
+        data = asdict(self)
+        data.pop("certificate_hash", None)
+        return data
+
+
+@dataclass(frozen=True)
+class AncestralContextRefinementCertificate:
+    schema_version: str
+    refinement_rule_id: str
+    refinement_rule_version: str
+    target_context_id: str
+    target_context_hash: str
+    candidate_context_ids: tuple[str, ...]
+    candidate_context_hashes: tuple[str, ...]
+    base_selection_certificate_hash: str
+    refined_selection_certificate_hash: str
+    counterexample_receipt_hash: str
+    counterexample_result: str
+    counterexample_residual_kind: str
+    previous_required_tag_keys: tuple[str, ...]
+    added_required_tag_keys: tuple[str, ...]
+    refined_required_tag_keys: tuple[str, ...]
+    selected_before_ids: tuple[str, ...]
+    selected_after_ids: tuple[str, ...]
+    newly_rejected_context_ids: tuple[str, ...]
+    refinement_reason: str
+    certificate_hash: str = ""
+
+    def __post_init__(self) -> None:
+        if self.schema_version != ANCESTRAL_CONTEXT_REFINEMENT_CERTIFICATE_SCHEMA:
+            raise ValueError(f"invalid ancestral context refinement certificate schema: {self.schema_version}")
+        for field_name in (
+            "candidate_context_ids",
+            "candidate_context_hashes",
+            "previous_required_tag_keys",
+            "added_required_tag_keys",
+            "refined_required_tag_keys",
+            "selected_before_ids",
+            "selected_after_ids",
+            "newly_rejected_context_ids",
+        ):
+            object.__setattr__(self, field_name, tuple(getattr(self, field_name)))
+        object.__setattr__(self, "previous_required_tag_keys", _unique_nonempty_strings(self.previous_required_tag_keys))
+        object.__setattr__(self, "added_required_tag_keys", _unique_nonempty_strings(self.added_required_tag_keys))
+        object.__setattr__(self, "refined_required_tag_keys", _unique_nonempty_strings(self.refined_required_tag_keys))
+        if not self.certificate_hash:
+            object.__setattr__(self, "certificate_hash", ancestral_context_refinement_certificate_hash(self))
 
     def without_hash(self) -> dict[str, Any]:
         data = asdict(self)
@@ -455,6 +505,161 @@ def validate_ancestral_context_selection_certificate(
         return False
 
 
+def build_ancestral_context_refinement_certificate(
+    *,
+    target: AncestralContextDescriptor,
+    candidates: Iterable[AncestralContextDescriptor],
+    base_selection: AncestralContextSelectionCertificate,
+    refined_selection: AncestralContextSelectionCertificate,
+    counterexample_receipt: Receipt,
+    added_required_tag_keys: Iterable[str],
+    refinement_reason: str,
+    refinement_rule_id: str = "counterexample_tag_refinement",
+    refinement_rule_version: str = "1.0",
+) -> AncestralContextRefinementCertificate:
+    candidate_rows = tuple(candidates)
+    added_keys = _unique_nonempty_strings(added_required_tag_keys)
+    previous_keys = _unique_nonempty_strings(base_selection.required_tag_keys)
+    refined_keys = _unique_nonempty_strings((*previous_keys, *added_keys))
+    newly_rejected = tuple(
+        context_id
+        for context_id in base_selection.selected_context_ids
+        if context_id not in set(refined_selection.selected_context_ids)
+    )
+    residual = counterexample_receipt.hard_result.residual
+    residual_kind = ""
+    if isinstance(residual, Mapping):
+        residual_kind = str(residual.get("kind", ""))
+    return AncestralContextRefinementCertificate(
+        schema_version=ANCESTRAL_CONTEXT_REFINEMENT_CERTIFICATE_SCHEMA,
+        refinement_rule_id=refinement_rule_id,
+        refinement_rule_version=refinement_rule_version,
+        target_context_id=target.context_id,
+        target_context_hash=target.descriptor_hash,
+        candidate_context_ids=tuple(candidate.context_id for candidate in candidate_rows),
+        candidate_context_hashes=tuple(candidate.descriptor_hash for candidate in candidate_rows),
+        base_selection_certificate_hash=base_selection.certificate_hash,
+        refined_selection_certificate_hash=refined_selection.certificate_hash,
+        counterexample_receipt_hash=counterexample_receipt.receipt_hash,
+        counterexample_result=counterexample_receipt.hard_result.result,
+        counterexample_residual_kind=residual_kind,
+        previous_required_tag_keys=previous_keys,
+        added_required_tag_keys=added_keys,
+        refined_required_tag_keys=refined_keys,
+        selected_before_ids=base_selection.selected_context_ids,
+        selected_after_ids=refined_selection.selected_context_ids,
+        newly_rejected_context_ids=newly_rejected,
+        refinement_reason=refinement_reason,
+    )
+
+
+def validate_ancestral_context_refinement_certificate(
+    certificate: AncestralContextRefinementCertificate,
+    *,
+    target: AncestralContextDescriptor | None = None,
+    candidates: Iterable[AncestralContextDescriptor] | None = None,
+    base_selection: AncestralContextSelectionCertificate | None = None,
+    refined_selection: AncestralContextSelectionCertificate | None = None,
+    counterexample_receipt: Receipt | None = None,
+) -> bool:
+    try:
+        if certificate.schema_version != ANCESTRAL_CONTEXT_REFINEMENT_CERTIFICATE_SCHEMA:
+            return False
+        if not certificate.refinement_rule_id or not certificate.refinement_rule_version:
+            return False
+        if not certificate.target_context_id or not _is_hash(certificate.target_context_hash):
+            return False
+        if len(certificate.candidate_context_ids) != len(certificate.candidate_context_hashes):
+            return False
+        if not certificate.candidate_context_ids or len(certificate.candidate_context_ids) != len(set(certificate.candidate_context_ids)):
+            return False
+        if any(not context_id for context_id in certificate.candidate_context_ids):
+            return False
+        if any(not _is_hash(value) for value in certificate.candidate_context_hashes):
+            return False
+        for value in (
+            certificate.base_selection_certificate_hash,
+            certificate.refined_selection_certificate_hash,
+            certificate.counterexample_receipt_hash,
+        ):
+            if not _is_hash(value):
+                return False
+        if certificate.counterexample_result != "reject":
+            return False
+        if not certificate.counterexample_residual_kind:
+            return False
+        previous_keys = _unique_nonempty_strings(certificate.previous_required_tag_keys)
+        added_keys = _unique_nonempty_strings(certificate.added_required_tag_keys)
+        refined_keys = _unique_nonempty_strings(certificate.refined_required_tag_keys)
+        if previous_keys != certificate.previous_required_tag_keys:
+            return False
+        if added_keys != certificate.added_required_tag_keys:
+            return False
+        if refined_keys != certificate.refined_required_tag_keys:
+            return False
+        if refined_keys != _unique_nonempty_strings((*previous_keys, *added_keys)):
+            return False
+        before = set(certificate.selected_before_ids)
+        after = set(certificate.selected_after_ids)
+        newly_rejected = set(certificate.newly_rejected_context_ids)
+        if not before or not after:
+            return False
+        if not after.issubset(before):
+            return False
+        if newly_rejected != before.difference(after):
+            return False
+        if not newly_rejected:
+            return False
+        if any(not context_id for context_id in (*certificate.selected_before_ids, *certificate.selected_after_ids, *certificate.newly_rejected_context_ids)):
+            return False
+        if not certificate.refinement_reason:
+            return False
+        if target is not None:
+            if certificate.target_context_id != target.context_id or certificate.target_context_hash != target.descriptor_hash:
+                return False
+        if candidates is not None:
+            rows = tuple(candidates)
+            if certificate.candidate_context_ids != tuple(candidate.context_id for candidate in rows):
+                return False
+            if certificate.candidate_context_hashes != tuple(candidate.descriptor_hash for candidate in rows):
+                return False
+        if base_selection is not None:
+            if target is None or candidates is None:
+                return False
+            if not validate_ancestral_context_selection_certificate(base_selection, target=target, candidates=candidates):
+                return False
+            if base_selection.certificate_hash != certificate.base_selection_certificate_hash:
+                return False
+            if base_selection.required_tag_keys != certificate.previous_required_tag_keys:
+                return False
+            if base_selection.selected_context_ids != certificate.selected_before_ids:
+                return False
+        if refined_selection is not None:
+            if target is None or candidates is None:
+                return False
+            if not validate_ancestral_context_selection_certificate(refined_selection, target=target, candidates=candidates):
+                return False
+            if refined_selection.certificate_hash != certificate.refined_selection_certificate_hash:
+                return False
+            if refined_selection.required_tag_keys != certificate.refined_required_tag_keys:
+                return False
+            if refined_selection.selected_context_ids != certificate.selected_after_ids:
+                return False
+        if counterexample_receipt is not None:
+            if not counterexample_receipt.static_valid():
+                return False
+            if counterexample_receipt.receipt_hash != certificate.counterexample_receipt_hash:
+                return False
+            if counterexample_receipt.hard_result.result != certificate.counterexample_result:
+                return False
+            residual = counterexample_receipt.hard_result.residual
+            if not isinstance(residual, Mapping) or str(residual.get("kind", "")) != certificate.counterexample_residual_kind:
+                return False
+        return certificate.certificate_hash == ancestral_context_refinement_certificate_hash(certificate)
+    except Exception:
+        return False
+
+
 def ancestral_branch_memory_snapshot_hash(snapshot: AncestralBranchMemorySnapshot | Mapping[str, Any]) -> str:
     if isinstance(snapshot, AncestralBranchMemorySnapshot):
         data = snapshot.without_hash()
@@ -477,6 +682,17 @@ def ancestral_context_selection_certificate_hash(
     certificate: AncestralContextSelectionCertificate | Mapping[str, Any],
 ) -> str:
     if isinstance(certificate, AncestralContextSelectionCertificate):
+        data = certificate.without_hash()
+    else:
+        data = dict(certificate)
+        data.pop("certificate_hash", None)
+    return stable_hash(data)
+
+
+def ancestral_context_refinement_certificate_hash(
+    certificate: AncestralContextRefinementCertificate | Mapping[str, Any],
+) -> str:
+    if isinstance(certificate, AncestralContextRefinementCertificate):
         data = certificate.without_hash()
     else:
         data = dict(certificate)

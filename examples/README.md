@@ -15,6 +15,7 @@ python3 -m examples.material_lattice_metropolis
 python3 -m examples.ancestral_branch_exploration
 python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
+python3 -m examples.context_refinement_transfer
 python3 -m examples.programmable_world_model_frontier
 ```
 
@@ -25,8 +26,11 @@ branch receipts to later budgeted proposal ordering. The analogical branch
 command adds an `analogical_certificate` that binds explicit ancestor-context
 reuse and misleading-ancestor rejection. The context-selection command adds
 descriptor-level `trwm.ancestral_context_selection_certificate.v1` artifacts
-before branch-memory reuse. The frontier command aggregates the three physical
-certified examples into a cross-domain report and bounded G1 claim certificate.
+before branch-memory reuse. The context-refinement command adds
+`trwm.ancestral_context_refinement_certificate.v1` artifacts that bind a failed
+coarse retrieval to a stricter refined retrieval. The frontier command
+aggregates the three physical certified examples into a cross-domain report and
+bounded G1 claim certificate.
 
 ## Experiments
 
@@ -104,6 +108,19 @@ Learning: "find branches of the past" needs a certified retrieval surface. A
 branch-memory snapshot is not enough; the target also needs an auditable reason
 why those ancestor contexts are admissible for reuse.
 
+### Context Refinement Transfer
+
+`examples.context_refinement_transfer` starts from a coarse selector that does
+not require the discriminating `regime` tag. The coarse selector admits two
+misleading ancestors, ranks their unsafe action first, and the target hard
+verifier rejects that branch. The rejected receipt becomes a counterexample for
+a refinement certificate. Adding `regime` narrows the selected ancestors and
+the next budget-one target pass commits.
+
+Learning: failed branches of the past should not only train proposal order; they
+should also refine the retrieval policy that decides which past branches are
+allowed to influence exploration.
+
 ### Programmable World Model Frontier
 
 `examples.programmable_world_model_frontier` runs all three certified examples,
@@ -139,3 +156,8 @@ certificates before claim promotion.
   39-59 (1994), doi:10.3233/AIC-1994-7104.
 - Negative-transfer surveys motivate explicit rejection of misleading sources:
   https://arxiv.org/abs/2009.00909
+- Counterexample-guided abstraction refinement is the analogy for refining a
+  coarse selection after a failed counterexample:
+  https://doi.org/10.1007/10722167_15
+- Active learning is the analogy for spending verifier feedback to improve the
+  next query policy: https://minds.wisconsin.edu/handle/1793/60660

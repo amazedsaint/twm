@@ -6,12 +6,14 @@ import unittest
 from trwm.ancestral import (
     AncestralBranchMemory,
     AncestralContextDescriptor,
+    build_ancestral_context_refinement_certificate,
     build_ancestral_context_selection_certificate,
     validate_ancestral_branch_memory_snapshot,
+    validate_ancestral_context_refinement_certificate,
     validate_ancestral_context_selection_certificate,
 )
 from trwm.branch import BranchRuntime, build_branch_selection_certificate
-from trwm.core import Ledger, TransactionEngine
+from trwm.core import HardVerifierResult, Ledger, ProposalTrace, TransactionEngine, TypedCandidate
 from trwm.experiments.counterfactual_learning import (
     CONTEXT,
     CounterfactualChoiceAdapter,
@@ -136,6 +138,87 @@ class AncestralBranchMemoryTests(unittest.TestCase):
             )
         )
 
+    def test_context_refinement_certificate_binds_rejected_counterexample(self) -> None:
+        target = _context("robotics:target", regime="narrow")
+        compatible = _context("robotics:ancestor", regime="narrow")
+        misleading = _context("robotics:misleading", regime="wide")
+        candidates = (compatible, misleading)
+        base = build_ancestral_context_selection_certificate(target, candidates, required_tag_keys=())
+        refined = build_ancestral_context_selection_certificate(target, candidates, required_tag_keys=("regime",))
+        engine = TransactionEngine(_RejectingAdapter(), ledger=Ledger())
+        outcome = engine.transact(
+            {"context": "robotics:target"},
+            ProposalTrace("counterexample", actions=({"context": "robotics:target", "action": "unsafe"},)),
+            TypedCandidate(
+                payload={"context": "robotics:target", "action": "unsafe"},
+                type_name="refinement.counterexample",
+                schema_version="refinement.counterexample.v1",
+            ),
+        )
+
+        certificate = build_ancestral_context_refinement_certificate(
+            target=target,
+            candidates=candidates,
+            base_selection=base,
+            refined_selection=refined,
+            counterexample_receipt=outcome.receipt,
+            added_required_tag_keys=("regime",),
+            refinement_reason="target_reject_from_misleading_context",
+        )
+
+        self.assertEqual(base.selected_context_ids, ("robotics:ancestor", "robotics:misleading"))
+        self.assertEqual(refined.selected_context_ids, ("robotics:ancestor",))
+        self.assertEqual(certificate.newly_rejected_context_ids, ("robotics:misleading",))
+        self.assertTrue(
+            validate_ancestral_context_refinement_certificate(
+                certificate,
+                target=target,
+                candidates=candidates,
+                base_selection=base,
+                refined_selection=refined,
+                counterexample_receipt=outcome.receipt,
+            )
+        )
+
+    def test_context_refinement_certificate_rejects_tampering(self) -> None:
+        target = _context("robotics:target", regime="narrow")
+        compatible = _context("robotics:ancestor", regime="narrow")
+        misleading = _context("robotics:misleading", regime="wide")
+        candidates = (compatible, misleading)
+        base = build_ancestral_context_selection_certificate(target, candidates, required_tag_keys=())
+        refined = build_ancestral_context_selection_certificate(target, candidates, required_tag_keys=("regime",))
+        engine = TransactionEngine(_RejectingAdapter(), ledger=Ledger())
+        outcome = engine.transact(
+            {"context": "robotics:target"},
+            ProposalTrace("counterexample", actions=({"context": "robotics:target", "action": "unsafe"},)),
+            TypedCandidate(
+                payload={"context": "robotics:target", "action": "unsafe"},
+                type_name="refinement.counterexample",
+                schema_version="refinement.counterexample.v1",
+            ),
+        )
+        certificate = build_ancestral_context_refinement_certificate(
+            target=target,
+            candidates=candidates,
+            base_selection=base,
+            refined_selection=refined,
+            counterexample_receipt=outcome.receipt,
+            added_required_tag_keys=("regime",),
+            refinement_reason="target_reject_from_misleading_context",
+        )
+        tampered = replace(certificate, newly_rejected_context_ids=(), certificate_hash="")
+
+        self.assertFalse(
+            validate_ancestral_context_refinement_certificate(
+                tampered,
+                target=target,
+                candidates=candidates,
+                base_selection=base,
+                refined_selection=refined,
+                counterexample_receipt=outcome.receipt,
+            )
+        )
+
     def test_snapshot_tampering_fails_validation(self) -> None:
         engine = TransactionEngine(CounterfactualChoiceAdapter(), ledger=Ledger())
         outcome = BranchRuntime(engine, CounterfactualChoiceProjector()).step(
@@ -165,3 +248,24 @@ def _context(context_id: str, *, regime: str) -> AncestralContextDescriptor:
         residual_kinds=("safety_envelope_violation",),
         tags={"regime": regime},
     )
+
+
+class _RejectingAdapter:
+    verifier_id = "refinement_rejecting_oracle"
+    verifier_version = "1.0"
+
+    def verify(self, candidate: TypedCandidate) -> HardVerifierResult:
+        return HardVerifierResult.reject(
+            self.verifier_id,
+            self.verifier_version,
+            residual={"kind": "target_reject_from_misleading_context"},
+        )
+
+    def apply_commit(self, state, candidate: TypedCandidate):
+        return state
+
+    def replay(self, state, receipt):
+        return state
+
+    def rollback(self, state, receipt):
+        return receipt.rollback_bundle["pre_state"]

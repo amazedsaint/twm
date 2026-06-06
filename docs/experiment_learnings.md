@@ -122,6 +122,17 @@ under the same one-call target budget, while a bypass attempt using the rejected
 context is blocked by the target hard verifier. This moves the design from
 "explicitly named ancestors" to "certified ancestor retrieval."
 
+The context-refinement transfer example closes the loop from failed target
+branches back into retrieval. A coarse selector that omits `regime` admits
+misleading ancestors, ranks their unsafe action first, and records a hard
+rejected target receipt. The
+`trwm.ancestral_context_refinement_certificate.v1` artifact binds that
+counterexample receipt, the base selection certificate, the added `regime` tag,
+and the refined selection certificate. The refined selector narrows the ancestor
+set and commits under the same one-call target budget. This is the first local
+evidence that branches of the past can improve exploration policy itself, not
+only candidate order.
+
 The boundary remains narrow. This is a deterministic G1 canary inspired by
 experience replay, counterfactual regret evidence, and selective tree-search
 sampling; it is not a statistical exploration algorithm, regret guarantee,
