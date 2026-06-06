@@ -188,6 +188,11 @@ This repository currently targets `G1` evidence:
   static wrong-direction target rejects, sensitivity-guided target commits,
   and same-budget verifier-call evidence before one-factor direction evidence
   can filter target proposals,
+- branch-shield-fallback certificates that bind shield spec ids, unsafe
+  families, fallback families, unsafe source rejects, fallback source commits,
+  static unsafe target rejects, shield-guided target commits, and same-budget
+  verifier-call evidence before guard/fallback evidence can filter target
+  proposals,
 - branch-continuation certificates that bind lambda schedules, max path steps,
   source continuation receipts, source direct-jump rejects, static direct-jump
   target rejects, continuation target commits, and same-budget verifier-call

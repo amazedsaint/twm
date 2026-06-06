@@ -92,6 +92,10 @@ from examples.branch_sensitivity_transfer import (
     run_branch_sensitivity_transfer_certified_experiment,
     validate_branch_sensitivity_transfer_certificate,
 )
+from examples.branch_shield_fallback_transfer import (
+    run_branch_shield_fallback_transfer_certified_experiment,
+    validate_branch_shield_fallback_transfer_certificate,
+)
 from examples.branch_continuation_transfer import (
     run_branch_continuation_transfer_certified_experiment,
     validate_branch_continuation_transfer_certificate,
@@ -218,6 +222,8 @@ BRANCH_HISTORY_FRONTIER_SOURCES = (
     "https://arxiv.org/abs/1602.07576",
     "https://doi.org/10.1080/00401706.1991.10484804",
     "https://doi.org/10.1109/9.119632",
+    "https://doi.org/10.1609/aaai.v32i1.11797",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC6959420/",
     "https://doi.org/10.1016/0004-3702(77)90007-8",
     "https://itl.nist.gov/div898/handbook/prc/section2/prc241.htm",
     "https://doi.org/10.1287/moor.23.4.769",
@@ -243,7 +249,7 @@ BRANCH_HISTORY_FRONTIER_CLAIM_BOUNDARY = (
     "prerequisite ordering, curriculum sequencing, regime-conditioned contingency reuse, hindsight goal relabeling, receipt-bound "
     "field intervention, diagnostic probing, residual-template repair, boundary bracketing, source consensus, "
     "contrastive invariant transfer, context selection, retrieval refinement, query-policy reuse, conflict resolution, "
-    "drift quarantine, recency-weighted source freshness, restart-anchor backtracking, symmetry-transform transfer, pairwise-constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, calibration transfer, conformal transfer, active-subspace transfer, sensitivity transfer, continuation transfer, commutativity transfer, branch-switch transfer, transposition transfer, branch pruning, branch diversity, budget allocation, trust-region radius transfer, "
+    "drift quarantine, recency-weighted source freshness, restart-anchor backtracking, symmetry-transform transfer, pairwise-constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, calibration transfer, conformal transfer, active-subspace transfer, sensitivity transfer, shield-fallback transfer, continuation transfer, commutativity transfer, branch-switch transfer, transposition transfer, branch pruning, branch diversity, budget allocation, trust-region radius transfer, "
     "stop-rule abstention, branch composition, and retained-memory influence. "
     "It is not a statistical exploration algorithm, regret guarantee, MCTS result, contextual-bandit "
     "result, Hindsight Experience Replay result, causal inference result, do-calculus result, Bayesian "
@@ -263,6 +269,8 @@ BRANCH_HISTORY_FRONTIER_CLAIM_BOUNDARY = (
     "guarantee, bifurcation analysis, branch-switching algorithm performance, "
     "sensitivity-analysis algorithm, elementary-effects screening result, SPSA gradient estimate, "
     "derivative estimate, gradient-estimation guarantee, "
+    "shield synthesis, runtime assurance, safe reinforcement learning, temporal-logic enforcement, "
+    "controller switching, "
     "transposition-table performance, Zobrist-hashing implementation, duplicate-detection algorithm, "
     "graph-search scalability, "
     "or scientific-discovery claim."
@@ -360,6 +368,8 @@ class BranchHistoryFrontierReport:
     active_subspace_success_count: int
     branch_sensitivity_certificate_count: int
     sensitivity_success_count: int
+    branch_shield_fallback_certificate_count: int
+    shield_success_count: int
     branch_continuation_certificate_count: int
     continuation_success_count: int
     branch_commutativity_certificate_count: int
@@ -427,6 +437,7 @@ def run_branch_history_frontier_experiment() -> BranchHistoryFrontierResult:
             run_branch_conformal_transfer_certified_experiment(),
             run_branch_active_subspace_transfer_certified_experiment(),
             run_branch_sensitivity_transfer_certified_experiment(),
+            run_branch_shield_fallback_transfer_certified_experiment(),
             run_branch_continuation_transfer_certified_experiment(),
             run_branch_commutativity_transfer_certified_experiment(),
             run_branch_switch_transfer_certified_experiment(),
@@ -525,6 +536,8 @@ def build_branch_history_frontier_result(
         active_subspace_success_count=_metric_for(children, "branch_active_subspace_transfer", "active_subspace_success_count"),
         branch_sensitivity_certificate_count=_metric(children, "branch_sensitivity_certificate_count"),
         sensitivity_success_count=_metric_for(children, "branch_sensitivity_transfer", "sensitivity_success_count"),
+        branch_shield_fallback_certificate_count=_metric(children, "branch_shield_fallback_certificate_count"),
+        shield_success_count=_metric_for(children, "branch_shield_fallback_transfer", "shield_success_count"),
         branch_continuation_certificate_count=_metric(children, "branch_continuation_certificate_count"),
         continuation_success_count=_metric_for(children, "branch_continuation_transfer", "continuation_success_count"),
         branch_commutativity_certificate_count=_metric(children, "branch_commutativity_certificate_count"),
@@ -562,11 +575,12 @@ def build_branch_history_frontier_result(
             "propensity-match transfer twenty-ninth, robustness transfer thirtieth, "
             "calibration transfer thirty-first, conformal transfer thirty-second, "
             "active-subspace transfer thirty-third, sensitivity transfer thirty-fourth, "
-            "continuation transfer thirty-fifth, commutativity transfer thirty-sixth, "
-            "branch-switch transfer thirty-seventh, transposition transfer thirty-eighth, "
-            "receipt-bound branch pruning thirty-ninth, diversity-certified family coverage fortieth, "
-            "budget-allocation transfer forty-first, no-good stop-rule abstention forty-second, "
-            "branch composition forty-third, and retained-memory influence with matched ablation forty-fourth."
+            "shield-fallback transfer thirty-fifth, continuation transfer thirty-sixth, "
+            "commutativity transfer thirty-seventh, branch-switch transfer thirty-eighth, "
+            "transposition transfer thirty-ninth, receipt-bound branch pruning fortieth, "
+            "diversity-certified family coverage forty-first, budget-allocation transfer forty-second, "
+            "no-good stop-rule abstention forty-third, branch composition forty-fourth, and retained-memory "
+            "influence with matched ablation forty-fifth."
         ),
     )
     claim = certify_claim(
@@ -574,7 +588,7 @@ def build_branch_history_frontier_result(
         claim_text=(
             "The certified branch-history examples identify a local G1 substrate path where branches of "
             "the past improve exploration only through audited proposal ordering, selection, refinement, "
-            "query-policy, conflict-resolution, drift-quarantine, recency weighting, restart-anchor backtracking, symmetry-transform transfer, pairwise-constraint transfer, confidence-bound support, Pareto-front transfer, outlier filtering, provenance guarding, credit assignment, propensity matching, robustness transfer, confidence calibration, nonconformity quantiles, active-subspace direction filters, sensitivity-axis filters, continuation paths, commutative order filters, branch-switch points, canonical transpositions, pruning, diversity, budget-allocation, "
+            "query-policy, conflict-resolution, drift-quarantine, recency weighting, restart-anchor backtracking, symmetry-transform transfer, pairwise-constraint transfer, confidence-bound support, Pareto-front transfer, outlier filtering, provenance guarding, credit assignment, propensity matching, robustness transfer, confidence calibration, nonconformity quantiles, active-subspace direction filters, sensitivity-axis filters, shield-fallback filters, continuation paths, commutative order filters, branch-switch points, canonical transpositions, pruning, diversity, budget-allocation, "
             "counterfactual accepted-loser reuse, option-family abstraction, prerequisite ordering, "
             "regime-conditioned contingency reuse, hindsight goal relabeling, field intervention, diagnostic "
             "probing, residual-template repair, boundary bracketing, source consensus, contrastive invariant transfer, "
@@ -583,7 +597,7 @@ def build_branch_history_frontier_result(
         evidence_grade="G1",
         scope="branch_history_frontier",
         requirements=(
-            requirement("exactly_forty_four_branch_history_stages", report.stage_count == 44),
+            requirement("exactly_forty_five_branch_history_stages", report.stage_count == 45),
             requirement(
                 "expected_child_experiments",
                 set(report.child_experiment_ids)
@@ -622,6 +636,7 @@ def build_branch_history_frontier_result(
                     "branch_conformal_transfer",
                     "branch_active_subspace_transfer",
                     "branch_sensitivity_transfer",
+                    "branch_shield_fallback_transfer",
                     "branch_continuation_transfer",
                     "branch_commutativity_transfer",
                     "branch_switch_transfer",
@@ -753,6 +768,10 @@ def build_branch_history_frontier_result(
                 report.branch_sensitivity_certificate_count == 3 and report.sensitivity_success_count == 3,
             ),
             requirement(
+                "branch_shield_fallback_certificates_present",
+                report.branch_shield_fallback_certificate_count == 3 and report.shield_success_count == 3,
+            ),
+            requirement(
                 "branch_continuation_certificates_present",
                 report.branch_continuation_certificate_count == 3 and report.continuation_success_count == 3,
             ),
@@ -845,6 +864,8 @@ def build_branch_history_frontier_result(
             "active_subspace_success_count": report.active_subspace_success_count,
             "branch_sensitivity_certificate_count": report.branch_sensitivity_certificate_count,
             "sensitivity_success_count": report.sensitivity_success_count,
+            "branch_shield_fallback_certificate_count": report.branch_shield_fallback_certificate_count,
+            "shield_success_count": report.shield_success_count,
             "branch_continuation_certificate_count": report.branch_continuation_certificate_count,
             "continuation_success_count": report.continuation_success_count,
             "branch_commutativity_certificate_count": report.branch_commutativity_certificate_count,
@@ -976,6 +997,8 @@ def _primary_certificate(child: CertifiedExampleResult) -> Any:
         return child.branch_active_subspace_transfer_certificate
     if experiment_id == "branch_sensitivity_transfer":
         return child.branch_sensitivity_transfer_certificate
+    if experiment_id == "branch_shield_fallback_transfer":
+        return child.branch_shield_fallback_transfer_certificate
     if experiment_id == "branch_continuation_transfer":
         return child.branch_continuation_transfer_certificate
     if experiment_id == "branch_commutativity_transfer":
@@ -1094,6 +1117,11 @@ def _primary_certificate_valid(child: CertifiedExampleResult) -> bool:
     if experiment_id == "branch_sensitivity_transfer":
         return validate_branch_sensitivity_transfer_certificate(
             child.branch_sensitivity_transfer_certificate,
+            child.report,
+        )
+    if experiment_id == "branch_shield_fallback_transfer":
+        return validate_branch_shield_fallback_transfer_certificate(
+            child.branch_shield_fallback_transfer_certificate,
             child.report,
         )
     if experiment_id == "branch_continuation_transfer":
@@ -1439,6 +1467,15 @@ def _stage_fields(child: CertifiedExampleResult) -> tuple[str, str, str, str, bo
             f"sensitivity certificates {report.branch_sensitivity_certificate_count}",
             True,
             "sensitivity-axis certificates before wrong-direction target perturbations",
+        )
+    if experiment_id == "branch_shield_fallback_transfer":
+        return (
+            "receipt_bound_shield_fallback",
+            f"unsafe target commits {report.static_success_count}/{report.domain_count}",
+            f"shield-fallback target commits {report.shield_success_count}/{report.domain_count}",
+            f"shield-fallback certificates {report.branch_shield_fallback_certificate_count}",
+            True,
+            "shield-fallback certificates before unsafe target family replay",
         )
     if experiment_id == "branch_continuation_transfer":
         return (
