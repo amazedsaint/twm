@@ -32,6 +32,7 @@ python3 -m examples.context_refinement_transfer
 python3 -m examples.context_query_policy_transfer
 python3 -m examples.context_drift_quarantine
 python3 -m examples.branch_recency_weight_transfer
+python3 -m examples.branch_restart_transfer
 python3 -m examples.branch_pruning_transfer
 python3 -m examples.branch_diversity_transfer
 python3 -m examples.branch_budget_transfer
@@ -112,6 +113,10 @@ old-epoch branch evidence quarantine before target reuse. The
 branch-recency command adds `trwm.branch_recency_certificate.v1` artifacts that
 bind old stale commits, recent stale rejects, recent adapted commits, and the
 same one-call target budget before freshness overrides cumulative history. The
+branch-restart command adds `trwm.branch_restart_certificate.v1` artifacts that
+bind source local dead-end rejects, restart-anchor commits, static target
+rejects, and same-budget restart target commits before abandoning local
+continuation. The
 branch-pruning command adds `trwm.branch_pruning_certificate.v1` artifacts
 showing that rejected source branch receipts can prune known-dead target
 candidates before scarce verifier budget is spent. The
@@ -137,7 +142,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the twenty-six branch-memory stages into one bounded G1 report. The physical
+the twenty-seven branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -485,6 +490,22 @@ recent stale reject receipt, recent adapted commit receipt, static target
 reject, recency target commit, branch-selection certificates, and same-budget
 comparison before claiming recency-guided exploration lift.
 
+### Branch Restart Transfer
+
+`examples.branch_restart_transfer` tests restart-anchor evidence. Each domain
+records a source branch where a local continuation is rejected and a restart
+anchor commits. The static target spends one verifier call on the matching
+local continuation and fails. The restart-guided target spends the same one
+verifier call on the restart anchor and commits only after fresh hard
+verification.
+
+Learning: branches of the past can improve exploration by choosing where to
+restart, not just which local candidate to rank first.
+`trwm.branch_restart_certificate.v1` binds the source local-dead-end reject,
+source restart-anchor commit, static target reject, restart target commit,
+branch-selection certificates, and same-budget comparison before claiming
+restart-guided exploration lift.
+
 ### Branch Pruning Transfer
 
 `examples.branch_pruning_transfer` tests negative branch evidence. Each domain
@@ -586,7 +607,7 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the twenty-six branch-history experiments and
+`examples.branch_history_frontier` runs the twenty-seven branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
@@ -597,7 +618,7 @@ diagnostic probing, residual-template repair, boundary bracketing, source
 consensus, contrastive invariant transfer, trust-region radius transfer, analogical ancestor reuse, certified context selection,
 counterexample refinement,
 conflict-aware query-policy transfer,
-drift quarantine, recency-weighted source freshness, receipt-bound branch pruning, diversity-certified family
+drift quarantine, recency-weighted source freshness, restart-anchor backtracking, receipt-bound branch pruning, diversity-certified family
 coverage, branch budget allocation, no-good stop-rule abstention, branch composition, and retained-memory
 influence.
 
@@ -617,7 +638,7 @@ receipts and fresh target verification, source consensus is admitted only
 through majority receipts plus fresh target verification, contrastive invariants
 are admitted only through positive/negative source receipts plus fresh target
 verification, context selection is certified, failed branches refine retrieval,
-conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, rejected branches prune
+conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, rejected branches prune
 known-dead target candidates, same-family failures force coverage only through
 a certificate, verifier budget is allocated only through a cost-bound
 certificate, branch fragments compose
@@ -686,6 +707,10 @@ certificates before claim promotion.
   for letting recent receipt evidence override stale cumulative history; this
   repo does not claim bandit regret guarantees:
   https://arxiv.org/abs/0805.3415
+- Heavy-tailed SAT/CSP search and random restarts are the analogy for
+  abandoning local continuation in favor of a restart anchor; this repo does
+  not claim SAT/CSP restart performance:
+  https://doi.org/10.1023/A:1006314320276
 - Hindsight Experience Replay is the goal-relabeling analogy for learning from
   outcomes that missed the originally intended goal:
   https://papers.neurips.cc/paper/7090-hindsight-experience-replay

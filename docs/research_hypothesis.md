@@ -125,6 +125,10 @@ This repository currently targets `G1` evidence:
   stale source rejects, recent adapted source commits, static target rejects,
   recency target commits, and same-budget verifier-call evidence before
   receipt freshness can override cumulative branch-history support,
+- branch-restart certificates that bind source local-dead-end rejects, source
+  restart-anchor commits, static target rejects, restart target commits, and
+  same-budget verifier-call evidence before past branches can tell target
+  exploration to backtrack or restart,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can
@@ -588,6 +592,9 @@ search.
 - Garivier and Moulines, On Upper-Confidence Bound Policies for
   Non-Stationary Bandit Problems:
   https://arxiv.org/abs/0805.3415
+- Gomes, Selman, Crato, and Kautz, Heavy-Tailed Phenomena in Satisfiability
+  and Constraint Satisfaction Problems:
+  https://doi.org/10.1023/A:1006314320276
 - El-Yaniv and Wiener, On the Foundations of Noise-free Selective
   Classification: https://jmlr.csail.mit.edu/papers/v11/el-yaniv10a.html
 - NASA NTRS, A Formal Verification Framework for Runtime Assurance:
