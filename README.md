@@ -67,6 +67,7 @@ python3 -m examples.branch_symmetry_transfer
 python3 -m examples.branch_constraint_transfer
 python3 -m examples.branch_confidence_transfer
 python3 -m examples.branch_pareto_transfer
+python3 -m examples.branch_outlier_filter_transfer
 python3 -m examples.branch_pruning_transfer
 python3 -m examples.branch_diversity_transfer
 python3 -m examples.branch_budget_transfer
@@ -117,6 +118,8 @@ under the same one-call budget; the branch-confidence example uses a fixed
 support lower bound to avoid over-promoting thin optimistic source evidence;
 the branch-pareto example uses source dominance receipts to avoid scalar replay
 and try a nondominated candidate under the same one-call budget;
+the branch-outlier-filter example uses source inlier/outlier feature receipts
+to avoid anomalous source replay under the same one-call budget;
 the branch-pruning example uses rejected branch
 receipts to remove known-dead target candidates before verifier-budget allocation; the
 branch-diversity example uses same-family rejects to force coverage of a
@@ -142,7 +145,7 @@ future proposal evidence for a sibling target and
 certifies the memory query that ranks the sibling proposals against a
 same-budget static sibling baseline; the frontier example aggregates the three
 physical certified domains, while the branch-history frontier aggregates the
-thirty-one branch-memory stages. See `examples/README.md` and
+thirty-two branch-memory stages. See `examples/README.md` and
 `docs/experiment_learnings.md`.
 
 ## Package Layout

@@ -145,6 +145,11 @@ This repository currently targets `G1` evidence:
   vectors, source reject/commit receipts, static scalar-replay target rejects,
   Pareto-guided target commits, and same-budget verifier-call evidence before
   scalar source preferences can influence target exploration,
+- branch-outlier-filter certificates that bind source inlier feature values,
+  source-valid outlier receipts, feature-distance thresholds, static outlier
+  replay target rejects, filtered target commits, and same-budget verifier-call
+  evidence before anomalous committed source branches can influence target
+  exploration,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can
@@ -574,6 +579,8 @@ search.
   https://doi.org/10.1145/3147.3165
 - Deb et al., A Fast and Elitist Multiobjective Genetic Algorithm: NSGA-II:
   https://doi.org/10.1109/4235.996017
+- Fischler and Bolles, Random Sample Consensus:
+  https://doi.org/10.1145/358669.358692
 - Zinkevich et al., Counterfactual Regret Minimization:
   https://papers.nips.cc/paper/3306-regret-minimization-in-games-with-incomplete-information
 - Gray and Lamport, Consensus on Transaction Commit:
