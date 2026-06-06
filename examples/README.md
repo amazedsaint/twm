@@ -36,6 +36,7 @@ python3 -m examples.branch_restart_transfer
 python3 -m examples.branch_symmetry_transfer
 python3 -m examples.branch_constraint_transfer
 python3 -m examples.branch_confidence_transfer
+python3 -m examples.branch_pareto_transfer
 python3 -m examples.branch_pruning_transfer
 python3 -m examples.branch_diversity_transfer
 python3 -m examples.branch_budget_transfer
@@ -129,6 +130,10 @@ pair, and same-budget constraint-guided target commit. The branch-confidence
 command adds `trwm.branch_confidence_certificate.v1` artifacts that bind thin
 optimistic support, stronger source support, Wilson-style lower bounds, failed
 static target replay, and same-budget confidence-guided target commit. The
+branch-pareto command adds `trwm.branch_pareto_certificate.v1` artifacts that
+bind dominated and nondominated objective vectors, source reject/commit
+receipts, failed scalar target replay, and same-budget Pareto-guided target
+commit. The
 branch-pruning command adds `trwm.branch_pruning_certificate.v1` artifacts
 showing that rejected source branch receipts can prune known-dead target
 candidates before scarce verifier budget is spent. The
@@ -154,7 +159,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the thirty branch-memory stages into one bounded G1 report. The physical
+the thirty-one branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -571,6 +576,24 @@ exploration lift. The Wilson interval is only the support-bound analogy here;
 this is not statistical validation or production calibration:
 https://itl.nist.gov/div898/handbook/prc/section2/prc241.htm
 
+### Branch Pareto Transfer
+
+`examples.branch_pareto_transfer` tests multi-objective dominance evidence.
+Each domain records a source branch where a scalar-favored action is rejected
+and a nondominated balanced action commits. The static target spends one
+verifier call replaying the scalar action and fails. The Pareto-guided target
+spends the same one verifier call on the nondominated action and commits only
+after fresh hard verification.
+
+Learning: branches of the past can improve exploration by binding objective
+tradeoffs, not only scalar action scores. `trwm.branch_pareto_certificate.v1`
+binds dominated and Pareto objective vectors, source reject/commit receipts,
+target scalar replay reject, target Pareto commit, branch-selection
+certificates, and same-budget comparison before claiming Pareto-guided
+exploration lift. NSGA-II is only the non-dominated sorting analogy here; this
+is not a multiobjective optimizer or Pareto-front approximation guarantee:
+https://doi.org/10.1109/4235.996017
+
 ### Branch Pruning Transfer
 
 `examples.branch_pruning_transfer` tests negative branch evidence. Each domain
@@ -672,7 +695,7 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the thirty branch-history experiments and
+`examples.branch_history_frontier` runs the thirty-one branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
@@ -683,7 +706,7 @@ diagnostic probing, residual-template repair, boundary bracketing, source
 consensus, contrastive invariant transfer, trust-region radius transfer, analogical ancestor reuse, certified context selection,
 counterexample refinement,
 conflict-aware query-policy transfer,
-drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, receipt-bound branch pruning, diversity-certified family
+drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, receipt-bound branch pruning, diversity-certified family
 coverage, branch budget allocation, no-good stop-rule abstention, branch composition, and retained-memory
 influence.
 
@@ -703,7 +726,7 @@ receipts and fresh target verification, source consensus is admitted only
 through majority receipts plus fresh target verification, contrastive invariants
 are admitted only through positive/negative source receipts plus fresh target
 verification, context selection is certified, failed branches refine retrieval,
-conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, rejected branches prune
+conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, Pareto dominance is certificate-bound, rejected branches prune
 known-dead target candidates, same-family failures force coverage only through
 a certificate, verifier budget is allocated only through a cost-bound
 certificate, branch fragments compose

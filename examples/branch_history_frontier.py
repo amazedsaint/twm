@@ -52,6 +52,10 @@ from examples.branch_confidence_transfer import (
     run_branch_confidence_transfer_certified_experiment,
     validate_branch_confidence_transfer_certificate,
 )
+from examples.branch_pareto_transfer import (
+    run_branch_pareto_transfer_certified_experiment,
+    validate_branch_pareto_transfer_certificate,
+)
 from examples.branch_consensus_transfer import (
     run_branch_consensus_transfer_certified_experiment,
     validate_branch_consensus_transfer_certificate,
@@ -162,6 +166,7 @@ BRANCH_HISTORY_FRONTIER_SOURCES = (
     "https://arxiv.org/abs/1602.07576",
     "https://doi.org/10.1016/0004-3702(77)90007-8",
     "https://itl.nist.gov/div898/handbook/prc/section2/prc241.htm",
+    "https://doi.org/10.1109/4235.996017",
 )
 BRANCH_HISTORY_FRONTIER_CLAIM_BOUNDARY = (
     "G1 aggregate over local deterministic branch-history examples only. It shows a staged evidence "
@@ -169,13 +174,14 @@ BRANCH_HISTORY_FRONTIER_CLAIM_BOUNDARY = (
     "prerequisite ordering, curriculum sequencing, regime-conditioned contingency reuse, hindsight goal relabeling, receipt-bound "
     "field intervention, diagnostic probing, residual-template repair, boundary bracketing, source consensus, "
     "contrastive invariant transfer, context selection, retrieval refinement, query-policy reuse, conflict resolution, "
-    "drift quarantine, recency-weighted source freshness, restart-anchor backtracking, symmetry-transform transfer, pairwise-constraint transfer, confidence-bound support, branch pruning, branch diversity, budget allocation, trust-region radius transfer, "
+    "drift quarantine, recency-weighted source freshness, restart-anchor backtracking, symmetry-transform transfer, pairwise-constraint transfer, confidence-bound support, Pareto-front transfer, branch pruning, branch diversity, budget allocation, trust-region radius transfer, "
     "stop-rule abstention, branch composition, and retained-memory influence. "
     "It is not a statistical exploration algorithm, regret guarantee, MCTS result, contextual-bandit "
     "result, Hindsight Experience Replay result, causal inference result, do-calculus result, Bayesian "
     "experimental-design result, active-learning result, case-based reasoning system, automatic similarity "
     "metric, typed symmetry-search system, equivariant neural-network result, CSP solver, arc-consistency "
-    "algorithm, statistical validation, production calibration, or scientific-discovery claim."
+    "algorithm, statistical validation, production calibration, multiobjective optimizer, Pareto-front "
+    "approximation guarantee, or scientific-discovery claim."
 )
 
 
@@ -250,6 +256,8 @@ class BranchHistoryFrontierReport:
     constraint_success_count: int
     branch_confidence_certificate_count: int
     confidence_success_count: int
+    branch_pareto_certificate_count: int
+    pareto_success_count: int
     branch_pruning_certificate_count: int
     pruned_action_count: int
     branch_diversity_certificate_count: int
@@ -299,6 +307,7 @@ def run_branch_history_frontier_experiment() -> BranchHistoryFrontierResult:
             run_branch_symmetry_transfer_certified_experiment(),
             run_branch_constraint_transfer_certified_experiment(),
             run_branch_confidence_transfer_certified_experiment(),
+            run_branch_pareto_transfer_certified_experiment(),
             run_branch_pruning_transfer_certified_experiment(),
             run_branch_diversity_transfer_certified_experiment(),
             run_branch_budget_transfer_certified_experiment(),
@@ -373,6 +382,8 @@ def build_branch_history_frontier_result(
         constraint_success_count=_metric_for(children, "branch_constraint_transfer", "constraint_success_count"),
         branch_confidence_certificate_count=_metric(children, "branch_confidence_certificate_count"),
         confidence_success_count=_metric_for(children, "branch_confidence_transfer", "confidence_success_count"),
+        branch_pareto_certificate_count=_metric(children, "branch_pareto_certificate_count"),
+        pareto_success_count=_metric_for(children, "branch_pareto_transfer", "pareto_success_count"),
         branch_pruning_certificate_count=_metric(children, "branch_pruning_certificate_count"),
         pruned_action_count=_metric(children, "pruned_action_count"),
         branch_diversity_certificate_count=_metric(children, "branch_diversity_certificate_count"),
@@ -397,9 +408,10 @@ def build_branch_history_frontier_result(
             "and conflict-resolution certificates eighteenth, drift quarantine nineteenth, recency-weighted source freshness "
             "twentieth, restart-anchor backtracking twenty-first, typed symmetry transfer twenty-second, "
             "pairwise-constraint transfer twenty-third, confidence-bound support twenty-fourth, "
-            "receipt-bound branch pruning twenty-fifth, diversity-certified family coverage twenty-sixth, "
-            "budget-allocation transfer twenty-seventh, no-good stop-rule abstention twenty-eighth, "
-            "branch composition twenty-ninth, and retained-memory influence with matched ablation thirtieth."
+            "Pareto-front transfer twenty-fifth, receipt-bound branch pruning twenty-sixth, "
+            "diversity-certified family coverage twenty-seventh, budget-allocation transfer twenty-eighth, "
+            "no-good stop-rule abstention twenty-ninth, branch composition thirtieth, and retained-memory "
+            "influence with matched ablation thirty-first."
         ),
     )
     claim = certify_claim(
@@ -407,7 +419,7 @@ def build_branch_history_frontier_result(
         claim_text=(
             "The certified branch-history examples identify a local G1 substrate path where branches of "
             "the past improve exploration only through audited proposal ordering, selection, refinement, "
-            "query-policy, conflict-resolution, drift-quarantine, recency weighting, restart-anchor backtracking, symmetry-transform transfer, pairwise-constraint transfer, confidence-bound support, pruning, diversity, budget-allocation, "
+            "query-policy, conflict-resolution, drift-quarantine, recency weighting, restart-anchor backtracking, symmetry-transform transfer, pairwise-constraint transfer, confidence-bound support, Pareto-front transfer, pruning, diversity, budget-allocation, "
             "counterfactual accepted-loser reuse, option-family abstraction, prerequisite ordering, "
             "regime-conditioned contingency reuse, hindsight goal relabeling, field intervention, diagnostic "
             "probing, residual-template repair, boundary bracketing, source consensus, contrastive invariant transfer, "
@@ -416,7 +428,7 @@ def build_branch_history_frontier_result(
         evidence_grade="G1",
         scope="branch_history_frontier",
         requirements=(
-            requirement("exactly_thirty_branch_history_stages", report.stage_count == 30),
+            requirement("exactly_thirty_one_branch_history_stages", report.stage_count == 31),
             requirement(
                 "expected_child_experiments",
                 set(report.child_experiment_ids)
@@ -445,6 +457,7 @@ def build_branch_history_frontier_result(
                     "branch_symmetry_transfer",
                     "branch_constraint_transfer",
                     "branch_confidence_transfer",
+                    "branch_pareto_transfer",
                     "branch_pruning_transfer",
                     "branch_diversity_transfer",
                     "branch_budget_transfer",
@@ -531,6 +544,10 @@ def build_branch_history_frontier_result(
                 "branch_confidence_certificates_present",
                 report.branch_confidence_certificate_count == 3 and report.confidence_success_count == 3,
             ),
+            requirement(
+                "branch_pareto_certificates_present",
+                report.branch_pareto_certificate_count == 3 and report.pareto_success_count == 3,
+            ),
             requirement("branch_pruning_certificates_present", report.branch_pruning_certificate_count == 3 and report.pruned_action_count == 6),
             requirement("branch_diversity_certificates_present", report.branch_diversity_certificate_count == 3 and report.diverse_family_count == 3),
             requirement("branch_budget_certificates_present", report.branch_budget_certificate_count == 3 and report.static_abstain_count == 3),
@@ -588,6 +605,8 @@ def build_branch_history_frontier_result(
             "constraint_success_count": report.constraint_success_count,
             "branch_confidence_certificate_count": report.branch_confidence_certificate_count,
             "confidence_success_count": report.confidence_success_count,
+            "branch_pareto_certificate_count": report.branch_pareto_certificate_count,
+            "pareto_success_count": report.pareto_success_count,
             "branch_pruning_certificate_count": report.branch_pruning_certificate_count,
             "pruned_action_count": report.pruned_action_count,
             "branch_diversity_certificate_count": report.branch_diversity_certificate_count,
@@ -691,6 +710,8 @@ def _primary_certificate(child: CertifiedExampleResult) -> Any:
         return child.branch_constraint_transfer_certificate
     if experiment_id == "branch_confidence_transfer":
         return child.branch_confidence_transfer_certificate
+    if experiment_id == "branch_pareto_transfer":
+        return child.branch_pareto_transfer_certificate
     if experiment_id == "branch_pruning_transfer":
         return child.branch_pruning_transfer_certificate
     if experiment_id == "branch_diversity_transfer":
@@ -756,6 +777,8 @@ def _primary_certificate_valid(child: CertifiedExampleResult) -> bool:
         return validate_branch_constraint_transfer_certificate(child.branch_constraint_transfer_certificate, child.report)
     if experiment_id == "branch_confidence_transfer":
         return validate_branch_confidence_transfer_certificate(child.branch_confidence_transfer_certificate, child.report)
+    if experiment_id == "branch_pareto_transfer":
+        return validate_branch_pareto_transfer_certificate(child.branch_pareto_transfer_certificate, child.report)
     if experiment_id == "branch_pruning_transfer":
         return validate_branch_pruning_transfer_certificate(child.branch_pruning_transfer_certificate, child.report)
     if experiment_id == "branch_diversity_transfer":
@@ -989,6 +1012,15 @@ def _stage_fields(child: CertifiedExampleResult) -> tuple[str, str, str, str, bo
             f"confidence certificates {report.branch_confidence_certificate_count}",
             True,
             "support-confidence certificates before promoting thin source evidence",
+        )
+    if experiment_id == "branch_pareto_transfer":
+        return (
+            "receipt_bound_pareto_front",
+            f"scalar replay commits {report.static_success_count}/{report.domain_count}",
+            f"Pareto-guided target commits {report.pareto_success_count}/{report.domain_count}",
+            f"Pareto certificates {report.branch_pareto_certificate_count}",
+            True,
+            "multi-objective dominance certificates before scalar objective replay",
         )
     if experiment_id == "branch_composition_transfer":
         return (
