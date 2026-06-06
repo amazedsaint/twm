@@ -93,6 +93,10 @@ This repository currently targets `G1` evidence:
   typed verifier-field before/after values, static target rejects, intervened
   target commits, and same-budget verifier-call evidence before past branches
   can suggest target field edits,
+- branch-diagnostic-probe certificates that bind source probe reject/commit
+  receipts, static unprobed target rejects, guided probe commits, guided final
+  commits, and same-budget verifier-call evidence before past branches can
+  suggest what target diagnostic to run before acting,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can
