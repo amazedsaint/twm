@@ -3,7 +3,13 @@ from __future__ import annotations
 from dataclasses import replace
 import unittest
 
-from trwm.ancestral import AncestralBranchMemory, validate_ancestral_branch_memory_snapshot
+from trwm.ancestral import (
+    AncestralBranchMemory,
+    AncestralContextDescriptor,
+    build_ancestral_context_selection_certificate,
+    validate_ancestral_branch_memory_snapshot,
+    validate_ancestral_context_selection_certificate,
+)
 from trwm.branch import BranchRuntime, build_branch_selection_certificate
 from trwm.core import Ledger, TransactionEngine
 from trwm.experiments.counterfactual_learning import (
@@ -90,6 +96,46 @@ class AncestralBranchMemoryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             memory.rank_from_contexts(("",), ("a", "b"))
 
+    def test_context_selection_certificate_selects_compatible_ancestors(self) -> None:
+        target = _context("robotics:target", regime="narrow")
+        compatible = _context("robotics:ancestor", regime="narrow")
+        misleading = _context("robotics:misleading", regime="wide")
+
+        certificate = build_ancestral_context_selection_certificate(
+            target,
+            (compatible, misleading),
+            required_tag_keys=("regime",),
+        )
+
+        self.assertEqual(certificate.selected_context_ids, ("robotics:ancestor",))
+        self.assertEqual(certificate.rejected_context_ids, ("robotics:misleading",))
+        self.assertEqual(certificate.rejected_reasons, {"robotics:misleading": "tag_mismatch:regime"})
+        self.assertTrue(
+            validate_ancestral_context_selection_certificate(
+                certificate,
+                target=target,
+                candidates=(compatible, misleading),
+            )
+        )
+
+    def test_context_selection_certificate_rejects_tampering(self) -> None:
+        target = _context("robotics:target", regime="narrow")
+        compatible = _context("robotics:ancestor", regime="narrow")
+        certificate = build_ancestral_context_selection_certificate(
+            target,
+            (compatible,),
+            required_tag_keys=("regime",),
+        )
+        tampered = replace(certificate, selected_context_ids=(), certificate_hash="")
+
+        self.assertFalse(
+            validate_ancestral_context_selection_certificate(
+                tampered,
+                target=target,
+                candidates=(compatible,),
+            )
+        )
+
     def test_snapshot_tampering_fails_validation(self) -> None:
         engine = TransactionEngine(CounterfactualChoiceAdapter(), ledger=Ledger())
         outcome = BranchRuntime(engine, CounterfactualChoiceProjector()).step(
@@ -108,3 +154,14 @@ class AncestralBranchMemoryTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def _context(context_id: str, *, regime: str) -> AncestralContextDescriptor:
+    return AncestralContextDescriptor(
+        context_id=context_id,
+        domain="robotics_replan",
+        family="trajectory",
+        hard_gate_keys=("clearance", "turn_rate"),
+        residual_kinds=("safety_envelope_violation",),
+        tags={"regime": regime},
+    )

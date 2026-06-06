@@ -44,6 +44,7 @@ python3 -m examples.molecular_dynamics_verlet
 python3 -m examples.material_lattice_metropolis
 python3 -m examples.ancestral_branch_exploration
 python3 -m examples.analogical_branch_transfer
+python3 -m examples.context_selection_transfer
 python3 -m examples.programmable_world_model_frontier
 ```
 
@@ -52,8 +53,9 @@ rollback audit. The domain examples now emit `report`, `evidence_certificate`,
 and `claim_certificate` JSON; the ancestral branch example adds an
 `exploration_certificate` for past-branch-guided proposal ordering; the
 analogical branch example tests explicit ancestor-context reuse and misleading
-ancestor rejection; the frontier example aggregates the three physical certified
-domains. See `examples/README.md` and
+ancestor rejection; the context-selection example certifies which ancestor
+contexts may influence target exploration; the frontier example aggregates the
+three physical certified domains. See `examples/README.md` and
 `docs/experiment_learnings.md`.
 
 ## Package Layout

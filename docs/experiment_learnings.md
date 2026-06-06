@@ -112,6 +112,16 @@ substrate lesson is that context-neighborhood selection is now part of the
 world-model surface and needs certificates before it can become trusted
 proposal evidence.
 
+The context-selection transfer example makes that surface explicit. Each source
+and target context now has an `AncestralContextDescriptor` with domain, family,
+hard-gate keys, residual kinds, and required tags. The
+`trwm.ancestral_context_selection_certificate.v1` artifact selects compatible
+ancestors and records rejected contexts with reasons such as
+`tag_mismatch:regime`. Across the three toy domains, selected ancestors commit
+under the same one-call target budget, while a bypass attempt using the rejected
+context is blocked by the target hard verifier. This moves the design from
+"explicitly named ancestors" to "certified ancestor retrieval."
+
 The boundary remains narrow. This is a deterministic G1 canary inspired by
 experience replay, counterfactual regret evidence, and selective tree-search
 sampling; it is not a statistical exploration algorithm, regret guarantee,

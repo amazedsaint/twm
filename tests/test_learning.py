@@ -5,6 +5,8 @@ import unittest
 from trwm import (
     AdditiveCoupling,
     AncestralBranchMemory,
+    AncestralContextDescriptor,
+    AncestralContextSelectionCertificate,
     BranchRuntime,
     CounterfactualRollbackRanker,
     HyperdimensionalMemory,
@@ -38,6 +40,8 @@ class LearningTests(unittest.TestCase):
         self.assertIsNotNone(CounterfactualRollbackRanker)
         self.assertIsNotNone(HyperdimensionalMemory)
         self.assertIsNotNone(AncestralBranchMemory)
+        self.assertIsNotNone(AncestralContextDescriptor)
+        self.assertIsNotNone(AncestralContextSelectionCertificate)
         self.assertIsNotNone(AdditiveCoupling)
         self.assertIsNotNone(BranchRuntime)
 

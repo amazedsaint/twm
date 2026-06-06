@@ -9,6 +9,80 @@ from .core import Receipt, canonical_json, stable_hash
 
 
 ANCESTRAL_BRANCH_MEMORY_SNAPSHOT_SCHEMA = "trwm.ancestral_branch_memory_snapshot.v1"
+ANCESTRAL_CONTEXT_DESCRIPTOR_SCHEMA = "trwm.ancestral_context_descriptor.v1"
+ANCESTRAL_CONTEXT_SELECTION_CERTIFICATE_SCHEMA = "trwm.ancestral_context_selection_certificate.v1"
+
+
+@dataclass(frozen=True)
+class AncestralContextDescriptor:
+    context_id: str
+    domain: str
+    family: str
+    hard_gate_keys: tuple[str, ...]
+    residual_kinds: tuple[str, ...]
+    tags: Mapping[str, str]
+    schema_version: str = ANCESTRAL_CONTEXT_DESCRIPTOR_SCHEMA
+    descriptor_hash: str = ""
+
+    def __post_init__(self) -> None:
+        if self.schema_version != ANCESTRAL_CONTEXT_DESCRIPTOR_SCHEMA:
+            raise ValueError(f"invalid ancestral context descriptor schema: {self.schema_version}")
+        if not self.context_id or not self.domain or not self.family:
+            raise ValueError("context_id, domain, and family must be non-empty")
+        object.__setattr__(self, "hard_gate_keys", _sorted_nonempty_strings(self.hard_gate_keys))
+        object.__setattr__(self, "residual_kinds", _sorted_nonempty_strings(self.residual_kinds))
+        object.__setattr__(self, "tags", {str(key): str(value) for key, value in self.tags.items()})
+        if any(not key or not value for key, value in self.tags.items()):
+            raise ValueError("context descriptor tags must be non-empty strings")
+        if not self.descriptor_hash:
+            object.__setattr__(self, "descriptor_hash", ancestral_context_descriptor_hash(self))
+
+    def without_hash(self) -> dict[str, Any]:
+        data = asdict(self)
+        data.pop("descriptor_hash", None)
+        return data
+
+
+@dataclass(frozen=True)
+class AncestralContextSelectionCertificate:
+    schema_version: str
+    selection_rule_id: str
+    selection_rule_version: str
+    target_context_id: str
+    target_context_hash: str
+    candidate_count: int
+    candidate_context_ids: tuple[str, ...]
+    candidate_context_hashes: tuple[str, ...]
+    selected_context_ids: tuple[str, ...]
+    selected_context_hashes: tuple[str, ...]
+    rejected_context_ids: tuple[str, ...]
+    rejected_context_hashes: tuple[str, ...]
+    required_tag_keys: tuple[str, ...]
+    rejected_reasons: Mapping[str, str]
+    certificate_hash: str = ""
+
+    def __post_init__(self) -> None:
+        if self.schema_version != ANCESTRAL_CONTEXT_SELECTION_CERTIFICATE_SCHEMA:
+            raise ValueError(f"invalid ancestral context selection certificate schema: {self.schema_version}")
+        for field_name in (
+            "candidate_context_ids",
+            "candidate_context_hashes",
+            "selected_context_ids",
+            "selected_context_hashes",
+            "rejected_context_ids",
+            "rejected_context_hashes",
+            "required_tag_keys",
+        ):
+            object.__setattr__(self, field_name, tuple(getattr(self, field_name)))
+        object.__setattr__(self, "required_tag_keys", _unique_nonempty_strings(self.required_tag_keys))
+        object.__setattr__(self, "rejected_reasons", {str(key): str(value) for key, value in self.rejected_reasons.items()})
+        if not self.certificate_hash:
+            object.__setattr__(self, "certificate_hash", ancestral_context_selection_certificate_hash(self))
+
+    def without_hash(self) -> dict[str, Any]:
+        data = asdict(self)
+        data.pop("certificate_hash", None)
+        return data
 
 
 @dataclass(frozen=True)
@@ -266,12 +340,147 @@ def validate_ancestral_branch_memory_snapshot(snapshot: AncestralBranchMemorySna
         return False
 
 
+def build_ancestral_context_selection_certificate(
+    target: AncestralContextDescriptor,
+    candidates: Iterable[AncestralContextDescriptor],
+    *,
+    required_tag_keys: Iterable[str],
+    selection_rule_id: str = "tagged_context_overlap",
+    selection_rule_version: str = "1.0",
+) -> AncestralContextSelectionCertificate:
+    candidate_rows = tuple(candidates)
+    required_tags = _unique_nonempty_strings(required_tag_keys)
+    selected: list[AncestralContextDescriptor] = []
+    rejected: list[AncestralContextDescriptor] = []
+    rejected_reasons: dict[str, str] = {}
+    for candidate in candidate_rows:
+        compatible, reason = _context_compatible(target, candidate, required_tags)
+        if compatible:
+            selected.append(candidate)
+        else:
+            rejected.append(candidate)
+            rejected_reasons[candidate.context_id] = reason
+    return AncestralContextSelectionCertificate(
+        schema_version=ANCESTRAL_CONTEXT_SELECTION_CERTIFICATE_SCHEMA,
+        selection_rule_id=selection_rule_id,
+        selection_rule_version=selection_rule_version,
+        target_context_id=target.context_id,
+        target_context_hash=target.descriptor_hash,
+        candidate_count=len(candidate_rows),
+        candidate_context_ids=tuple(candidate.context_id for candidate in candidate_rows),
+        candidate_context_hashes=tuple(candidate.descriptor_hash for candidate in candidate_rows),
+        selected_context_ids=tuple(candidate.context_id for candidate in selected),
+        selected_context_hashes=tuple(candidate.descriptor_hash for candidate in selected),
+        rejected_context_ids=tuple(candidate.context_id for candidate in rejected),
+        rejected_context_hashes=tuple(candidate.descriptor_hash for candidate in rejected),
+        required_tag_keys=required_tags,
+        rejected_reasons=rejected_reasons,
+    )
+
+
+def validate_ancestral_context_selection_certificate(
+    certificate: AncestralContextSelectionCertificate,
+    *,
+    target: AncestralContextDescriptor | None = None,
+    candidates: Iterable[AncestralContextDescriptor] | None = None,
+) -> bool:
+    try:
+        if certificate.schema_version != ANCESTRAL_CONTEXT_SELECTION_CERTIFICATE_SCHEMA:
+            return False
+        if not certificate.selection_rule_id or not certificate.selection_rule_version:
+            return False
+        if not certificate.target_context_id or not _is_hash(certificate.target_context_hash):
+            return False
+        if not isinstance(certificate.candidate_count, int) or isinstance(certificate.candidate_count, bool) or certificate.candidate_count < 0:
+            return False
+        length_fields = (
+            certificate.candidate_context_ids,
+            certificate.candidate_context_hashes,
+        )
+        if any(len(field) != certificate.candidate_count for field in length_fields):
+            return False
+        if len(certificate.candidate_context_ids) != len(set(certificate.candidate_context_ids)):
+            return False
+        if any(not context_id for context_id in certificate.candidate_context_ids):
+            return False
+        if any(not _is_hash(value) for value in certificate.candidate_context_hashes):
+            return False
+        if any(not _is_hash(value) for value in certificate.selected_context_hashes):
+            return False
+        if any(not _is_hash(value) for value in certificate.rejected_context_hashes):
+            return False
+        if len(certificate.selected_context_ids) != len(certificate.selected_context_hashes):
+            return False
+        if len(certificate.rejected_context_ids) != len(certificate.rejected_context_hashes):
+            return False
+        selected_ids = set(certificate.selected_context_ids)
+        rejected_ids = set(certificate.rejected_context_ids)
+        candidate_ids = set(certificate.candidate_context_ids)
+        if selected_ids.intersection(rejected_ids):
+            return False
+        if selected_ids.union(rejected_ids) != candidate_ids:
+            return False
+        if len(certificate.selected_context_ids) != len(selected_ids):
+            return False
+        if len(certificate.rejected_context_ids) != len(rejected_ids):
+            return False
+        if certificate.required_tag_keys != _unique_nonempty_strings(certificate.required_tag_keys):
+            return False
+        if set(certificate.rejected_reasons.keys()) != rejected_ids:
+            return False
+        if any(not reason for reason in certificate.rejected_reasons.values()):
+            return False
+        if target is not None:
+            if certificate.target_context_id != target.context_id or certificate.target_context_hash != target.descriptor_hash:
+                return False
+        if candidates is not None:
+            rows = tuple(candidates)
+            if certificate.candidate_context_ids != tuple(candidate.context_id for candidate in rows):
+                return False
+            if certificate.candidate_context_hashes != tuple(candidate.descriptor_hash for candidate in rows):
+                return False
+            if target is None:
+                return False
+            rebuilt = build_ancestral_context_selection_certificate(
+                target,
+                rows,
+                required_tag_keys=certificate.required_tag_keys,
+                selection_rule_id=certificate.selection_rule_id,
+                selection_rule_version=certificate.selection_rule_version,
+            )
+            if rebuilt.certificate_hash != certificate.certificate_hash:
+                return False
+        return certificate.certificate_hash == ancestral_context_selection_certificate_hash(certificate)
+    except Exception:
+        return False
+
+
 def ancestral_branch_memory_snapshot_hash(snapshot: AncestralBranchMemorySnapshot | Mapping[str, Any]) -> str:
     if isinstance(snapshot, AncestralBranchMemorySnapshot):
         data = snapshot.without_hash()
     else:
         data = dict(snapshot)
         data.pop("snapshot_hash", None)
+    return stable_hash(data)
+
+
+def ancestral_context_descriptor_hash(descriptor: AncestralContextDescriptor | Mapping[str, Any]) -> str:
+    if isinstance(descriptor, AncestralContextDescriptor):
+        data = descriptor.without_hash()
+    else:
+        data = dict(descriptor)
+        data.pop("descriptor_hash", None)
+    return stable_hash(data)
+
+
+def ancestral_context_selection_certificate_hash(
+    certificate: AncestralContextSelectionCertificate | Mapping[str, Any],
+) -> str:
+    if isinstance(certificate, AncestralContextSelectionCertificate):
+        data = certificate.without_hash()
+    else:
+        data = dict(certificate)
+        data.pop("certificate_hash", None)
     return stable_hash(data)
 
 
@@ -321,6 +530,49 @@ def _unique_contexts(contexts: Iterable[str]) -> tuple[str, ...]:
         token = str(context)
         if not token:
             raise ValueError("ancestor context must be non-empty")
+        if token not in seen:
+            rows.append(token)
+            seen.add(token)
+    return tuple(rows)
+
+
+def _context_compatible(
+    target: AncestralContextDescriptor,
+    candidate: AncestralContextDescriptor,
+    required_tag_keys: tuple[str, ...],
+) -> tuple[bool, str]:
+    if target.context_id == candidate.context_id:
+        return False, "same_context"
+    if target.domain != candidate.domain:
+        return False, "domain_mismatch"
+    if target.family != candidate.family:
+        return False, "family_mismatch"
+    if target.hard_gate_keys != candidate.hard_gate_keys:
+        return False, "hard_gate_mismatch"
+    if not set(target.residual_kinds).intersection(candidate.residual_kinds):
+        return False, "residual_mismatch"
+    for key in required_tag_keys:
+        if key not in target.tags or key not in candidate.tags:
+            return False, f"missing_tag:{key}"
+        if target.tags[key] != candidate.tags[key]:
+            return False, f"tag_mismatch:{key}"
+    return True, ""
+
+
+def _sorted_nonempty_strings(values: Iterable[str]) -> tuple[str, ...]:
+    rows = tuple(str(value) for value in values)
+    if not rows or any(not value for value in rows):
+        raise ValueError("string set must contain non-empty strings")
+    return tuple(sorted(set(rows)))
+
+
+def _unique_nonempty_strings(values: Iterable[str]) -> tuple[str, ...]:
+    rows: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        token = str(value)
+        if not token:
+            raise ValueError("string set must contain non-empty strings")
         if token not in seen:
             rows.append(token)
             seen.add(token)

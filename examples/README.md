@@ -14,6 +14,7 @@ python3 -m examples.molecular_dynamics_verlet
 python3 -m examples.material_lattice_metropolis
 python3 -m examples.ancestral_branch_exploration
 python3 -m examples.analogical_branch_transfer
+python3 -m examples.context_selection_transfer
 python3 -m examples.programmable_world_model_frontier
 ```
 
@@ -22,9 +23,10 @@ Each command emits JSON. The three domain commands now include top-level
 ancestral branch command adds an `exploration_certificate` that binds past
 branch receipts to later budgeted proposal ordering. The analogical branch
 command adds an `analogical_certificate` that binds explicit ancestor-context
-reuse and misleading-ancestor rejection. The frontier command aggregates the
-three physical certified examples into a cross-domain report and bounded G1
-claim certificate.
+reuse and misleading-ancestor rejection. The context-selection command adds
+descriptor-level `trwm.ancestral_context_selection_certificate.v1` artifacts
+before branch-memory reuse. The frontier command aggregates the three physical
+certified examples into a cross-domain report and bounded G1 claim certificate.
 
 ## Experiments
 
@@ -88,6 +90,20 @@ Learning: branch history can transfer across explicitly named related contexts,
 but context choice is itself a future verifier surface. Misleading ancestors are
 allowed to propose; they are not allowed to commit.
 
+### Context Selection Transfer
+
+`examples.context_selection_transfer` adds certified ancestor selection. Each
+domain publishes context descriptors for the target, two compatible ancestors,
+and one misleading ancestor. The selection certificate admits the compatible
+contexts and rejects the misleading one because its required `regime` tag does
+not match. The selected ancestors improve target budget-one exploration; a
+bypass pass using the rejected context is still blocked by the target hard
+verifier.
+
+Learning: "find branches of the past" needs a certified retrieval surface. A
+branch-memory snapshot is not enough; the target also needs an auditable reason
+why those ancestor contexts are admissible for reuse.
+
 ### Programmable World Model Frontier
 
 `examples.programmable_world_model_frontier` runs all three certified examples,
@@ -118,3 +134,8 @@ certificates before claim promotion.
   https://papers.nips.cc/paper/3306-regret-minimization-in-games-with-incomplete-information
 - UCT/MCTS is the planning analogy for spending samples selectively:
   https://doi.org/10.1007/11871842_29
+- Case-based reasoning is the retrieval/reuse/revision analogy for solving a
+  new problem from prior cases: Aamodt and Plaza, AI Communications 7(1),
+  39-59 (1994), doi:10.3233/AIC-1994-7104.
+- Negative-transfer surveys motivate explicit rejection of misleading sources:
+  https://arxiv.org/abs/2009.00909
