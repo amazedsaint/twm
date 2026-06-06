@@ -109,6 +109,10 @@ This repository currently targets `G1` evidence:
   source receipts, support counts, static target rejects, consensus target
   commits, and same-budget verifier-call evidence before multi-source agreement
   can prioritize target proposal families,
+- branch-invariant certificates that bind positive source receipts, negative
+  source receipts, invariant field keys, static target rejects, invariant target
+  commits, and same-budget verifier-call evidence before contrastive source
+  signatures can prioritize target proposals,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can
@@ -598,6 +602,8 @@ search.
   https://proceedings.mlr.press/v37/sui15.html
 - Seung, Opper, and Sompolinsky, Query by Committee:
   https://doi.org/10.1145/130385.130417
+- Mitchell, Version Spaces: A Candidate Elimination Approach to Rule Learning:
+  https://www.ijcai.org/Proceedings/77-1/Papers/048.pdf
 - W3C PROV Overview:
   https://www.w3.org/TR/prov-overview/
 - ISO/IEC/IEEE 15026-2 assurance case structure and terminology:

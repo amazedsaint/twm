@@ -53,6 +53,7 @@ python3 -m examples.branch_diagnostic_probe_transfer
 python3 -m examples.branch_residual_template_transfer
 python3 -m examples.branch_boundary_bracket_transfer
 python3 -m examples.branch_consensus_transfer
+python3 -m examples.branch_invariant_transfer
 python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
@@ -106,13 +107,15 @@ transferring commit authority; the boundary-bracket example uses source
 reject/commit endpoints to prioritize a target threshold candidate without
 transferring commit authority; the consensus example requires two source
 branches to agree on a target proposal family before outranking a singleton
-source family, without transferring commit authority; the
+source family, without transferring commit authority; the invariant example
+uses positive and negative source branch receipts to identify a target proposal
+signature without transferring commit authority; the
 context-retention example retains the successful target branch as certified
 future proposal evidence for a sibling target and
 certifies the memory query that ranks the sibling proposals against a
 same-budget static sibling baseline; the frontier example aggregates the three
 physical certified domains, while the branch-history frontier aggregates the
-twenty-one branch-memory stages. See `examples/README.md` and
+twenty-two branch-memory stages. See `examples/README.md` and
 `docs/experiment_learnings.md`.
 
 ## Package Layout
