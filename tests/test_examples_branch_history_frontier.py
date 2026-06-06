@@ -11,6 +11,7 @@ from examples.branch_composition_transfer import run_branch_composition_transfer
 from examples.branch_consensus_transfer import run_branch_consensus_transfer_certified_experiment
 from examples.branch_contingency_transfer import run_branch_contingency_transfer_certified_experiment
 from examples.branch_counterfactual_transfer import run_branch_counterfactual_transfer_certified_experiment
+from examples.branch_curriculum_transfer import run_branch_curriculum_transfer_certified_experiment
 from examples.branch_diagnostic_probe_transfer import run_branch_diagnostic_probe_transfer_certified_experiment
 from examples.branch_diversity_transfer import run_branch_diversity_transfer_certified_experiment
 from examples.branch_hindsight_relabel_transfer import run_branch_hindsight_relabel_transfer_certified_experiment
@@ -41,7 +42,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         claim = result.claim_certificate
 
         self.assertEqual(report.schema_version, "trwm.example.branch_history_frontier.v1")
-        self.assertEqual(report.stage_count, 24)
+        self.assertEqual(report.stage_count, 25)
         self.assertEqual(
             report.child_experiment_ids,
             (
@@ -49,6 +50,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
                 "branch_counterfactual_transfer",
                 "branch_abstraction_transfer",
                 "branch_prerequisite_transfer",
+                "branch_curriculum_transfer",
                 "branch_contingency_transfer",
                 "branch_hindsight_relabel_transfer",
                 "branch_intervention_transfer",
@@ -78,6 +80,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
                 "accepted_loser_counterfactual_reuse",
                 "option_family_branch_abstraction",
                 "receipt_bound_prerequisite_ordering",
+                "receipt_bound_curriculum_sequence",
                 "regime_conditioned_branch_reuse",
                 "hindsight_goal_relabeling",
                 "receipt_bound_field_intervention",
@@ -103,13 +106,15 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         self.assertTrue(report.all_evidence_valid)
         self.assertTrue(report.all_claims_supported)
         self.assertTrue(report.all_primary_certificates_valid)
-        self.assertEqual(report.total_receipt_count, 522)
-        self.assertEqual(report.total_committed_count, 207)
-        self.assertEqual(report.total_rejected_count, 210)
+        self.assertEqual(report.total_receipt_count, 549)
+        self.assertEqual(report.total_committed_count, 225)
+        self.assertEqual(report.total_rejected_count, 219)
         self.assertEqual(report.total_invalid_commit_count, 0)
-        self.assertEqual(report.same_budget_stage_count, 24)
+        self.assertEqual(report.same_budget_stage_count, 25)
         self.assertEqual(report.branch_abstraction_certificate_count, 3)
         self.assertEqual(report.branch_prerequisite_certificate_count, 3)
+        self.assertEqual(report.branch_curriculum_certificate_count, 3)
+        self.assertEqual(report.guided_curriculum_success_count, 6)
         self.assertEqual(report.branch_contingency_certificate_count, 3)
         self.assertEqual(report.matched_source_context_count, 3)
         self.assertEqual(report.branch_hindsight_relabel_certificate_count, 3)
@@ -157,6 +162,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
             run_branch_counterfactual_transfer_certified_experiment(),
             run_branch_abstraction_transfer_certified_experiment(),
             run_branch_prerequisite_transfer_certified_experiment(),
+            run_branch_curriculum_transfer_certified_experiment(),
             run_branch_contingency_transfer_certified_experiment(),
             run_branch_hindsight_relabel_transfer_certified_experiment(),
             run_branch_intervention_transfer_certified_experiment(),

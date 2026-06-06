@@ -16,6 +16,7 @@ python3 -m examples.ancestral_branch_exploration
 python3 -m examples.branch_counterfactual_transfer
 python3 -m examples.branch_abstraction_transfer
 python3 -m examples.branch_prerequisite_transfer
+python3 -m examples.branch_curriculum_transfer
 python3 -m examples.branch_contingency_transfer
 python3 -m examples.branch_hindsight_relabel_transfer
 python3 -m examples.branch_intervention_transfer
@@ -53,6 +54,9 @@ option family can guide a target-specific same-family action when exact
 source-action replay is stale. The branch-prerequisite command adds
 `trwm.branch_prerequisite_certificate.v1` artifacts showing that past branches
 can certify prerequisite-before-final ordering under a matched two-call budget.
+The branch-curriculum command adds `trwm.branch_curriculum_certificate.v1`
+artifacts showing that past branch receipts can certify a monotone easy-to-hard
+target sequence before final verification under a matched three-call budget.
 The branch-contingency command adds
 `trwm.branch_contingency_certificate.v1` artifacts showing that a target
 context can select the source branch with the matching regime tag when stale
@@ -129,7 +133,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the twenty-four branch-memory stages into one bounded G1 report. The physical
+the twenty-five branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -228,6 +232,21 @@ which candidate to try. `trwm.branch_prerequisite_certificate.v1` binds source
 prerequisite/final receipts, static target rejects, guided prerequisite/final
 commits, branch-selection certificates, and the same-budget comparison before
 claiming prerequisite-order lift.
+
+### Branch Curriculum Transfer
+
+`examples.branch_curriculum_transfer` tests easy-to-hard continuation. Each
+domain records a source sequence with two curriculum steps and one final
+commit. The static target spends the same three verifier calls on direct final,
+skipped-level, and bad early-level candidates and commits nothing. The guided
+target spends those three calls on level 1, level 2, and final target actions;
+all three commit only after fresh hard verification and replay/rollback audit.
+
+Learning: branches of the past can improve exploration by certifying a
+curriculum sequence, not only a single prerequisite. `trwm.branch_curriculum_certificate.v1`
+binds source curriculum receipts, static target rejects, guided curriculum
+commits, guided final commits, branch-selection certificates, and the matched
+three-call budget before claiming curriculum-guided exploration lift.
 
 ### Branch Contingency Transfer
 
@@ -548,12 +567,12 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the twenty-four branch-history experiments and
+`examples.branch_history_frontier` runs the twenty-five branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
 ordering through accepted-loser counterfactual reuse, option-family
-abstraction, prerequisite ordering, regime-conditioned contingency reuse,
+abstraction, prerequisite ordering, curriculum sequencing, regime-conditioned contingency reuse,
 hindsight goal relabeling, receipt-bound field intervention, receipt-bound
 diagnostic probing, residual-template repair, boundary bracketing, source
 consensus, contrastive invariant transfer, trust-region radius transfer, analogical ancestor reuse, certified context selection,

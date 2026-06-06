@@ -140,6 +140,20 @@ same-budget comparison. The substrate implication is that branch memory needs
 stateful ordering certificates: a useful branch of the past may say what must
 be true before another proposal is worth spending verifier budget on.
 
+The branch-curriculum transfer example generalizes one prerequisite into a
+monotone easy-to-hard sequence. Each domain records a source sequence with two
+curriculum steps and one final commit. The target static branch spends three
+verifier calls on a direct final, a skipped-level step, and a bad early-level
+candidate, committing nothing. The guided target spends the same three calls
+on level 1, level 2, and final target actions; all three commit through fresh
+hard verification and replay/rollback audit. The new
+`trwm.branch_curriculum_certificate.v1` artifact binds source curriculum
+receipts, static target rejects, guided curriculum commits, guided final
+commits, branch-selection certificates, and the matched three-call budget. The
+substrate implication is that branch memory needs certified continuation
+surfaces: a useful branch of the past may define the order of target
+difficulty, but every intermediate and final state still needs its own receipt.
+
 The branch-contingency transfer example adds context-feature switchpoints. Each
 domain records one source branch for a stale/default regime and one source
 branch for the target regime. The target static branch spends one verifier call
@@ -415,11 +429,11 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the twenty-four local branch-memory
+The branch-history frontier report now aggregates the twenty-five local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
 receipt-bound ordering, accepted-loser counterfactual reuse, option-family
-abstraction, stateful prerequisite ordering, regime-conditioned contingency
+abstraction, stateful prerequisite ordering, curriculum sequencing, regime-conditioned contingency
 reuse, hindsight goal relabeling, receipt-bound field intervention,
 receipt-bound diagnostic probing, residual-template repair, boundary
 bracketing, source consensus, contrastive invariant transfer, trust-region radius transfer, analogical
@@ -436,7 +450,7 @@ The boundary remains narrow. This is a deterministic G1 canary inspired by
 experience replay, counterfactual regret evidence, and selective tree-search
 sampling plus nogood-style pruning, diversity pressure, and recombinable
 building-block search plus successive resource allocation and temporal
-abstraction plus contextual bandits with side information and hindsight
+abstraction plus curriculum learning and continuation methods plus contextual bandits with side information and hindsight
 experience replay plus intervention notation as a variable-edit analogy and
 experimental-design information as a probe-selection analogy plus case-based
 reuse/revise as a residual-template analogy plus safe exploration as a
@@ -448,5 +462,5 @@ it is not a
 statistical exploration algorithm, regret guarantee, MCTS implementation,
 automatic similarity metric, CEGAR system, CDCL solver, novelty-search result,
 MAP-Elites implementation, Hyperband implementation, options-framework result,
-contextual-bandit result, Hindsight Experience Replay result, causal-inference result, do-calculus result, Bayesian experimental-design result, active-learning result, query-by-committee result, version-space learning result, safe Bayesian optimization result, case-based reasoning system, genetic algorithm, program synthesizer, or
+contextual-bandit result, curriculum-learning result, homotopy-optimization result, Hindsight Experience Replay result, causal-inference result, do-calculus result, Bayesian experimental-design result, active-learning result, query-by-committee result, version-space learning result, safe Bayesian optimization result, case-based reasoning system, genetic algorithm, program synthesizer, or
 cross-domain scientific discovery result.
