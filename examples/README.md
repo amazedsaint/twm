@@ -21,6 +21,7 @@ python3 -m examples.branch_hindsight_relabel_transfer
 python3 -m examples.branch_intervention_transfer
 python3 -m examples.branch_diagnostic_probe_transfer
 python3 -m examples.branch_residual_template_transfer
+python3 -m examples.branch_boundary_bracket_transfer
 python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
@@ -69,6 +70,10 @@ The branch-residual-template command adds
 `trwm.branch_residual_template_certificate.v1` artifacts showing that a source
 reject plus committed repair can identify a named repair template, while the
 target repair still commits only after fresh hard verification.
+The branch-boundary-bracket command adds
+`trwm.branch_boundary_bracket_certificate.v1` artifacts showing that source
+reject/commit endpoints can prioritize a target boundary candidate, while the
+target candidate still commits only after fresh hard verification.
 The analogical branch
 command adds an `analogical_certificate` that binds explicit ancestor-context
 reuse and misleading-ancestor rejection. The context-selection command adds
@@ -105,7 +110,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the nineteen branch-memory stages into one bounded G1 report. The physical
+the twenty branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -285,6 +290,22 @@ source reject/repair receipts, static target reject, templated target commit,
 template fields, branch-selection certificates, and matched one-call budget
 before claiming template-guided exploration lift.
 
+### Branch Boundary Bracket Transfer
+
+`examples.branch_boundary_bracket_transfer` tests receipt-bound boundary
+bracketing. Each domain records a source branch with one unsafe endpoint and
+one safe endpoint: robot clearance/turn-rate, molecular strain, or material
+thermal/purity bounds. The target static pass spends one verifier call on the
+unsafe target endpoint and fails. The bracket-guided pass spends the same one
+verifier call on a target candidate near the hard-gate boundary and commits
+only after fresh hard verification.
+
+Learning: boundary brackets can make exploration more sample-efficient only as
+proposal-order evidence. `trwm.branch_boundary_bracket_certificate.v1` binds
+the source reject/safe receipts, static target reject, bracketed target commit,
+bracket fields, branch-selection certificates, and matched one-call budget
+before claiming boundary-guided exploration lift.
+
 ### Analogical Branch Transfer
 
 `examples.analogical_branch_transfer` runs the same three toy domains with two
@@ -445,15 +466,15 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the nineteen branch-history experiments and
+`examples.branch_history_frontier` runs the twenty branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
 ordering through accepted-loser counterfactual reuse, option-family
 abstraction, prerequisite ordering, regime-conditioned contingency reuse,
 hindsight goal relabeling, receipt-bound field intervention, receipt-bound
-diagnostic probing, residual-template repair, analogical ancestor reuse,
-certified context selection, counterexample refinement,
+diagnostic probing, residual-template repair, boundary bracketing, analogical
+ancestor reuse, certified context selection, counterexample refinement,
 conflict-aware query-policy transfer,
 drift quarantine, receipt-bound branch pruning, diversity-certified family
 coverage, branch budget allocation, branch composition, and retained-memory
@@ -470,12 +491,14 @@ certificate, field intervention is admitted only through a reject/commit
 certificate and fresh target verification, diagnostic probing is admitted only
 through probe/final receipts under a matched budget, residual templates are
 admitted only through source reject/repair receipts and fresh target
-verification, context selection is certified, failed branches refine retrieval,
-conflicts are certificate-bound, drift is quarantined, rejected branches prune
-known-dead target candidates, same-family failures force coverage only through
-a certificate, verifier budget is allocated only through a cost-bound
-certificate, branch fragments compose only through a certificate, and retained
-memory is compared against a same-budget baseline.
+verification, boundary brackets are admitted only through source reject/safe
+receipts and fresh target verification, context selection is certified, failed
+branches refine retrieval, conflicts are certificate-bound, drift is
+quarantined, rejected branches prune known-dead target candidates, same-family
+failures force coverage only through a certificate, verifier budget is
+allocated only through a cost-bound certificate, branch fragments compose only
+through a certificate, and retained memory is compared against a same-budget
+baseline.
 
 ### Programmable World Model Frontier
 
@@ -520,6 +543,10 @@ certificates before claim promotion.
   choosing a useful diagnostic probe; this repo does not claim Bayesian
   experimental design:
   https://doi.org/10.1214/aoms/1177728069
+- SafeOpt is the safe-exploration analogy for expanding toward useful
+  candidates while respecting safety constraints; this repo does not claim
+  safe Bayesian optimization:
+  https://proceedings.mlr.press/v37/sui15.html
 - Contextual bandits with side information are the analogy for conditioning a
   branch choice on observable target context:
   https://papers.nips.cc/paper/3178-the-epoch-greedy-algorithm-for-multi-armed-bandits-with-side-information

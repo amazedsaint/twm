@@ -5,6 +5,7 @@ import unittest
 from examples.analogical_branch_transfer import run_analogical_branch_transfer_certified_experiment
 from examples.ancestral_branch_exploration import run_ancestral_branch_exploration_certified_experiment
 from examples.branch_abstraction_transfer import run_branch_abstraction_transfer_certified_experiment
+from examples.branch_boundary_bracket_transfer import run_branch_boundary_bracket_transfer_certified_experiment
 from examples.branch_budget_transfer import run_branch_budget_transfer_certified_experiment
 from examples.branch_composition_transfer import run_branch_composition_transfer_certified_experiment
 from examples.branch_contingency_transfer import run_branch_contingency_transfer_certified_experiment
@@ -36,7 +37,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         claim = result.claim_certificate
 
         self.assertEqual(report.schema_version, "trwm.example.branch_history_frontier.v1")
-        self.assertEqual(report.stage_count, 19)
+        self.assertEqual(report.stage_count, 20)
         self.assertEqual(
             report.child_experiment_ids,
             (
@@ -49,6 +50,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
                 "branch_intervention_transfer",
                 "branch_diagnostic_probe_transfer",
                 "branch_residual_template_transfer",
+                "branch_boundary_bracket_transfer",
                 "analogical_branch_transfer",
                 "context_selection_transfer",
                 "context_refinement_transfer",
@@ -73,6 +75,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
                 "receipt_bound_field_intervention",
                 "receipt_bound_diagnostic_probe",
                 "receipt_bound_residual_template",
+                "receipt_bound_boundary_bracket",
                 "explicit_ancestor_reuse",
                 "certified_context_selection",
                 "counterexample_refinement",
@@ -88,11 +91,11 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         self.assertTrue(report.all_evidence_valid)
         self.assertTrue(report.all_claims_supported)
         self.assertTrue(report.all_primary_certificates_valid)
-        self.assertEqual(report.total_receipt_count, 444)
-        self.assertEqual(report.total_committed_count, 171)
-        self.assertEqual(report.total_rejected_count, 174)
+        self.assertEqual(report.total_receipt_count, 456)
+        self.assertEqual(report.total_committed_count, 177)
+        self.assertEqual(report.total_rejected_count, 180)
         self.assertEqual(report.total_invalid_commit_count, 0)
-        self.assertEqual(report.same_budget_stage_count, 19)
+        self.assertEqual(report.same_budget_stage_count, 20)
         self.assertEqual(report.branch_abstraction_certificate_count, 3)
         self.assertEqual(report.branch_prerequisite_certificate_count, 3)
         self.assertEqual(report.branch_contingency_certificate_count, 3)
@@ -106,6 +109,8 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         self.assertEqual(report.guided_final_success_count, 3)
         self.assertEqual(report.branch_residual_template_certificate_count, 3)
         self.assertEqual(report.template_success_count, 3)
+        self.assertEqual(report.branch_boundary_bracket_certificate_count, 3)
+        self.assertEqual(report.bracket_success_count, 3)
         self.assertEqual(report.counterfactual_certificate_count, 3)
         self.assertEqual(report.rolled_back_counterfactual_count, 3)
         self.assertEqual(report.branch_conflict_certificate_count, 6)
@@ -136,6 +141,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
             run_branch_intervention_transfer_certified_experiment(),
             run_branch_diagnostic_probe_transfer_certified_experiment(),
             run_branch_residual_template_transfer_certified_experiment(),
+            run_branch_boundary_bracket_transfer_certified_experiment(),
             run_analogical_branch_transfer_certified_experiment(),
             run_context_selection_transfer_certified_experiment(),
             run_context_refinement_transfer_certified_experiment(),

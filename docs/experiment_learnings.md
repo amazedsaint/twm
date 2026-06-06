@@ -206,6 +206,19 @@ commit, branch-selection certificates, template fields, and same-budget
 comparison. The substrate implication is that residual repair templates can
 propose structured edits, but they cannot transfer commit authority.
 
+The branch-boundary bracket transfer example adds threshold-neighborhood
+evidence. Each domain records a source unsafe endpoint and a source safe
+endpoint, then uses that reject/commit pair to prioritize a target candidate
+near the hard-gate boundary. The static target spends one verifier call on the
+unsafe endpoint and fails; the bracket-guided target spends the same one
+verifier call on the boundary candidate and commits only after fresh target
+hard verification. The new `trwm.branch_boundary_bracket_certificate.v1`
+artifact binds the source reject/safe receipts, static target reject, bracketed
+target commit, branch-selection certificates, bracket fields, and same-budget
+comparison. The substrate implication is that past branches can narrow where to
+look near a verifier boundary, but cannot certify the boundary candidate
+without a target receipt.
+
 The analogical branch transfer example adds one more design constraint:
 cross-context reuse must name its ancestor contexts explicitly. For each toy
 domain, two positive ancestor contexts reorder the target budget-one search
@@ -351,14 +364,15 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the nineteen local branch-memory
+The branch-history frontier report now aggregates the twenty local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
 receipt-bound ordering, accepted-loser counterfactual reuse, option-family
 abstraction, stateful prerequisite ordering, regime-conditioned contingency
 reuse, hindsight goal relabeling, receipt-bound field intervention,
-receipt-bound diagnostic probing, residual-template repair, analogical ancestor
-reuse, certified context selection, counterexample refinement,
+receipt-bound diagnostic probing, residual-template repair, boundary
+bracketing, analogical ancestor reuse, certified context selection,
+counterexample refinement,
 conflict-aware query-policy transfer,
 drift quarantine, receipt-bound branch pruning, diversity-certified family
 coverage, receipt-bound budget allocation, branch composition, and retained
@@ -374,9 +388,10 @@ building-block search plus successive resource allocation and temporal
 abstraction plus contextual bandits with side information and hindsight
 experience replay plus intervention notation as a variable-edit analogy and
 experimental-design information as a probe-selection analogy plus case-based
-reuse/revise as a residual-template analogy; it is not a
+reuse/revise as a residual-template analogy plus safe exploration as a
+boundary-bracketing analogy; it is not a
 statistical exploration algorithm, regret guarantee, MCTS implementation,
 automatic similarity metric, CEGAR system, CDCL solver, novelty-search result,
 MAP-Elites implementation, Hyperband implementation, options-framework result,
-contextual-bandit result, Hindsight Experience Replay result, causal-inference result, do-calculus result, Bayesian experimental-design result, active-learning result, case-based reasoning system, genetic algorithm, program synthesizer, or
+contextual-bandit result, Hindsight Experience Replay result, causal-inference result, do-calculus result, Bayesian experimental-design result, active-learning result, safe Bayesian optimization result, case-based reasoning system, genetic algorithm, program synthesizer, or
 cross-domain scientific discovery result.

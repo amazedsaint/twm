@@ -101,6 +101,10 @@ This repository currently targets `G1` evidence:
   receipts, static target rejects, templated target commits, template fields,
   and same-budget verifier-call evidence before residual repair templates can
   guide target proposals,
+- branch-boundary-bracket certificates that bind source unsafe/safe endpoint
+  receipts, static target rejects, bracketed target commits, bracket fields,
+  and same-budget verifier-call evidence before target threshold candidates can
+  be prioritized,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can
@@ -586,6 +590,8 @@ search.
 - Aamodt and Plaza, Case-Based Reasoning: Foundational Issues, Methodological
   Variations, and System Approaches:
   https://journals.sagepub.com/doi/10.3233/AIC-1994-7104
+- Sui et al., Safe Exploration for Optimization with Gaussian Processes:
+  https://proceedings.mlr.press/v37/sui15.html
 - W3C PROV Overview:
   https://www.w3.org/TR/prov-overview/
 - ISO/IEC/IEEE 15026-2 assurance case structure and terminology:
