@@ -48,6 +48,7 @@ python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
 python3 -m examples.context_query_policy_transfer
 python3 -m examples.context_drift_quarantine
+python3 -m examples.branch_pruning_transfer
 python3 -m examples.branch_composition_transfer
 python3 -m examples.context_retention_transfer
 python3 -m examples.branch_history_frontier
@@ -65,14 +66,16 @@ a rejected target branch to refine ancestor retrieval; the context-query-policy
 example applies that refined retrieval policy to held-out sibling targets
 against a stale-query baseline and certifies the conflicting committed source
 evidence it overrides; the context-drift example quarantines old-epoch branch
-evidence before reuse; the branch-composition example combines two receipt-bound
-past branch fragments only as a verifier-gated target proposal; the
+evidence before reuse; the branch-pruning example uses rejected branch receipts
+to remove known-dead target candidates before verifier-budget allocation; the
+branch-composition example combines two receipt-bound past branch fragments only
+as a verifier-gated target proposal; the
 context-retention example retains the successful target branch as certified
 future proposal evidence for a sibling target and
 certifies the memory query that ranks the sibling proposals against a
 same-budget static sibling baseline; the frontier example aggregates the three
 physical certified domains, while the branch-history frontier aggregates the
-eight branch-memory stages. See `examples/README.md` and
+nine branch-memory stages. See `examples/README.md` and
 `docs/experiment_learnings.md`.
 
 ## Package Layout

@@ -69,6 +69,10 @@ This repository currently targets `G1` evidence:
 - branch-selection certificates that bind receipt hashes, accepted/rejected/
   abstained index sets, selected and committed indices, and loser rollback to
   prove local rank-after-hard-filter,
+- branch-pruning certificates that bind rejected source branch receipts,
+  pruned target action ids, unpruned/pruned target receipt hashes, and
+  same-budget verifier-call evidence before negative branch evidence can
+  shape verifier-budget allocation,
 - branch-composition certificates that bind two source branch fragments,
   source and target receipt hashes, static/component/composed target
   comparisons, and same-budget verifier-call evidence before a composed

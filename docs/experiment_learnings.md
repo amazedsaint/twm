@@ -163,6 +163,19 @@ current target commits, selected/quarantined context ids, and the quarantine
 reason. The substrate implication is that memory needs explicit validity scope:
 old branches should not influence exploration just because they once committed.
 
+The branch-pruning transfer example adds negative-evidence admission. Each
+domain records a source branch with two hard-rejected actions and one committed
+winner. The unpruned target spends the same two-call verifier budget on the
+known-dead actions and commits nothing. The pruning certificate removes those
+actions from the target candidate set, and the pruned target commits under the
+same two-call budget. The new `trwm.branch_pruning_certificate.v1` artifact
+binds source reject receipts, source commit receipts, target baseline rejects,
+pruned target receipts, branch-selection certificates, pruned action ids, and
+the same-budget comparison. The substrate implication is that rejected branches
+can improve exploration by shaping verifier-budget allocation, but pruning is
+only an admission filter; surviving candidates still need hard-verifier
+receipts before commit.
+
 The branch-composition transfer example adds a proposal-construction check.
 Each domain records two source branches whose committed receipts stand for
 distinct hard-gate fragments. A static target branch fails under one verifier
@@ -206,19 +219,20 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the eight local branch-memory
+The branch-history frontier report now aggregates the nine local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
 receipt-bound ordering, analogical ancestor reuse, certified context selection,
 counterexample refinement, conflict-aware query-policy transfer, drift
-quarantine, receipt-bound branch composition, and retained memory influence.
+quarantine, receipt-bound branch pruning, branch composition, and retained
+memory influence.
 This changes the design posture from isolated demos to a staged substrate map:
 each branch-history capability must expose its own certificate, and later
 stages are only meaningful if earlier evidence still validates.
 
 The boundary remains narrow. This is a deterministic G1 canary inspired by
 experience replay, counterfactual regret evidence, and selective tree-search
-sampling plus recombinable building-block search; it is not a statistical
-exploration algorithm, regret guarantee, MCTS implementation, automatic
-similarity metric, CEGAR system, genetic algorithm, program synthesizer, or
-cross-domain scientific discovery result.
+sampling plus nogood-style pruning and recombinable building-block search; it
+is not a statistical exploration algorithm, regret guarantee, MCTS
+implementation, automatic similarity metric, CEGAR system, CDCL solver, genetic
+algorithm, program synthesizer, or cross-domain scientific discovery result.

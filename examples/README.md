@@ -18,6 +18,7 @@ python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
 python3 -m examples.context_query_policy_transfer
 python3 -m examples.context_drift_quarantine
+python3 -m examples.branch_pruning_transfer
 python3 -m examples.branch_composition_transfer
 python3 -m examples.context_retention_transfer
 python3 -m examples.branch_history_frontier
@@ -41,6 +42,9 @@ stale-query baseline under the same one-call verifier budget, plus
 but misleading source evidence the refined policy overrides. The context-drift
 command adds `trwm.context_drift_quarantine_certificate.v1` artifacts that bind
 old-epoch branch evidence quarantine before target reuse. The
+branch-pruning command adds `trwm.branch_pruning_certificate.v1` artifacts
+showing that rejected source branch receipts can prune known-dead target
+candidates before scarce verifier budget is spent. The
 branch-composition command adds `trwm.branch_composition_certificate.v1`
 artifacts showing that two receipt-bound source fragments can be combined into
 a target proposal only after static and single-fragment branches fail under the
@@ -54,7 +58,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the eight branch-memory stages into one bounded G1 report. The physical frontier
+the nine branch-memory stages into one bounded G1 report. The physical frontier
 command aggregates the three physical certified examples into a cross-domain
 report and bounded G1 claim certificate.
 
@@ -181,6 +185,22 @@ evidence only when its context tags still match the target; otherwise the
 transactional world model needs a quarantine certificate before memory can
 influence exploration.
 
+### Branch Pruning Transfer
+
+`examples.branch_pruning_transfer` tests negative branch evidence. Each domain
+records a source branch with two hard-rejected actions and one committed
+winner. The unpruned target spends the same two-call verifier budget on the
+known-dead actions and commits nothing. The pruning certificate removes those
+actions from the target candidate set, and the pruned target commits under the
+same two-call budget.
+
+Learning: rejection receipts can improve exploration by changing what the next
+search is allowed to spend verifier budget on. This is still only an admission
+filter: `trwm.branch_pruning_certificate.v1` binds source rejects, target
+baseline rejects, pruned target receipts, branch-selection certificates, and
+same-budget comparison, but the surviving candidate still needs hard
+verification before commit.
+
 ### Branch Composition Transfer
 
 `examples.branch_composition_transfer` tests whether branches of the past can
@@ -220,18 +240,20 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the eight branch-history experiments and
+`examples.branch_history_frontier` runs the nine branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
 ordering through conflict-aware query-policy transfer, drift quarantine,
-receipt-bound branch composition, and retained-memory influence.
+receipt-bound branch pruning, branch composition, and retained-memory
+influence.
 
 Learning: the current branch-history direction is only coherent when every
 stage validates: raw past branches reorder proposals, explicit ancestor reuse is
 bounded, context selection is certified, failed branches refine retrieval,
-conflicts are certificate-bound, drift is quarantined, branch fragments compose
-only through a certificate, and retained memory is compared against a
+conflicts are certificate-bound, drift is quarantined, rejected branches prune
+known-dead target candidates, branch fragments compose only through a
+certificate, and retained memory is compared against a
 same-budget baseline.
 
 ### Programmable World Model Frontier
@@ -277,3 +299,10 @@ certificates before claim promotion.
   https://doi.org/10.1007/10722167_15
 - Active learning is the analogy for spending verifier feedback to improve the
   next query policy: https://minds.wisconsin.edu/handle/1793/60660
+- Branch-and-bound pruning is the optimization analogy for avoiding
+  subproblems that cannot improve the search:
+  https://www.sciencedirect.com/science/article/pii/S1572528616000062
+- Nogood learning and CDCL are the constraint-search analogies for reusing
+  conflicts to avoid repeating failed branches:
+  https://digitalcommons.unl.edu/csetechreports/158/ and
+  https://users.aalto.fi/~tjunttil/2020-DP-AUT/notes-sat/cdcl.html
