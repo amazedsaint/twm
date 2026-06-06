@@ -143,9 +143,14 @@ transfers under the same one-call budget. The new
 `trwm.context_query_policy_certificate.v1` artifact binds the counterexample
 receipt, base and refined selection certificates, each held-out sibling
 selection, top actions, receipt hashes, and same-budget comparison. The
-substrate implication is that retrieval refinement should be a portable query
-policy artifact before it is treated as reusable exploration improvement on
-future contexts.
+companion `trwm.context_branch_conflict_certificate.v1` artifact binds the
+conflict explicitly: committed source receipts support the stale unsafe action,
+the calibration and sibling target receipts reject that action, and the refined
+query policy commits the target action at the same budget. The substrate
+implication is that retrieval refinement should be a portable query policy
+artifact before it is treated as reusable exploration improvement on future
+contexts, and contradictory past evidence should be resolved by a certificate
+rather than by raw memory score alone.
 
 The context-retention transfer example adds the next memory transition. After
 refinement commits, the committed target branch is retained with a

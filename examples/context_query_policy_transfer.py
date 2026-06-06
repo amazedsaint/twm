@@ -45,6 +45,7 @@ from trwm.core import Ledger, Receipt, TransactionEngine, stable_hash
 
 
 CONTEXT_QUERY_POLICY_CERTIFICATE_SCHEMA = "trwm.context_query_policy_certificate.v1"
+CONTEXT_BRANCH_CONFLICT_CERTIFICATE_SCHEMA = "trwm.context_branch_conflict_certificate.v1"
 CONTEXT_QUERY_POLICY_TRANSFER_CERTIFICATE_SCHEMA = "trwm.context_query_policy_transfer_certificate.v1"
 CONTEXT_QUERY_POLICY_CLAIM_BOUNDARY = (
     "G1 deterministic toy-domain evidence only. The example shows a rejected calibration branch can "
@@ -116,6 +117,44 @@ class ContextQueryPolicyCertificate:
 
 
 @dataclass(frozen=True)
+class ContextBranchConflictCertificate:
+    schema_version: str
+    domain: str
+    sibling_context_id: str
+    stale_action: str
+    policy_action: str
+    committed_target_action: str
+    stale_source_committed_receipt_hashes: tuple[str, ...]
+    policy_source_committed_receipt_hashes: tuple[str, ...]
+    counterexample_receipt_hash: str
+    sibling_stale_reject_receipt_hashes: tuple[str, ...]
+    sibling_policy_commit_receipt_hashes: tuple[str, ...]
+    refinement_certificate_hash: str
+    query_policy_certificate_hash: str
+    same_budget: bool
+    conflict_resolution: str
+    certificate_hash: str = ""
+
+    def __post_init__(self) -> None:
+        if self.schema_version != CONTEXT_BRANCH_CONFLICT_CERTIFICATE_SCHEMA:
+            raise ValueError(f"invalid context branch conflict certificate schema: {self.schema_version}")
+        for field_name in (
+            "stale_source_committed_receipt_hashes",
+            "policy_source_committed_receipt_hashes",
+            "sibling_stale_reject_receipt_hashes",
+            "sibling_policy_commit_receipt_hashes",
+        ):
+            object.__setattr__(self, field_name, tuple(getattr(self, field_name)))
+        if not self.certificate_hash:
+            object.__setattr__(self, "certificate_hash", context_branch_conflict_certificate_hash(self))
+
+    def without_hash(self) -> dict[str, Any]:
+        data = asdict(self)
+        data.pop("certificate_hash", None)
+        return data
+
+
+@dataclass(frozen=True)
 class ContextQueryPolicyDomainReport:
     domain: str
     calibration_context: str
@@ -136,6 +175,7 @@ class ContextQueryPolicyDomainReport:
     counterexample_residual_kind: str
     refinement_certificate_hash: str
     query_policy_certificate_hash: str
+    branch_conflict_certificate_hash: str
     calibration_base_selection_certificate_hash: str
     calibration_refined_selection_certificate_hash: str
     sibling_base_selection_certificate_hash: str
@@ -166,6 +206,7 @@ class ContextQueryPolicyTransferReport:
     sibling_policy_budget_success_count: int
     same_budget_query_policy_count: int
     query_policy_certificate_count: int
+    branch_conflict_certificate_count: int
     refinement_certificate_count: int
     context_selection_certificate_count: int
     memory_snapshot_hash: str
@@ -174,6 +215,7 @@ class ContextQueryPolicyTransferReport:
     all_context_selection_certificates_valid: bool
     all_context_refinement_certificates_valid: bool
     all_context_query_policy_certificates_valid: bool
+    all_context_branch_conflict_certificates_valid: bool
     all_branch_selection_certificates_valid: bool
     all_branch_selection_audits_valid: bool
     replay_audit_ok: bool
@@ -205,6 +247,7 @@ class ContextQueryPolicyTransferCertificate:
     context_selection_certificate_hashes: tuple[str, ...]
     context_refinement_certificate_hashes: tuple[str, ...]
     context_query_policy_certificate_hashes: tuple[str, ...]
+    context_branch_conflict_certificate_hashes: tuple[str, ...]
     memory_snapshot_hash: str
     calibration_coarse_budget_success_count: int
     sibling_stale_budget_success_count: int
@@ -227,6 +270,7 @@ class ContextQueryPolicyTransferCertificate:
             "context_selection_certificate_hashes",
             "context_refinement_certificate_hashes",
             "context_query_policy_certificate_hashes",
+            "context_branch_conflict_certificate_hashes",
         ):
             object.__setattr__(self, field_name, tuple(getattr(self, field_name)))
         if not self.certificate_hash:
@@ -245,6 +289,7 @@ class CertifiedContextQueryPolicyTransferResult(CertifiedExampleResult):
     context_selection_certificates: tuple[AncestralContextSelectionCertificate, ...]
     context_refinement_certificates: tuple[AncestralContextRefinementCertificate, ...]
     context_query_policy_certificates: tuple[ContextQueryPolicyCertificate, ...]
+    context_branch_conflict_certificates: tuple[ContextBranchConflictCertificate, ...]
     evidence_certificate: ExampleEvidenceCertificate
     claim_certificate: ClaimCertificate
 
@@ -264,6 +309,7 @@ def run_context_query_policy_transfer_certified_experiment() -> CertifiedContext
     selection_certificates: list[AncestralContextSelectionCertificate] = []
     refinement_certificates: list[AncestralContextRefinementCertificate] = []
     query_policy_certificates: list[ContextQueryPolicyCertificate] = []
+    branch_conflict_certificates: list[ContextBranchConflictCertificate] = []
     query_policy_audits: list[
         tuple[
             ContextQueryPolicyCertificate,
@@ -275,6 +321,17 @@ def run_context_query_policy_transfer_certified_experiment() -> CertifiedContext
             AncestralContextSelectionCertificate,
             AncestralContextRefinementCertificate,
             Receipt,
+        ]
+    ] = []
+    branch_conflict_audits: list[
+        tuple[
+            ContextBranchConflictCertificate,
+            tuple[Receipt, ...],
+            Receipt,
+            tuple[Receipt, ...],
+            tuple[Receipt, ...],
+            AncestralContextRefinementCertificate,
+            ContextQueryPolicyCertificate,
         ]
     ] = []
 
@@ -441,6 +498,20 @@ def run_context_query_policy_transfer_certified_experiment() -> CertifiedContext
                 policy_transfer_reason="calibration_refinement_applied_to_heldout_sibling_target",
             )
             query_policy_certificates.append(query_policy_certificate)
+            branch_conflict_certificate = build_context_branch_conflict_certificate(
+                domain=spec.domain_id,
+                sibling_context_id=sibling_descriptor.context_id,
+                stale_action=sibling_stale_order[0],
+                policy_action=sibling_policy_order[0],
+                committed_target_action=spec.committed_action,
+                source_receipts=tuple(source_receipts),
+                counterexample_receipt=calibration_coarse_outcome.receipts[0],
+                sibling_stale_receipts=tuple(sibling_stale_outcome.receipts),
+                sibling_policy_receipts=tuple(sibling_policy_outcome.receipts),
+                refinement_certificate=refinement_certificate,
+                query_policy_certificate=query_policy_certificate,
+            )
+            branch_conflict_certificates.append(branch_conflict_certificate)
             query_policy_audits.append(
                 (
                     query_policy_certificate,
@@ -452,6 +523,17 @@ def run_context_query_policy_transfer_certified_experiment() -> CertifiedContext
                     sibling_policy_selection,
                     refinement_certificate,
                     calibration_coarse_outcome.receipts[0],
+                )
+            )
+            branch_conflict_audits.append(
+                (
+                    branch_conflict_certificate,
+                    tuple(source_receipts),
+                    calibration_coarse_outcome.receipts[0],
+                    tuple(sibling_stale_outcome.receipts),
+                    tuple(sibling_policy_outcome.receipts),
+                    refinement_certificate,
+                    query_policy_certificate,
                 )
             )
 
@@ -476,6 +558,7 @@ def run_context_query_policy_transfer_certified_experiment() -> CertifiedContext
                     counterexample_residual_kind=residual_kind,
                     refinement_certificate_hash=refinement_certificate.certificate_hash,
                     query_policy_certificate_hash=query_policy_certificate.certificate_hash,
+                    branch_conflict_certificate_hash=branch_conflict_certificate.certificate_hash,
                     calibration_base_selection_certificate_hash=calibration_base_selection.certificate_hash,
                     calibration_refined_selection_certificate_hash=calibration_refined_selection.certificate_hash,
                     sibling_base_selection_certificate_hash=sibling_base_selection.certificate_hash,
@@ -543,6 +626,26 @@ def run_context_query_policy_transfer_certified_experiment() -> CertifiedContext
             counterexample_receipt,
         ) in query_policy_audits
     )
+    all_context_branch_conflict_certificates_valid = all(
+        validate_context_branch_conflict_certificate(
+            certificate,
+            source_receipts=source_receipts,
+            counterexample_receipt=counterexample_receipt,
+            sibling_stale_receipts=sibling_stale_receipts,
+            sibling_policy_receipts=sibling_policy_receipts,
+            refinement_certificate=refinement_certificate,
+            query_policy_certificate=query_policy_certificate,
+        )
+        for (
+            certificate,
+            source_receipts,
+            counterexample_receipt,
+            sibling_stale_receipts,
+            sibling_policy_receipts,
+            refinement_certificate,
+            query_policy_certificate,
+        ) in branch_conflict_audits
+    )
     report = ContextQueryPolicyTransferReport(
         schema_version="trwm.example.context_query_policy_transfer.v1",
         experiment_id="context_query_policy_transfer",
@@ -560,6 +663,7 @@ def run_context_query_policy_transfer_certified_experiment() -> CertifiedContext
         sibling_policy_budget_success_count=sum(1 for row in rows if row.sibling_policy_budget_committed),
         same_budget_query_policy_count=sum(1 for row in rows if row.same_budget),
         query_policy_certificate_count=len(query_policy_certificates),
+        branch_conflict_certificate_count=len(branch_conflict_certificates),
         refinement_certificate_count=len(refinement_certificates),
         context_selection_certificate_count=len(selection_certificates),
         memory_snapshot_hash=memory_snapshot.snapshot_hash,
@@ -568,6 +672,7 @@ def run_context_query_policy_transfer_certified_experiment() -> CertifiedContext
         all_context_selection_certificates_valid=all_context_selection_certificates_valid,
         all_context_refinement_certificates_valid=all_context_refinement_certificates_valid,
         all_context_query_policy_certificates_valid=all_context_query_policy_certificates_valid,
+        all_context_branch_conflict_certificates_valid=all_context_branch_conflict_certificates_valid,
         all_branch_selection_certificates_valid=all_branch_selection_certificates_valid,
         all_branch_selection_audits_valid=all_branch_selection_audits_valid,
         replay_audit_ok=replay_audit_ok,
@@ -593,6 +698,7 @@ def run_context_query_policy_transfer_certified_experiment() -> CertifiedContext
         context_selection_certificate_hashes=tuple(certificate.certificate_hash for certificate in selection_certificates),
         context_refinement_certificate_hashes=tuple(certificate.certificate_hash for certificate in refinement_certificates),
         context_query_policy_certificate_hashes=tuple(certificate.certificate_hash for certificate in query_policy_certificates),
+        context_branch_conflict_certificate_hashes=tuple(certificate.certificate_hash for certificate in branch_conflict_certificates),
     )
     evidence_certificate = build_example_evidence_certificate(
         report,
@@ -619,6 +725,7 @@ def run_context_query_policy_transfer_certified_experiment() -> CertifiedContext
         context_selection_certificates=tuple(selection_certificates),
         context_refinement_certificates=tuple(refinement_certificates),
         context_query_policy_certificates=tuple(query_policy_certificates),
+        context_branch_conflict_certificates=tuple(branch_conflict_certificates),
         evidence_certificate=evidence_certificate,
         claim_certificate=claim_certificate,
     )
@@ -835,6 +942,169 @@ def validate_context_query_policy_certificate(
         return False
 
 
+def build_context_branch_conflict_certificate(
+    *,
+    domain: str,
+    sibling_context_id: str,
+    stale_action: str,
+    policy_action: str,
+    committed_target_action: str,
+    source_receipts: tuple[Receipt, ...],
+    counterexample_receipt: Receipt,
+    sibling_stale_receipts: tuple[Receipt, ...],
+    sibling_policy_receipts: tuple[Receipt, ...],
+    refinement_certificate: AncestralContextRefinementCertificate,
+    query_policy_certificate: ContextQueryPolicyCertificate,
+    conflict_resolution: str = "counterexample_refined_query_policy",
+) -> ContextBranchConflictCertificate:
+    return ContextBranchConflictCertificate(
+        schema_version=CONTEXT_BRANCH_CONFLICT_CERTIFICATE_SCHEMA,
+        domain=domain,
+        sibling_context_id=sibling_context_id,
+        stale_action=stale_action,
+        policy_action=policy_action,
+        committed_target_action=committed_target_action,
+        stale_source_committed_receipt_hashes=tuple(
+            receipt.receipt_hash for receipt in source_receipts if receipt.committed and _receipt_action(receipt) == stale_action
+        ),
+        policy_source_committed_receipt_hashes=tuple(
+            receipt.receipt_hash for receipt in source_receipts if receipt.committed and _receipt_action(receipt) == policy_action
+        ),
+        counterexample_receipt_hash=counterexample_receipt.receipt_hash,
+        sibling_stale_reject_receipt_hashes=tuple(
+            receipt.receipt_hash for receipt in sibling_stale_receipts if receipt.hard_result.rejected
+        ),
+        sibling_policy_commit_receipt_hashes=tuple(
+            receipt.receipt_hash for receipt in sibling_policy_receipts if receipt.committed
+        ),
+        refinement_certificate_hash=refinement_certificate.certificate_hash,
+        query_policy_certificate_hash=query_policy_certificate.certificate_hash,
+        same_budget=query_policy_certificate.same_budget,
+        conflict_resolution=conflict_resolution,
+    )
+
+
+def validate_context_branch_conflict_certificate(
+    certificate: ContextBranchConflictCertificate,
+    *,
+    source_receipts: tuple[Receipt, ...] | None = None,
+    counterexample_receipt: Receipt | None = None,
+    sibling_stale_receipts: tuple[Receipt, ...] | None = None,
+    sibling_policy_receipts: tuple[Receipt, ...] | None = None,
+    refinement_certificate: AncestralContextRefinementCertificate | None = None,
+    query_policy_certificate: ContextQueryPolicyCertificate | None = None,
+) -> bool:
+    try:
+        if certificate.schema_version != CONTEXT_BRANCH_CONFLICT_CERTIFICATE_SCHEMA:
+            return False
+        for value in (
+            certificate.domain,
+            certificate.sibling_context_id,
+            certificate.stale_action,
+            certificate.policy_action,
+            certificate.committed_target_action,
+            certificate.conflict_resolution,
+        ):
+            if not value:
+                return False
+        if certificate.stale_action == certificate.committed_target_action:
+            return False
+        if certificate.policy_action != certificate.committed_target_action:
+            return False
+        for values in (
+            certificate.stale_source_committed_receipt_hashes,
+            certificate.policy_source_committed_receipt_hashes,
+            certificate.sibling_stale_reject_receipt_hashes,
+            certificate.sibling_policy_commit_receipt_hashes,
+        ):
+            if not values or any(not _is_hash(value) for value in values):
+                return False
+        for value in (
+            certificate.counterexample_receipt_hash,
+            certificate.refinement_certificate_hash,
+            certificate.query_policy_certificate_hash,
+        ):
+            if not _is_hash(value):
+                return False
+        if not certificate.same_budget:
+            return False
+        if certificate.conflict_resolution != "counterexample_refined_query_policy":
+            return False
+        if source_receipts is not None:
+            stale_source = tuple(
+                receipt.receipt_hash
+                for receipt in source_receipts
+                if receipt.committed and _receipt_action(receipt) == certificate.stale_action
+            )
+            policy_source = tuple(
+                receipt.receipt_hash
+                for receipt in source_receipts
+                if receipt.committed and _receipt_action(receipt) == certificate.policy_action
+            )
+            if stale_source != certificate.stale_source_committed_receipt_hashes:
+                return False
+            if policy_source != certificate.policy_source_committed_receipt_hashes:
+                return False
+            if any(not receipt.static_valid() for receipt in source_receipts):
+                return False
+        if counterexample_receipt is not None:
+            if not counterexample_receipt.static_valid():
+                return False
+            if counterexample_receipt.receipt_hash != certificate.counterexample_receipt_hash:
+                return False
+            if counterexample_receipt.hard_result.result != "reject":
+                return False
+            if _receipt_action(counterexample_receipt) != certificate.stale_action:
+                return False
+        if sibling_stale_receipts is not None:
+            stale_rejects = tuple(receipt.receipt_hash for receipt in sibling_stale_receipts if receipt.hard_result.rejected)
+            if stale_rejects != certificate.sibling_stale_reject_receipt_hashes:
+                return False
+            if any(not receipt.static_valid() for receipt in sibling_stale_receipts):
+                return False
+            if any(receipt.committed for receipt in sibling_stale_receipts):
+                return False
+            if any(_receipt_action(receipt) != certificate.stale_action for receipt in sibling_stale_receipts):
+                return False
+        if sibling_policy_receipts is not None:
+            policy_commits = tuple(receipt.receipt_hash for receipt in sibling_policy_receipts if receipt.committed)
+            if policy_commits != certificate.sibling_policy_commit_receipt_hashes:
+                return False
+            if any(not receipt.static_valid() for receipt in sibling_policy_receipts):
+                return False
+            if not policy_commits:
+                return False
+            if any(_receipt_action(receipt) != certificate.policy_action for receipt in sibling_policy_receipts):
+                return False
+        if refinement_certificate is not None:
+            if refinement_certificate.certificate_hash != certificate.refinement_certificate_hash:
+                return False
+            if refinement_certificate.counterexample_receipt_hash != certificate.counterexample_receipt_hash:
+                return False
+            if not validate_ancestral_context_refinement_certificate(refinement_certificate):
+                return False
+        if query_policy_certificate is not None:
+            if query_policy_certificate.certificate_hash != certificate.query_policy_certificate_hash:
+                return False
+            if query_policy_certificate.sibling_context_id != certificate.sibling_context_id:
+                return False
+            if query_policy_certificate.stale_top_action != certificate.stale_action:
+                return False
+            if query_policy_certificate.policy_top_action != certificate.policy_action:
+                return False
+            if query_policy_certificate.committed_target_action != certificate.committed_target_action:
+                return False
+            if query_policy_certificate.counterexample_receipt_hash != certificate.counterexample_receipt_hash:
+                return False
+            if query_policy_certificate.same_budget != certificate.same_budget:
+                return False
+            if not validate_context_query_policy_certificate(query_policy_certificate):
+                return False
+        return certificate.certificate_hash == context_branch_conflict_certificate_hash(certificate)
+    except Exception:
+        return False
+
+
 def build_context_query_policy_transfer_certificate(
     report: ContextQueryPolicyTransferReport,
     *,
@@ -843,6 +1113,7 @@ def build_context_query_policy_transfer_certificate(
     context_selection_certificate_hashes: tuple[str, ...],
     context_refinement_certificate_hashes: tuple[str, ...],
     context_query_policy_certificate_hashes: tuple[str, ...],
+    context_branch_conflict_certificate_hashes: tuple[str, ...],
 ) -> ContextQueryPolicyTransferCertificate:
     return ContextQueryPolicyTransferCertificate(
         schema_version=CONTEXT_QUERY_POLICY_TRANSFER_CERTIFICATE_SCHEMA,
@@ -859,6 +1130,7 @@ def build_context_query_policy_transfer_certificate(
         context_selection_certificate_hashes=context_selection_certificate_hashes,
         context_refinement_certificate_hashes=context_refinement_certificate_hashes,
         context_query_policy_certificate_hashes=context_query_policy_certificate_hashes,
+        context_branch_conflict_certificate_hashes=context_branch_conflict_certificate_hashes,
         memory_snapshot_hash=report.memory_snapshot_hash,
         calibration_coarse_budget_success_count=report.calibration_coarse_budget_success_count,
         sibling_stale_budget_success_count=report.sibling_stale_budget_success_count,
@@ -897,6 +1169,7 @@ def validate_context_query_policy_transfer_certificate(
             certificate.context_selection_certificate_hashes,
             certificate.context_refinement_certificate_hashes,
             certificate.context_query_policy_certificate_hashes,
+            certificate.context_branch_conflict_certificate_hashes,
         ):
             if not values or any(not _is_hash(value) for value in values):
                 return False
@@ -911,6 +1184,8 @@ def validate_context_query_policy_transfer_certificate(
         if len(certificate.context_refinement_certificate_hashes) != certificate.domain_count:
             return False
         if len(certificate.context_query_policy_certificate_hashes) != certificate.held_out_sibling_count:
+            return False
+        if len(certificate.context_branch_conflict_certificate_hashes) != certificate.held_out_sibling_count:
             return False
         if len(certificate.context_selection_certificate_hashes) != certificate.domain_count * 2 + certificate.held_out_sibling_count * 2:
             return False
@@ -941,6 +1216,8 @@ def validate_context_query_policy_transfer_certificate(
                 return False
             if not report.all_context_query_policy_certificates_valid:
                 return False
+            if not report.all_context_branch_conflict_certificates_valid:
+                return False
             if example_report_hash(report) != certificate.report_hash:
                 return False
         return certificate.certificate_hash == context_query_policy_transfer_certificate_hash(certificate)
@@ -950,6 +1227,15 @@ def validate_context_query_policy_transfer_certificate(
 
 def context_query_policy_certificate_hash(certificate: ContextQueryPolicyCertificate | Mapping[str, Any]) -> str:
     if isinstance(certificate, ContextQueryPolicyCertificate):
+        data = certificate.without_hash()
+    else:
+        data = dict(certificate)
+        data.pop("certificate_hash", None)
+    return stable_hash(data)
+
+
+def context_branch_conflict_certificate_hash(certificate: ContextBranchConflictCertificate | Mapping[str, Any]) -> str:
+    if isinstance(certificate, ContextBranchConflictCertificate):
         data = certificate.without_hash()
     else:
         data = dict(certificate)
@@ -1000,6 +1286,7 @@ def _build_claim_certificate(
             requirement("all_context_selection_certificates_valid", report.all_context_selection_certificates_valid),
             requirement("all_context_refinement_certificates_valid", report.all_context_refinement_certificates_valid),
             requirement("all_context_query_policy_certificates_valid", report.all_context_query_policy_certificates_valid),
+            requirement("all_context_branch_conflict_certificates_valid", report.all_context_branch_conflict_certificates_valid),
             requirement("memory_snapshot_valid", report.memory_snapshot_valid),
             requirement("calibration_coarse_budget_fails_all_domains", report.calibration_coarse_budget_success_count == 0),
             requirement("sibling_stale_budget_fails_all_domains", report.sibling_stale_budget_success_count == 0),
@@ -1009,6 +1296,7 @@ def _build_claim_certificate(
             ),
             requirement("same_budget_query_policy_all_heldouts", report.same_budget_query_policy_count == report.held_out_sibling_count),
             requirement("query_policy_certificates_present", report.query_policy_certificate_count == report.held_out_sibling_count),
+            requirement("branch_conflict_certificates_present", report.branch_conflict_certificate_count == report.held_out_sibling_count),
             requirement("all_branch_selection_certificates_valid", report.all_branch_selection_certificates_valid),
             requirement("all_branch_selection_audits_valid", report.all_branch_selection_audits_valid),
             requirement("ledger_replay_rollback_valid", report.replay_audit_ok and report.rollback_audit_ok and report.ledger_audit_ok),
@@ -1023,6 +1311,7 @@ def _build_claim_certificate(
             "sibling_policy_budget_success_count": report.sibling_policy_budget_success_count,
             "same_budget_query_policy_count": report.same_budget_query_policy_count,
             "query_policy_certificate_count": report.query_policy_certificate_count,
+            "branch_conflict_certificate_count": report.branch_conflict_certificate_count,
         },
         boundary=CONTEXT_QUERY_POLICY_CLAIM_BOUNDARY,
         sources=CONTEXT_QUERY_POLICY_SOURCES,
@@ -1034,6 +1323,13 @@ def _unique_keys(values: tuple[str, ...]) -> tuple[str, ...]:
     if any(not value for value in rows):
         return ()
     return tuple(dict.fromkeys(rows))
+
+
+def _receipt_action(receipt: Receipt) -> str:
+    payload = receipt.replay_bundle.get("candidate_payload") if isinstance(receipt.replay_bundle, Mapping) else None
+    if not isinstance(payload, Mapping):
+        return ""
+    return str(payload.get("action", ""))
 
 
 def _is_hash(value: str) -> bool:

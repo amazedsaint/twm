@@ -7,6 +7,7 @@ from examples.common import validate_example_evidence_certificate
 from examples.context_query_policy_transfer import (
     run_context_query_policy_transfer_certified_experiment,
     run_context_query_policy_transfer_experiment,
+    validate_context_branch_conflict_certificate,
     validate_context_query_policy_certificate,
     validate_context_query_policy_transfer_certificate,
 )
@@ -37,6 +38,7 @@ class ContextQueryPolicyTransferExampleTests(unittest.TestCase):
         self.assertEqual(report.sibling_policy_budget_success_count, 6)
         self.assertEqual(report.same_budget_query_policy_count, 6)
         self.assertEqual(report.query_policy_certificate_count, 6)
+        self.assertEqual(report.branch_conflict_certificate_count, 6)
         self.assertEqual(report.refinement_certificate_count, 3)
         self.assertEqual(report.context_selection_certificate_count, 18)
         self.assertEqual(report.memory_row_count, 27)
@@ -44,6 +46,7 @@ class ContextQueryPolicyTransferExampleTests(unittest.TestCase):
         self.assertTrue(report.all_context_selection_certificates_valid)
         self.assertTrue(report.all_context_refinement_certificates_valid)
         self.assertTrue(report.all_context_query_policy_certificates_valid)
+        self.assertTrue(report.all_context_branch_conflict_certificates_valid)
         self.assertTrue(report.all_branch_selection_certificates_valid)
         self.assertTrue(report.all_branch_selection_audits_valid)
         self.assertTrue(report.replay_audit_ok)
@@ -62,12 +65,15 @@ class ContextQueryPolicyTransferExampleTests(unittest.TestCase):
         self.assertEqual(len(certificate.context_selection_certificate_hashes), 18)
         self.assertEqual(len(certificate.context_refinement_certificate_hashes), 3)
         self.assertEqual(len(certificate.context_query_policy_certificate_hashes), 6)
+        self.assertEqual(len(certificate.context_branch_conflict_certificate_hashes), 6)
         self.assertEqual(len(result.context_selection_certificates), 18)
         self.assertEqual(len(result.context_refinement_certificates), 3)
         self.assertEqual(len(result.context_query_policy_certificates), 6)
+        self.assertEqual(len(result.context_branch_conflict_certificates), 6)
         self.assertTrue(all(validate_ancestral_context_selection_certificate(row) for row in result.context_selection_certificates))
         self.assertTrue(all(validate_ancestral_context_refinement_certificate(row) for row in result.context_refinement_certificates))
         self.assertTrue(all(validate_context_query_policy_certificate(row) for row in result.context_query_policy_certificates))
+        self.assertTrue(all(validate_context_branch_conflict_certificate(row) for row in result.context_branch_conflict_certificates))
 
         for row in report.rows:
             self.assertEqual(len(row.candidate_contexts), 3)
@@ -82,6 +88,7 @@ class ContextQueryPolicyTransferExampleTests(unittest.TestCase):
             self.assertFalse(row.sibling_stale_budget_committed)
             self.assertTrue(row.sibling_policy_budget_committed)
             self.assertTrue(row.same_budget)
+            self.assertTrue(row.branch_conflict_certificate_hash)
             self.assertEqual(len(row.source_receipt_hashes), 9)
             self.assertEqual(len(row.calibration_coarse_receipt_hashes), 1)
             self.assertEqual(len(row.sibling_stale_receipt_hashes), 1)
@@ -99,6 +106,16 @@ class ContextQueryPolicyTransferExampleTests(unittest.TestCase):
             self.assertEqual(query_policy.policy_required_tag_keys, ("regime",))
             self.assertEqual(query_policy.policy_transfer_reason, "calibration_refinement_applied_to_heldout_sibling_target")
 
+        for conflict in result.context_branch_conflict_certificates:
+            self.assertNotEqual(conflict.stale_action, conflict.committed_target_action)
+            self.assertEqual(conflict.policy_action, conflict.committed_target_action)
+            self.assertTrue(conflict.stale_source_committed_receipt_hashes)
+            self.assertTrue(conflict.policy_source_committed_receipt_hashes)
+            self.assertTrue(conflict.sibling_stale_reject_receipt_hashes)
+            self.assertTrue(conflict.sibling_policy_commit_receipt_hashes)
+            self.assertTrue(conflict.same_budget)
+            self.assertEqual(conflict.conflict_resolution, "counterexample_refined_query_policy")
+
     def test_report_only_api_remains_available(self) -> None:
         report = run_context_query_policy_transfer_experiment()
 
@@ -108,6 +125,7 @@ class ContextQueryPolicyTransferExampleTests(unittest.TestCase):
         self.assertEqual(report.sibling_stale_budget_success_count, 0)
         self.assertEqual(report.sibling_policy_budget_success_count, 6)
         self.assertEqual(report.same_budget_query_policy_count, 6)
+        self.assertEqual(report.branch_conflict_certificate_count, 6)
 
     def test_tampered_report_hash_fails_certificate(self) -> None:
         result = run_context_query_policy_transfer_certified_experiment()
@@ -149,6 +167,16 @@ class ContextQueryPolicyTransferExampleTests(unittest.TestCase):
 
         self.assertFalse(validate_context_query_policy_transfer_certificate(invalid, result.report))
 
+    def test_missing_branch_conflict_certificate_fails_transfer_certificate(self) -> None:
+        result = run_context_query_policy_transfer_certified_experiment()
+        invalid = replace(
+            result.context_query_policy_transfer_certificate,
+            context_branch_conflict_certificate_hashes=result.context_query_policy_transfer_certificate.context_branch_conflict_certificate_hashes[:2],
+            certificate_hash="",
+        )
+
+        self.assertFalse(validate_context_query_policy_transfer_certificate(invalid, result.report))
+
     def test_tampered_query_policy_certificate_fails(self) -> None:
         result = run_context_query_policy_transfer_certified_experiment()
         invalid = replace(
@@ -168,6 +196,16 @@ class ContextQueryPolicyTransferExampleTests(unittest.TestCase):
         )
 
         self.assertFalse(validate_context_query_policy_certificate(invalid))
+
+    def test_tampered_branch_conflict_certificate_fails(self) -> None:
+        result = run_context_query_policy_transfer_certified_experiment()
+        invalid = replace(
+            result.context_branch_conflict_certificates[0],
+            conflict_resolution="commit_only_memory",
+            certificate_hash="",
+        )
+
+        self.assertFalse(validate_context_branch_conflict_certificate(invalid))
 
 
 if __name__ == "__main__":

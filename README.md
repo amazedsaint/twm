@@ -60,9 +60,10 @@ ancestor rejection; the context-selection example certifies which ancestor
 contexts may influence target exploration; the context-refinement example uses
 a rejected target branch to refine ancestor retrieval; the context-query-policy
 example applies that refined retrieval policy to held-out sibling targets
-against a stale-query baseline; the context-retention example retains the
-successful target branch as certified future proposal evidence for a sibling
-target and certifies the memory query that ranks the sibling proposals against a
+against a stale-query baseline and certifies the conflicting committed source
+evidence it overrides; the context-retention example retains the successful
+target branch as certified future proposal evidence for a sibling target and
+certifies the memory query that ranks the sibling proposals against a
 same-budget static sibling baseline; the frontier example aggregates the three
 physical certified domains. See `examples/README.md` and
 `docs/experiment_learnings.md`.

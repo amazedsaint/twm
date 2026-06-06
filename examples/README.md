@@ -33,7 +33,9 @@ before branch-memory reuse. The context-refinement command adds
 coarse retrieval to a stricter refined retrieval. The context-query-policy
 command adds `trwm.context_query_policy_certificate.v1` artifacts showing that
 the refined retrieval policy improves held-out sibling exploration against a
-stale-query baseline under the same one-call verifier budget. The
+stale-query baseline under the same one-call verifier budget, plus
+`trwm.context_branch_conflict_certificate.v1` artifacts that bind the committed
+but misleading source evidence the refined policy overrides. The
 context-retention command adds `trwm.ancestral_branch_retention_certificate.v1`
 artifacts that bind committed target branches into a hash-checked future-memory
 update, plus
@@ -150,6 +152,10 @@ the policy update is explicit and replayable. The new
 `trwm.context_query_policy_certificate.v1` binds the counterexample receipt,
 base and refined selection certificates, each held-out sibling selection, top
 actions, receipt hashes, and same-budget comparison before promoting the claim.
+The companion `trwm.context_branch_conflict_certificate.v1` binds the conflict:
+source receipts committed the stale unsafe action, the calibration and sibling
+targets rejected it, and the refined policy committed the target action at the
+same budget.
 
 ### Context Retention Transfer
 
