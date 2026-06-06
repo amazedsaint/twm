@@ -133,6 +133,19 @@ set and commits under the same one-call target budget. This is the first local
 evidence that branches of the past can improve exploration policy itself, not
 only candidate order.
 
+The context-query-policy transfer example adds a held-out check for that policy
+update. Each domain uses a calibration target to record the coarse-query
+counterexample and refinement certificate, then applies the refined required-tag
+policy to a sibling target. The sibling stale-query baseline still ranks the
+unsafe misleading action first and fails under one verifier call. The refined
+query policy ranks the committed action first and commits under the same
+one-call budget. The new `trwm.context_query_policy_certificate.v1` artifact
+binds the counterexample receipt, base and refined selection certificates,
+held-out sibling selections, top actions, receipt hashes, and same-budget
+comparison. The substrate implication is that retrieval refinement should be a
+portable query policy artifact before it is treated as exploration improvement
+on future contexts.
+
 The context-retention transfer example adds the next memory transition. After
 refinement commits, the committed target branch is retained with a
 `trwm.ancestral_branch_retention_certificate.v1` artifact that binds the

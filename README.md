@@ -46,6 +46,7 @@ python3 -m examples.ancestral_branch_exploration
 python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
+python3 -m examples.context_query_policy_transfer
 python3 -m examples.context_retention_transfer
 python3 -m examples.programmable_world_model_frontier
 ```
@@ -57,12 +58,14 @@ and `claim_certificate` JSON; the ancestral branch example adds an
 analogical branch example tests explicit ancestor-context reuse and misleading
 ancestor rejection; the context-selection example certifies which ancestor
 contexts may influence target exploration; the context-refinement example uses
-a rejected target branch to refine ancestor retrieval; the context-retention
-example retains the successful target branch as certified future proposal
-evidence for a sibling target and certifies the memory query that ranks the
-sibling proposals against a same-budget static sibling baseline; the frontier
-example aggregates the three physical certified domains. See
-`examples/README.md` and `docs/experiment_learnings.md`.
+a rejected target branch to refine ancestor retrieval; the context-query-policy
+example applies that refined retrieval policy to held-out sibling targets
+against a stale-query baseline; the context-retention example retains the
+successful target branch as certified future proposal evidence for a sibling
+target and certifies the memory query that ranks the sibling proposals against a
+same-budget static sibling baseline; the frontier example aggregates the three
+physical certified domains. See `examples/README.md` and
+`docs/experiment_learnings.md`.
 
 ## Package Layout
 

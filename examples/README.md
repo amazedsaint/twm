@@ -16,6 +16,7 @@ python3 -m examples.ancestral_branch_exploration
 python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
+python3 -m examples.context_query_policy_transfer
 python3 -m examples.context_retention_transfer
 python3 -m examples.programmable_world_model_frontier
 ```
@@ -29,9 +30,13 @@ reuse and misleading-ancestor rejection. The context-selection command adds
 descriptor-level `trwm.ancestral_context_selection_certificate.v1` artifacts
 before branch-memory reuse. The context-refinement command adds
 `trwm.ancestral_context_refinement_certificate.v1` artifacts that bind a failed
-coarse retrieval to a stricter refined retrieval. The context-retention command
-adds `trwm.ancestral_branch_retention_certificate.v1` artifacts that bind
-committed target branches into a hash-checked future-memory update, plus
+coarse retrieval to a stricter refined retrieval. The context-query-policy
+command adds `trwm.context_query_policy_certificate.v1` artifacts showing that
+the refined retrieval policy improves held-out sibling exploration against a
+stale-query baseline under the same one-call verifier budget. The
+context-retention command adds `trwm.ancestral_branch_retention_certificate.v1`
+artifacts that bind committed target branches into a hash-checked future-memory
+update, plus
 `trwm.ancestral_branch_influence_certificate.v1` artifacts that bind the later
 sibling proposal order to the exact memory snapshot and retained context. The
 context-retention report also emits
@@ -129,6 +134,22 @@ the next budget-one target pass commits.
 Learning: failed branches of the past should not only train proposal order; they
 should also refine the retrieval policy that decides which past branches are
 allowed to influence exploration.
+
+### Context Query Policy Transfer
+
+`examples.context_query_policy_transfer` keeps the refinement setup but splits
+it into a calibration target and a held-out sibling target. The calibration
+target records the coarse-query counterexample and emits the refinement
+certificate. The sibling target then compares the stale coarse query with the
+refined query policy under the same one-call verifier budget. The stale sibling
+query fails in all three toy domains; the refined query policy commits in all
+three.
+
+Learning: a failed branch can improve the exploration policy itself only when
+the policy update is explicit and replayable. The new
+`trwm.context_query_policy_certificate.v1` binds the counterexample receipt,
+base and refined selection certificates, held-out sibling selections, top
+actions, receipt hashes, and same-budget comparison before promoting the claim.
 
 ### Context Retention Transfer
 
