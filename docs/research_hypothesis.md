@@ -164,6 +164,11 @@ This repository currently targets `G1` evidence:
   mismatched and matched source receipts, static mismatched target rejects,
   matched target commits, and same-budget verifier-call evidence before
   context-mismatched source-valid branches can influence target exploration,
+- branch-robustness certificates that bind uncertainty-set variant ids,
+  brittle source receipts, robust source variant receipts, source margins,
+  static brittle target rejects, robust target commits, and same-budget
+  verifier-call evidence before nominal source-valid branches can influence
+  target exploration,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can
@@ -684,6 +689,8 @@ search.
 - Rosenbaum and Rubin, The Central Role of the Propensity Score in
   Observational Studies for Causal Effects:
   https://doi.org/10.1093/biomet/70.1.41
+- Ben-Tal and Nemirovski, Robust Convex Optimization:
+  https://doi.org/10.1287/moor.23.4.769
 - ISO/IEC/IEEE 15026-2 assurance case structure and terminology:
   https://standards.iteh.ai/catalog/standards/iso/4734d411-2bff-428f-8f4a-164859f171b8/iso-iec-ieee-15026-2-2022
 - OpenTelemetry Semantic Conventions:

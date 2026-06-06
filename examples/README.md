@@ -41,6 +41,7 @@ python3 -m examples.branch_outlier_filter_transfer
 python3 -m examples.branch_provenance_guard_transfer
 python3 -m examples.branch_credit_assignment_transfer
 python3 -m examples.branch_propensity_match_transfer
+python3 -m examples.branch_robustness_transfer
 python3 -m examples.branch_pruning_transfer
 python3 -m examples.branch_diversity_transfer
 python3 -m examples.branch_budget_transfer
@@ -155,6 +156,11 @@ branch-propensity-match command adds
 source covariates, scalar propensity-style scores, caliper distance,
 covariate-balance distance, failed mismatched target replay, and same-budget
 matched target commit. The
+branch-robustness command adds
+`trwm.branch_robustness_certificate.v1` artifacts that bind uncertainty-set
+variant ids, brittle source receipts, robust source variant receipts,
+positive source margins, failed brittle target replay, and same-budget robust
+target commit. The
 branch-pruning command adds `trwm.branch_pruning_certificate.v1` artifacts
 showing that rejected source branch receipts can prune known-dead target
 candidates before scarce verifier budget is spent. The
@@ -180,7 +186,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the thirty-five branch-memory stages into one bounded G1 report. The physical
+the thirty-six branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -692,6 +698,25 @@ covariate-balance analogy here; this is not a propensity-score estimator,
 causal-inference result, covariate-balance proof, or treatment-effect estimate:
 https://doi.org/10.1093/biomet/70.1.41
 
+### Branch Robustness Transfer
+
+`examples.branch_robustness_transfer` tests uncertainty-set coverage for source
+branch reuse. Each domain records one brittle nominal source commit and three
+robust source commits across perturbation variants. The static target spends one
+verifier call replaying the brittle nominal source and fails. The robust target
+spends the same one verifier call on the uncertainty-set-covered action and
+commits only after fresh hard verification.
+
+Learning: branches of the past can improve exploration only when nominal source
+validity is separated from uncertainty-set coverage.
+`trwm.branch_robustness_certificate.v1` binds variant ids, source/target
+contexts, brittle and robust source receipts, robust source margins, failed
+static target replay, robust target commit, branch-selection certificates, and
+same-budget comparison before claiming robustness-guided exploration lift.
+Robust optimization is only the uncertainty-set analogy here; this is not robust
+optimization, a worst-case guarantee, or distributional robustness:
+https://doi.org/10.1287/moor.23.4.769
+
 ### Branch Pruning Transfer
 
 `examples.branch_pruning_transfer` tests negative branch evidence. Each domain
@@ -793,7 +818,7 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the thirty-five branch-history experiments and
+`examples.branch_history_frontier` runs the thirty-six branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
@@ -804,7 +829,7 @@ diagnostic probing, residual-template repair, boundary bracketing, source
 consensus, contrastive invariant transfer, trust-region radius transfer, analogical ancestor reuse, certified context selection,
 counterexample refinement,
 conflict-aware query-policy transfer,
-drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, receipt-bound branch pruning, diversity-certified family
+drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, receipt-bound branch pruning, diversity-certified family
 coverage, branch budget allocation, no-good stop-rule abstention, branch composition, and retained-memory
 influence.
 
@@ -824,7 +849,7 @@ receipts and fresh target verification, source consensus is admitted only
 through majority receipts plus fresh target verification, contrastive invariants
 are admitted only through positive/negative source receipts plus fresh target
 verification, context selection is certified, failed branches refine retrieval,
-conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, Pareto dominance is certificate-bound, outlier filtering is certificate-bound, source provenance is certificate-bound, source-fragment credit is certificate-bound, source-context matching is certificate-bound, rejected branches prune
+conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, Pareto dominance is certificate-bound, outlier filtering is certificate-bound, source provenance is certificate-bound, source-fragment credit is certificate-bound, source-context matching is certificate-bound, uncertainty-set coverage is certificate-bound, rejected branches prune
 known-dead target candidates, same-family failures force coverage only through
 a certificate, verifier budget is allocated only through a cost-bound
 certificate, branch fragments compose
@@ -865,6 +890,9 @@ certificates before claim promotion.
 - Propensity score matching is the covariate-balance analogy for target/source
   context comparability, not a causal estimate:
   https://doi.org/10.1093/biomet/70.1.41
+- Robust optimization is the uncertainty-set analogy for branch robustness
+  coverage, not a worst-case or distributional guarantee:
+  https://doi.org/10.1287/moor.23.4.769
 - UCT/MCTS is the planning analogy for spending samples selectively:
   https://doi.org/10.1007/11871842_29
 - Case-based reasoning is the retrieval/reuse/revision analogy for solving a
