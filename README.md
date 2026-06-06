@@ -59,8 +59,9 @@ ancestor rejection; the context-selection example certifies which ancestor
 contexts may influence target exploration; the context-refinement example uses
 a rejected target branch to refine ancestor retrieval; the context-retention
 example retains the successful target branch as certified future proposal
-evidence for a sibling target; the frontier example aggregates the three
-physical certified domains. See `examples/README.md` and
+evidence for a sibling target and certifies the memory query that ranks the
+sibling proposals; the frontier example aggregates the three physical
+certified domains. See `examples/README.md` and
 `docs/experiment_learnings.md`.
 
 ## Package Layout
@@ -78,7 +79,8 @@ physical certified domains. See `examples/README.md` and
 - `trwm.ancestral`: receipt-bound ancestral branch memory, candidate ranking
   from committed/rolled-back/rejected branch history, hash-checked memory
   snapshots, context selection/refinement certificates, and branch-retention
-  certificates for audited memory updates.
+  certificates for audited memory updates plus influence certificates for
+  snapshot-bound proposal ordering.
 - `trwm.budget_policy`: receipt-trained verifier-budget planning with exact
   integer-cost subset selection and hash-checked policy snapshots.
 - `trwm.checkpoint`: replay checkpoint certificates for compacting audited

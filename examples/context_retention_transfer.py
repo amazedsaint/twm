@@ -24,11 +24,16 @@ from examples.common import (
 from examples.context_refinement_transfer import CONTEXT_REFINEMENT_SOURCES
 from examples.context_selection_transfer import _action_by_name, _descriptor, _make_traces, _with_context
 from trwm.ancestral import (
+    AncestralBranchInfluenceCertificate,
     AncestralBranchMemory,
+    AncestralBranchMemorySnapshot,
     AncestralBranchRetentionCertificate,
     AncestralContextRefinementCertificate,
+    AncestralContextDescriptor,
+    build_ancestral_branch_influence_certificate,
     build_ancestral_context_refinement_certificate,
     build_ancestral_context_selection_certificate,
+    validate_ancestral_branch_influence_certificate,
     validate_ancestral_branch_memory_snapshot,
     validate_ancestral_branch_retention_certificate,
     validate_ancestral_context_refinement_certificate,
@@ -49,8 +54,9 @@ CONTEXT_RETENTION_TRANSFER_CERTIFICATE_SCHEMA = "trwm.context_retention_transfer
 CONTEXT_RETENTION_CLAIM_BOUNDARY = (
     "G1 deterministic toy-domain evidence only. The example shows a rejected target branch can refine "
     "ancestor retrieval, and a committed target branch can be retained as certified future proposal "
-    "evidence for a sibling context. It is not automatic feature discovery, statistical transfer "
-    "learning, a CEGAR proof, robotics safety, chemistry, materials-discovery, or scientific-autonomy evidence."
+    "evidence for a sibling context with a certified memory-influence query. It is not automatic feature "
+    "discovery, statistical transfer learning, a CEGAR proof, robotics safety, chemistry, "
+    "materials-discovery, or scientific-autonomy evidence."
 )
 CONTEXT_RETENTION_SOURCES = CONTEXT_REFINEMENT_SOURCES
 
@@ -76,6 +82,7 @@ class ContextRetentionDomainReport:
     coarse_counterexample_residual_kind: str
     refinement_certificate_hash: str
     retention_certificate_hash: str
+    influence_certificate_hash: str
     base_selection_certificate_hash: str
     refined_selection_certificate_hash: str
     source_receipt_hashes: tuple[str, ...]
@@ -105,6 +112,7 @@ class ContextRetentionTransferReport:
     sibling_budget_success_count: int
     refinement_certificate_count: int
     retention_certificate_count: int
+    influence_certificate_count: int
     memory_snapshot_hash: str
     memory_snapshot_valid: bool
     memory_row_count: int
@@ -112,6 +120,7 @@ class ContextRetentionTransferReport:
     all_context_selection_certificates_valid: bool
     all_context_refinement_certificates_valid: bool
     all_branch_retention_certificates_valid: bool
+    all_branch_influence_certificates_valid: bool
     all_branch_selection_certificates_valid: bool
     all_branch_selection_audits_valid: bool
     replay_audit_ok: bool
@@ -143,6 +152,7 @@ class ContextRetentionTransferCertificate:
     refined_selection_certificate_hashes: tuple[str, ...]
     context_refinement_certificate_hashes: tuple[str, ...]
     branch_retention_certificate_hashes: tuple[str, ...]
+    branch_influence_certificate_hashes: tuple[str, ...]
     memory_snapshot_hash: str
     coarse_budget_success_count: int
     refined_budget_success_count: int
@@ -167,6 +177,7 @@ class ContextRetentionTransferCertificate:
             "refined_selection_certificate_hashes",
             "context_refinement_certificate_hashes",
             "branch_retention_certificate_hashes",
+            "branch_influence_certificate_hashes",
         ):
             object.__setattr__(self, field_name, tuple(getattr(self, field_name)))
         if not self.certificate_hash:
@@ -184,6 +195,7 @@ class CertifiedContextRetentionTransferResult(CertifiedExampleResult):
     context_retention_transfer_certificate: ContextRetentionTransferCertificate
     context_refinement_certificates: tuple[AncestralContextRefinementCertificate, ...]
     branch_retention_certificates: tuple[AncestralBranchRetentionCertificate, ...]
+    branch_influence_certificates: tuple[AncestralBranchInfluenceCertificate, ...]
     evidence_certificate: ExampleEvidenceCertificate
     claim_certificate: ClaimCertificate
 
@@ -204,6 +216,15 @@ def run_context_retention_transfer_certified_experiment() -> CertifiedContextRet
     refined_selection_certificates = []
     refinement_certificates: list[AncestralContextRefinementCertificate] = []
     retention_certificates: list[AncestralBranchRetentionCertificate] = []
+    influence_certificates: list[AncestralBranchInfluenceCertificate] = []
+    influence_audits: list[
+        tuple[
+            AncestralBranchInfluenceCertificate,
+            AncestralContextDescriptor,
+            AncestralBranchMemorySnapshot,
+            AncestralBranchRetentionCertificate,
+        ]
+    ] = []
 
     for spec in DOMAIN_SPECS:
         target_descriptor = _descriptor(spec, f"{spec.domain_id}:target", regime="target-compatible")
@@ -312,7 +333,18 @@ def run_context_retention_transfer_certified_experiment() -> CertifiedContextRet
 
         sibling_actions = tuple(_with_context(action, sibling_descriptor.context_id) for action in spec.actions)
         sibling_action_tokens = tuple(str(action["action"]) for action in sibling_actions)
-        sibling_order = tuple(str(action) for action in memory.rank_from_contexts((target_descriptor.context_id,), sibling_action_tokens))
+        influence_snapshot = memory.snapshot()
+        influence_certificate = build_ancestral_branch_influence_certificate(
+            target_context=sibling_descriptor,
+            memory_snapshot=influence_snapshot,
+            query_context_ids=(target_descriptor.context_id,),
+            candidates=sibling_action_tokens,
+            retention_certificates=(retention_certificate,),
+            influence_reason="rank_sibling_candidates_from_retained_target_branch",
+        )
+        influence_certificates.append(influence_certificate)
+        influence_audits.append((influence_certificate, sibling_descriptor, influence_snapshot, retention_certificate))
+        sibling_order = influence_certificate.ranked_actions
         sibling_action = _action_by_name(sibling_actions, sibling_order[0])
         sibling_outcome = runtime.step(
             state,
@@ -355,6 +387,7 @@ def run_context_retention_transfer_certified_experiment() -> CertifiedContextRet
                 coarse_counterexample_residual_kind=residual_kind,
                 refinement_certificate_hash=refinement_certificate.certificate_hash,
                 retention_certificate_hash=retention_certificate.certificate_hash,
+                influence_certificate_hash=influence_certificate.certificate_hash,
                 base_selection_certificate_hash=base_selection.certificate_hash,
                 refined_selection_certificate_hash=refined_selection.certificate_hash,
                 source_receipt_hashes=tuple(receipt.receipt_hash for receipt in source_receipts),
@@ -394,6 +427,15 @@ def run_context_retention_transfer_certified_experiment() -> CertifiedContextRet
         validate_ancestral_branch_retention_certificate(certificate)
         for certificate in retention_certificates
     )
+    all_branch_influence_certificates_valid = all(
+        validate_ancestral_branch_influence_certificate(
+            certificate,
+            target_context=target_context,
+            memory_snapshot=influence_snapshot,
+            retention_certificates=(retention_certificate,),
+        )
+        for certificate, target_context, influence_snapshot, retention_certificate in influence_audits
+    )
     report = ContextRetentionTransferReport(
         schema_version="trwm.example.context_retention_transfer.v1",
         experiment_id="context_retention_transfer",
@@ -414,6 +456,7 @@ def run_context_retention_transfer_certified_experiment() -> CertifiedContextRet
         sibling_budget_success_count=sum(1 for row in rows if row.sibling_budget_committed),
         refinement_certificate_count=len(refinement_certificates),
         retention_certificate_count=len(retention_certificates),
+        influence_certificate_count=len(influence_certificates),
         memory_snapshot_hash=memory_snapshot.snapshot_hash,
         memory_snapshot_valid=validate_ancestral_branch_memory_snapshot(memory_snapshot),
         memory_row_count=len(memory_snapshot.rows),
@@ -421,6 +464,7 @@ def run_context_retention_transfer_certified_experiment() -> CertifiedContextRet
         all_context_selection_certificates_valid=all_context_selection_certificates_valid,
         all_context_refinement_certificates_valid=all_context_refinement_certificates_valid,
         all_branch_retention_certificates_valid=all_branch_retention_certificates_valid,
+        all_branch_influence_certificates_valid=all_branch_influence_certificates_valid,
         all_branch_selection_certificates_valid=all_branch_selection_certificates_valid,
         all_branch_selection_audits_valid=all_branch_selection_audits_valid,
         replay_audit_ok=replay_audit_ok,
@@ -435,8 +479,9 @@ def run_context_retention_transfer_certified_experiment() -> CertifiedContextRet
         sources=CONTEXT_RETENTION_SOURCES,
         learning=(
             "A failed target branch first refines which ancestors are admissible. The successful refined "
-            "target branch is then retained as a hash-checked memory delta, and a sibling target can use "
-            "that retained branch as its only ancestor under the same hard verifier."
+            "target branch is then retained as a hash-checked memory delta. A sibling target uses a "
+            "snapshot-bound influence certificate to rank proposals from that retained branch before "
+            "spending the same hard verifier."
         ),
     )
     transfer_certificate = build_context_retention_transfer_certificate(
@@ -447,6 +492,7 @@ def run_context_retention_transfer_certified_experiment() -> CertifiedContextRet
         refined_selection_certificate_hashes=tuple(certificate.certificate_hash for certificate in refined_selection_certificates),
         context_refinement_certificate_hashes=tuple(certificate.certificate_hash for certificate in refinement_certificates),
         branch_retention_certificate_hashes=tuple(certificate.certificate_hash for certificate in retention_certificates),
+        branch_influence_certificate_hashes=tuple(certificate.certificate_hash for certificate in influence_certificates),
     )
     evidence_certificate = build_example_evidence_certificate(
         report,
@@ -472,6 +518,7 @@ def run_context_retention_transfer_certified_experiment() -> CertifiedContextRet
         context_retention_transfer_certificate=transfer_certificate,
         context_refinement_certificates=tuple(refinement_certificates),
         branch_retention_certificates=tuple(retention_certificates),
+        branch_influence_certificates=tuple(influence_certificates),
         evidence_certificate=evidence_certificate,
         claim_certificate=claim_certificate,
     )
@@ -486,6 +533,7 @@ def build_context_retention_transfer_certificate(
     refined_selection_certificate_hashes: tuple[str, ...],
     context_refinement_certificate_hashes: tuple[str, ...],
     branch_retention_certificate_hashes: tuple[str, ...],
+    branch_influence_certificate_hashes: tuple[str, ...],
 ) -> ContextRetentionTransferCertificate:
     return ContextRetentionTransferCertificate(
         schema_version=CONTEXT_RETENTION_TRANSFER_CERTIFICATE_SCHEMA,
@@ -502,6 +550,7 @@ def build_context_retention_transfer_certificate(
         refined_selection_certificate_hashes=refined_selection_certificate_hashes,
         context_refinement_certificate_hashes=context_refinement_certificate_hashes,
         branch_retention_certificate_hashes=branch_retention_certificate_hashes,
+        branch_influence_certificate_hashes=branch_influence_certificate_hashes,
         memory_snapshot_hash=report.memory_snapshot_hash,
         coarse_budget_success_count=report.coarse_budget_success_count,
         refined_budget_success_count=report.refined_budget_success_count,
@@ -538,6 +587,7 @@ def validate_context_retention_transfer_certificate(
             certificate.refined_selection_certificate_hashes,
             certificate.context_refinement_certificate_hashes,
             certificate.branch_retention_certificate_hashes,
+            certificate.branch_influence_certificate_hashes,
         ):
             if not values or any(not _is_hash(value) for value in values):
                 return False
@@ -554,6 +604,8 @@ def validate_context_retention_transfer_certificate(
         if len(certificate.context_refinement_certificate_hashes) != certificate.domain_count:
             return False
         if len(certificate.branch_retention_certificate_hashes) != certificate.domain_count:
+            return False
+        if len(certificate.branch_influence_certificate_hashes) != certificate.domain_count:
             return False
         if not (certificate.replay_audit_ok and certificate.rollback_audit_ok and certificate.ledger_audit_ok):
             return False
@@ -577,6 +629,8 @@ def validate_context_retention_transfer_certificate(
             if not report.all_context_refinement_certificates_valid:
                 return False
             if not report.all_branch_retention_certificates_valid:
+                return False
+            if not report.all_branch_influence_certificates_valid:
                 return False
             if example_report_hash(report) != certificate.report_hash:
                 return False
@@ -609,8 +663,8 @@ def _build_claim_certificate(
         claim_id="context_retention_transfer_g1",
         claim_text=(
             "Rejected target branches can refine ancestor retrieval, and retained committed target "
-            "branches can become certified ancestors for sibling exploration while hard verification "
-            "keeps commit authority."
+            "branches can become certified, influence-traceable ancestors for sibling exploration while "
+            "hard verification keeps commit authority."
         ),
         evidence_grade="G1",
         scope="context_retention_transfer",
@@ -627,12 +681,14 @@ def _build_claim_certificate(
             ),
             requirement("all_context_refinement_certificates_valid", report.all_context_refinement_certificates_valid),
             requirement("all_branch_retention_certificates_valid", report.all_branch_retention_certificates_valid),
+            requirement("all_branch_influence_certificates_valid", report.all_branch_influence_certificates_valid),
             requirement("all_context_selection_certificates_valid", report.all_context_selection_certificates_valid),
             requirement("memory_snapshot_valid", report.memory_snapshot_valid),
             requirement("coarse_budget_fails_all_domains", report.coarse_budget_success_count == 0),
             requirement("refined_budget_succeeds_all_domains", report.refined_budget_success_count == report.domain_count),
             requirement("sibling_budget_succeeds_all_domains", report.sibling_budget_success_count == report.domain_count),
             requirement("retention_certificates_present", report.retention_certificate_count == report.domain_count),
+            requirement("influence_certificates_present", report.influence_certificate_count == report.domain_count),
             requirement("newly_rejected_contexts_present", report.newly_rejected_context_count == report.domain_count * 2),
             requirement("all_branch_selection_certificates_valid", report.all_branch_selection_certificates_valid),
             requirement("all_branch_selection_audits_valid", report.all_branch_selection_audits_valid),
@@ -646,6 +702,7 @@ def _build_claim_certificate(
             "refined_selected_context_count": report.refined_selected_context_count,
             "newly_rejected_context_count": report.newly_rejected_context_count,
             "retained_context_count": report.retained_context_count,
+            "influence_certificate_count": report.influence_certificate_count,
             "coarse_budget_success_count": report.coarse_budget_success_count,
             "refined_budget_success_count": report.refined_budget_success_count,
             "sibling_budget_success_count": report.sibling_budget_success_count,

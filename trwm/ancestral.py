@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import asdict, dataclass
+from math import isfinite
 from typing import Any, Iterable, Mapping
 
 from .branch import BranchSelectionCertificate, audit_branch_selection, validate_branch_selection_certificate
@@ -13,6 +14,7 @@ ANCESTRAL_CONTEXT_DESCRIPTOR_SCHEMA = "trwm.ancestral_context_descriptor.v1"
 ANCESTRAL_CONTEXT_SELECTION_CERTIFICATE_SCHEMA = "trwm.ancestral_context_selection_certificate.v1"
 ANCESTRAL_CONTEXT_REFINEMENT_CERTIFICATE_SCHEMA = "trwm.ancestral_context_refinement_certificate.v1"
 ANCESTRAL_BRANCH_RETENTION_CERTIFICATE_SCHEMA = "trwm.ancestral_branch_retention_certificate.v1"
+ANCESTRAL_BRANCH_INFLUENCE_CERTIFICATE_SCHEMA = "trwm.ancestral_branch_influence_certificate.v1"
 
 
 @dataclass(frozen=True)
@@ -173,6 +175,68 @@ class AncestralBranchRetentionCertificate:
             object.__setattr__(self, field_name, tuple(getattr(self, field_name)))
         if not self.certificate_hash:
             object.__setattr__(self, "certificate_hash", ancestral_branch_retention_certificate_hash(self))
+
+    def without_hash(self) -> dict[str, Any]:
+        data = asdict(self)
+        data.pop("certificate_hash", None)
+        return data
+
+
+@dataclass(frozen=True)
+class AncestralBranchInfluenceRow:
+    action: str
+    score: float
+    committed: int
+    rolled_back: int
+    rejected: int
+    abstained: int
+    receipt_hashes: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if not self.action:
+            raise ValueError("influence row action must be non-empty")
+        object.__setattr__(self, "score", float(self.score))
+        if not isfinite(self.score):
+            raise ValueError("influence row score must be finite")
+        for field_name in ("committed", "rolled_back", "rejected", "abstained"):
+            value = getattr(self, field_name)
+            if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                raise ValueError(f"{field_name} must be a non-negative integer")
+        object.__setattr__(self, "receipt_hashes", tuple(self.receipt_hashes))
+
+
+@dataclass(frozen=True)
+class AncestralBranchInfluenceCertificate:
+    schema_version: str
+    influence_rule_id: str
+    influence_rule_version: str
+    target_context_id: str
+    target_context_hash: str
+    memory_snapshot_hash: str
+    query_context_ids: tuple[str, ...]
+    candidate_actions: tuple[str, ...]
+    ranked_actions: tuple[str, ...]
+    top_action: str
+    top_action_receipt_hashes: tuple[str, ...]
+    rows: tuple[AncestralBranchInfluenceRow, ...]
+    retention_certificate_hashes: tuple[str, ...]
+    influence_reason: str
+    certificate_hash: str = ""
+
+    def __post_init__(self) -> None:
+        if self.schema_version != ANCESTRAL_BRANCH_INFLUENCE_CERTIFICATE_SCHEMA:
+            raise ValueError(f"invalid ancestral branch influence certificate schema: {self.schema_version}")
+        for field_name in (
+            "query_context_ids",
+            "candidate_actions",
+            "ranked_actions",
+            "top_action_receipt_hashes",
+            "rows",
+            "retention_certificate_hashes",
+        ):
+            object.__setattr__(self, field_name, tuple(getattr(self, field_name)))
+        if not self.certificate_hash:
+            object.__setattr__(self, "certificate_hash", ancestral_branch_influence_certificate_hash(self))
 
     def without_hash(self) -> dict[str, Any]:
         data = asdict(self)
@@ -396,6 +460,28 @@ class AncestralBranchMemory:
             )
 
         return [candidate for _, candidate in sorted(indexed, key=key)]
+
+    def certify_influence(
+        self,
+        *,
+        target_context: AncestralContextDescriptor,
+        query_context_ids: Iterable[str],
+        candidates: Iterable[Any],
+        retention_certificates: Iterable[AncestralBranchRetentionCertificate] = (),
+        influence_reason: str,
+        influence_rule_id: str = "snapshot_score_order",
+        influence_rule_version: str = "1.0",
+    ) -> AncestralBranchInfluenceCertificate:
+        return build_ancestral_branch_influence_certificate(
+            target_context=target_context,
+            memory_snapshot=self.snapshot(),
+            query_context_ids=query_context_ids,
+            candidates=candidates,
+            retention_certificates=retention_certificates,
+            influence_reason=influence_reason,
+            influence_rule_id=influence_rule_id,
+            influence_rule_version=influence_rule_version,
+        )
 
     def snapshot(self) -> AncestralBranchMemorySnapshot:
         rows = tuple(
@@ -943,6 +1029,161 @@ def validate_ancestral_branch_retention_certificate(
         return False
 
 
+def build_ancestral_branch_influence_certificate(
+    *,
+    target_context: AncestralContextDescriptor,
+    memory_snapshot: AncestralBranchMemorySnapshot,
+    query_context_ids: Iterable[str],
+    candidates: Iterable[Any],
+    retention_certificates: Iterable[AncestralBranchRetentionCertificate] = (),
+    influence_reason: str,
+    influence_rule_id: str = "snapshot_score_order",
+    influence_rule_version: str = "1.0",
+) -> AncestralBranchInfluenceCertificate:
+    if not influence_reason:
+        raise ValueError("influence_reason must be non-empty")
+    if not validate_ancestral_branch_memory_snapshot(memory_snapshot):
+        raise ValueError("memory snapshot must validate before influence certification")
+    query_contexts = _unique_contexts(query_context_ids)
+    candidate_actions = tuple(_token(candidate) for candidate in candidates)
+    if not candidate_actions or len(candidate_actions) != len(set(candidate_actions)):
+        raise ValueError("influence candidates must be non-empty and unique after tokenization")
+    retention_rows = tuple(retention_certificates)
+    for retention in retention_rows:
+        if not validate_ancestral_branch_retention_certificate(retention):
+            raise ValueError("retention certificate must validate before influence certification")
+        if retention.retained_context_id not in set(query_contexts):
+            raise ValueError("retention certificate retained context must be part of the query context")
+        if any(receipt_hash not in set(memory_snapshot.receipt_hashes) for receipt_hash in retention.retained_receipt_hashes):
+            raise ValueError("retained receipts must be present in the memory snapshot")
+    rows = _influence_rows_from_snapshot(memory_snapshot, query_contexts, candidate_actions)
+    ranked_actions = tuple(row.action for row in _rank_influence_rows(rows))
+    top_action = ranked_actions[0]
+    top_row = next(row for row in rows if row.action == top_action)
+    certificate = AncestralBranchInfluenceCertificate(
+        schema_version=ANCESTRAL_BRANCH_INFLUENCE_CERTIFICATE_SCHEMA,
+        influence_rule_id=influence_rule_id,
+        influence_rule_version=influence_rule_version,
+        target_context_id=target_context.context_id,
+        target_context_hash=target_context.descriptor_hash,
+        memory_snapshot_hash=memory_snapshot.snapshot_hash,
+        query_context_ids=query_contexts,
+        candidate_actions=candidate_actions,
+        ranked_actions=ranked_actions,
+        top_action=top_action,
+        top_action_receipt_hashes=top_row.receipt_hashes,
+        rows=rows,
+        retention_certificate_hashes=tuple(retention.certificate_hash for retention in retention_rows),
+        influence_reason=influence_reason,
+    )
+    if not validate_ancestral_branch_influence_certificate(
+        certificate,
+        target_context=target_context,
+        memory_snapshot=memory_snapshot,
+        retention_certificates=retention_rows,
+    ):
+        raise ValueError("branch influence certificate must validate against query artifacts")
+    return certificate
+
+
+def validate_ancestral_branch_influence_certificate(
+    certificate: AncestralBranchInfluenceCertificate,
+    *,
+    target_context: AncestralContextDescriptor | None = None,
+    memory_snapshot: AncestralBranchMemorySnapshot | None = None,
+    retention_certificates: Iterable[AncestralBranchRetentionCertificate] | None = None,
+) -> bool:
+    try:
+        if certificate.schema_version != ANCESTRAL_BRANCH_INFLUENCE_CERTIFICATE_SCHEMA:
+            return False
+        if not certificate.influence_rule_id or not certificate.influence_rule_version:
+            return False
+        if not certificate.target_context_id or not _is_hash(certificate.target_context_hash):
+            return False
+        if not _is_hash(certificate.memory_snapshot_hash):
+            return False
+        if certificate.query_context_ids != _unique_contexts(certificate.query_context_ids):
+            return False
+        if not certificate.candidate_actions or len(certificate.candidate_actions) != len(set(certificate.candidate_actions)):
+            return False
+        if any(not action for action in certificate.candidate_actions):
+            return False
+        if len(certificate.ranked_actions) != len(certificate.candidate_actions):
+            return False
+        if set(certificate.ranked_actions) != set(certificate.candidate_actions):
+            return False
+        if len(certificate.ranked_actions) != len(set(certificate.ranked_actions)):
+            return False
+        if not certificate.top_action or certificate.ranked_actions[0] != certificate.top_action:
+            return False
+        if len(certificate.rows) != len(certificate.candidate_actions):
+            return False
+        if tuple(row.action for row in certificate.rows) != certificate.candidate_actions:
+            return False
+        for row in certificate.rows:
+            if not row.action or not isfinite(float(row.score)):
+                return False
+            counts = (row.committed, row.rolled_back, row.rejected, row.abstained)
+            if any(not isinstance(value, int) or isinstance(value, bool) or value < 0 for value in counts):
+                return False
+            if sum(counts) != len(row.receipt_hashes):
+                return False
+            if any(not _is_hash(value) for value in row.receipt_hashes):
+                return False
+            if len(row.receipt_hashes) != len(set(row.receipt_hashes)):
+                return False
+        top_row = next((row for row in certificate.rows if row.action == certificate.top_action), None)
+        if top_row is None or certificate.top_action_receipt_hashes != top_row.receipt_hashes:
+            return False
+        if not certificate.top_action_receipt_hashes:
+            return False
+        if any(not _is_hash(value) for value in certificate.retention_certificate_hashes):
+            return False
+        if len(certificate.retention_certificate_hashes) != len(set(certificate.retention_certificate_hashes)):
+            return False
+        if not certificate.influence_reason:
+            return False
+        if target_context is not None:
+            if certificate.target_context_id != target_context.context_id:
+                return False
+            if certificate.target_context_hash != target_context.descriptor_hash:
+                return False
+        retention_rows: tuple[AncestralBranchRetentionCertificate, ...] | None = None
+        if retention_certificates is not None:
+            retention_rows = tuple(retention_certificates)
+            if tuple(retention.certificate_hash for retention in retention_rows) != certificate.retention_certificate_hashes:
+                return False
+            query_context_set = set(certificate.query_context_ids)
+            for retention in retention_rows:
+                if not validate_ancestral_branch_retention_certificate(retention):
+                    return False
+                if retention.retained_context_id not in query_context_set:
+                    return False
+        if memory_snapshot is not None:
+            if not validate_ancestral_branch_memory_snapshot(memory_snapshot):
+                return False
+            if memory_snapshot.snapshot_hash != certificate.memory_snapshot_hash:
+                return False
+            expected_rows = _influence_rows_from_snapshot(
+                memory_snapshot,
+                certificate.query_context_ids,
+                certificate.candidate_actions,
+            )
+            if expected_rows != certificate.rows:
+                return False
+            expected_ranked = tuple(row.action for row in _rank_influence_rows(expected_rows))
+            if expected_ranked != certificate.ranked_actions:
+                return False
+            if retention_rows is not None:
+                snapshot_receipts = set(memory_snapshot.receipt_hashes)
+                for retention in retention_rows:
+                    if any(receipt_hash not in snapshot_receipts for receipt_hash in retention.retained_receipt_hashes):
+                        return False
+        return certificate.certificate_hash == ancestral_branch_influence_certificate_hash(certificate)
+    except Exception:
+        return False
+
+
 def ancestral_branch_memory_snapshot_hash(snapshot: AncestralBranchMemorySnapshot | Mapping[str, Any]) -> str:
     if isinstance(snapshot, AncestralBranchMemorySnapshot):
         data = snapshot.without_hash()
@@ -987,6 +1228,17 @@ def ancestral_branch_retention_certificate_hash(
     certificate: AncestralBranchRetentionCertificate | Mapping[str, Any],
 ) -> str:
     if isinstance(certificate, AncestralBranchRetentionCertificate):
+        data = certificate.without_hash()
+    else:
+        data = dict(certificate)
+        data.pop("certificate_hash", None)
+    return stable_hash(data)
+
+
+def ancestral_branch_influence_certificate_hash(
+    certificate: AncestralBranchInfluenceCertificate | Mapping[str, Any],
+) -> str:
+    if isinstance(certificate, AncestralBranchInfluenceCertificate):
         data = certificate.without_hash()
     else:
         data = dict(certificate)
@@ -1044,6 +1296,71 @@ def _unique_contexts(contexts: Iterable[str]) -> tuple[str, ...]:
             rows.append(token)
             seen.add(token)
     return tuple(rows)
+
+
+def _influence_rows_from_snapshot(
+    snapshot: AncestralBranchMemorySnapshot,
+    contexts: Iterable[str],
+    candidate_actions: Iterable[str],
+) -> tuple[AncestralBranchInfluenceRow, ...]:
+    context_tokens = _unique_contexts(contexts)
+    action_tokens = tuple(str(action) for action in candidate_actions)
+    row_map = {(row.context, row.action): row for row in snapshot.rows}
+    commit_weight = float(snapshot.learning_policy["commit_weight"])
+    rollback_weight = float(snapshot.learning_policy["rollback_weight"])
+    reject_weight = float(snapshot.learning_policy["reject_weight"])
+    abstain_weight = float(snapshot.learning_policy["abstain_weight"])
+    rows: list[AncestralBranchInfluenceRow] = []
+    for action in action_tokens:
+        committed = 0
+        rolled_back = 0
+        rejected = 0
+        abstained = 0
+        receipt_hashes: list[str] = []
+        for context in context_tokens:
+            row = row_map.get((context, action))
+            if row is None:
+                continue
+            committed += row.committed
+            rolled_back += row.rolled_back
+            rejected += row.rejected
+            abstained += row.abstained
+            receipt_hashes.extend(row.receipt_hashes)
+        score = (
+            commit_weight * committed
+            - rollback_weight * rolled_back
+            - reject_weight * rejected
+            - abstain_weight * abstained
+        )
+        rows.append(
+            AncestralBranchInfluenceRow(
+                action=action,
+                score=score,
+                committed=committed,
+                rolled_back=rolled_back,
+                rejected=rejected,
+                abstained=abstained,
+                receipt_hashes=tuple(receipt_hashes),
+            )
+        )
+    return tuple(rows)
+
+
+def _rank_influence_rows(rows: Iterable[AncestralBranchInfluenceRow]) -> tuple[AncestralBranchInfluenceRow, ...]:
+    indexed = tuple(enumerate(rows))
+
+    def key(row_pair: tuple[int, AncestralBranchInfluenceRow]) -> tuple[float, int, int, int, int, int]:
+        idx, row = row_pair
+        return (
+            -row.score,
+            -row.committed,
+            row.rolled_back,
+            row.rejected,
+            row.abstained,
+            idx,
+        )
+
+    return tuple(row for _, row in sorted(indexed, key=key))
 
 
 def _context_compatible(

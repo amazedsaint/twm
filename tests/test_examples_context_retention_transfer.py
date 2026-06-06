@@ -10,6 +10,7 @@ from examples.context_retention_transfer import (
     validate_context_retention_transfer_certificate,
 )
 from trwm.ancestral import (
+    validate_ancestral_branch_influence_certificate,
     validate_ancestral_branch_retention_certificate,
     validate_ancestral_context_refinement_certificate,
 )
@@ -41,12 +42,14 @@ class ContextRetentionTransferExampleTests(unittest.TestCase):
         self.assertEqual(report.sibling_budget_success_count, 3)
         self.assertEqual(report.refinement_certificate_count, 3)
         self.assertEqual(report.retention_certificate_count, 3)
+        self.assertEqual(report.influence_certificate_count, 3)
         self.assertEqual(report.memory_row_count, 30)
         self.assertEqual(report.memory_receipt_count, 30)
         self.assertTrue(report.memory_snapshot_valid)
         self.assertTrue(report.all_context_selection_certificates_valid)
         self.assertTrue(report.all_context_refinement_certificates_valid)
         self.assertTrue(report.all_branch_retention_certificates_valid)
+        self.assertTrue(report.all_branch_influence_certificates_valid)
         self.assertTrue(report.all_branch_selection_certificates_valid)
         self.assertTrue(report.all_branch_selection_audits_valid)
         self.assertTrue(report.replay_audit_ok)
@@ -66,11 +69,14 @@ class ContextRetentionTransferExampleTests(unittest.TestCase):
         self.assertEqual(len(certificate.refined_selection_certificate_hashes), 3)
         self.assertEqual(len(certificate.context_refinement_certificate_hashes), 3)
         self.assertEqual(len(certificate.branch_retention_certificate_hashes), 3)
+        self.assertEqual(len(certificate.branch_influence_certificate_hashes), 3)
         self.assertEqual(certificate.memory_snapshot_hash, report.memory_snapshot_hash)
         self.assertEqual(len(result.context_refinement_certificates), 3)
         self.assertEqual(len(result.branch_retention_certificates), 3)
+        self.assertEqual(len(result.branch_influence_certificates), 3)
         self.assertTrue(all(validate_ancestral_context_refinement_certificate(row) for row in result.context_refinement_certificates))
         self.assertTrue(all(validate_ancestral_branch_retention_certificate(row) for row in result.branch_retention_certificates))
+        self.assertTrue(all(validate_ancestral_branch_influence_certificate(row) for row in result.branch_influence_certificates))
 
         for row in report.rows:
             self.assertEqual(len(row.candidate_contexts), 3)
@@ -84,6 +90,7 @@ class ContextRetentionTransferExampleTests(unittest.TestCase):
             self.assertFalse(row.coarse_budget_committed)
             self.assertTrue(row.refined_budget_committed)
             self.assertTrue(row.sibling_budget_committed)
+            self.assertTrue(row.influence_certificate_hash)
             self.assertEqual(len(row.source_receipt_hashes), 9)
             self.assertEqual(len(row.refined_target_receipt_hashes), 1)
             self.assertEqual(len(row.sibling_target_receipt_hashes), 1)
@@ -97,6 +104,14 @@ class ContextRetentionTransferExampleTests(unittest.TestCase):
             self.assertEqual(retention.rolled_back_receipt_hashes, ())
             self.assertEqual(retention.abstained_receipt_hashes, ())
 
+        for influence in result.branch_influence_certificates:
+            self.assertEqual(len(influence.query_context_ids), 1)
+            self.assertEqual(len(influence.candidate_actions), 3)
+            self.assertEqual(len(influence.ranked_actions), 3)
+            self.assertEqual(influence.top_action, influence.ranked_actions[0])
+            self.assertEqual(len(influence.retention_certificate_hashes), 1)
+            self.assertTrue(influence.top_action_receipt_hashes)
+
     def test_report_only_api_remains_available(self) -> None:
         report = run_context_retention_transfer_experiment()
 
@@ -105,6 +120,7 @@ class ContextRetentionTransferExampleTests(unittest.TestCase):
         self.assertEqual(report.refined_budget_success_count, 3)
         self.assertEqual(report.sibling_budget_success_count, 3)
         self.assertEqual(report.retention_certificate_count, 3)
+        self.assertEqual(report.influence_certificate_count, 3)
 
     def test_tampered_report_hash_fails_certificate(self) -> None:
         result = run_context_retention_transfer_certified_experiment()
@@ -117,6 +133,16 @@ class ContextRetentionTransferExampleTests(unittest.TestCase):
         invalid = replace(
             result.context_retention_transfer_certificate,
             sibling_budget_success_count=2,
+            certificate_hash="",
+        )
+
+        self.assertFalse(validate_context_retention_transfer_certificate(invalid, result.report))
+
+    def test_missing_influence_certificate_fails_certificate(self) -> None:
+        result = run_context_retention_transfer_certified_experiment()
+        invalid = replace(
+            result.context_retention_transfer_certificate,
+            branch_influence_certificate_hashes=result.context_retention_transfer_certificate.branch_influence_certificate_hashes[:2],
             certificate_hash="",
         )
 

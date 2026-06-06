@@ -31,7 +31,9 @@ before branch-memory reuse. The context-refinement command adds
 `trwm.ancestral_context_refinement_certificate.v1` artifacts that bind a failed
 coarse retrieval to a stricter refined retrieval. The context-retention command
 adds `trwm.ancestral_branch_retention_certificate.v1` artifacts that bind
-committed target branches into a hash-checked future-memory update. The
+committed target branches into a hash-checked future-memory update, plus
+`trwm.ancestral_branch_influence_certificate.v1` artifacts that bind the later
+sibling proposal order to the exact memory snapshot and retained context. The
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -130,13 +132,17 @@ allowed to influence exploration.
 domain records a failed coarse target branch, it refines ancestor retrieval,
 commits the refined target branch, and emits an
 `trwm.ancestral_branch_retention_certificate.v1` certificate for adding that
-committed target receipt to memory. A sibling target then uses only the retained
-target context as its ancestor and commits under the same hard verifier.
+committed target receipt to memory. Before the sibling target spends verifier
+budget, a `trwm.ancestral_branch_influence_certificate.v1` certificate binds
+the memory snapshot, retained target context, candidate action set, ranked
+order, top action, and supporting retained receipt hashes. The sibling target
+then commits under the same hard verifier.
 
 Learning: the closed loop is now retrieve, fail, refine, commit, retain, then
-improve the next exploration. Retention is still evidence, not authority: the
-sibling branch must pass verification, branch-selection audit, ledger audit,
-replay audit, and rollback audit before commit.
+certify influence for the next exploration. Retention and influence are still
+evidence, not authority: the sibling branch must pass verification,
+branch-selection audit, ledger audit, replay audit, and rollback audit before
+commit.
 
 ### Programmable World Model Frontier
 

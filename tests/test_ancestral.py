@@ -6,9 +6,11 @@ import unittest
 from trwm.ancestral import (
     AncestralBranchMemory,
     AncestralContextDescriptor,
+    build_ancestral_branch_influence_certificate,
     build_ancestral_branch_retention_certificate,
     build_ancestral_context_refinement_certificate,
     build_ancestral_context_selection_certificate,
+    validate_ancestral_branch_influence_certificate,
     validate_ancestral_branch_retention_certificate,
     validate_ancestral_branch_memory_snapshot,
     validate_ancestral_context_refinement_certificate,
@@ -313,6 +315,78 @@ class AncestralBranchMemoryTests(unittest.TestCase):
                 post_memory_snapshot=post_snapshot,
                 receipts=outcome.receipts,
                 branch_selection_certificate=branch_certificate,
+            )
+        )
+
+    def test_branch_influence_certificate_binds_snapshot_ranking(self) -> None:
+        engine = TransactionEngine(CounterfactualChoiceAdapter(), ledger=Ledger())
+        outcome = BranchRuntime(engine, CounterfactualChoiceProjector()).step(
+            CounterfactualChoiceState(),
+            make_counterfactual_traces(0),
+        )
+        branch_certificate = build_branch_selection_certificate(outcome.receipts, verifier_call_count=outcome.verifier_calls)
+        memory = AncestralBranchMemory()
+        retention = memory.retain_branch(
+            _branch_context(CONTEXT),
+            outcome.receipts,
+            branch_certificate,
+            retention_reason="retain_counterfactual_training_branch",
+        )
+        target_context = _branch_context("counterfactual-target")
+
+        certificate = memory.certify_influence(
+            target_context=target_context,
+            query_context_ids=(CONTEXT,),
+            candidates=("a_slow", "b_fast", "c_unsafe"),
+            retention_certificates=(retention,),
+            influence_reason="rank_target_candidates_from_retained_branch",
+        )
+
+        self.assertEqual(certificate.top_action, "b_fast")
+        self.assertEqual(certificate.ranked_actions[0], "b_fast")
+        self.assertEqual(certificate.top_action_receipt_hashes, retention.committed_receipt_hashes)
+        self.assertEqual(certificate.retention_certificate_hashes, (retention.certificate_hash,))
+        self.assertTrue(validate_ancestral_branch_influence_certificate(certificate))
+        self.assertTrue(
+            validate_ancestral_branch_influence_certificate(
+                certificate,
+                target_context=target_context,
+                memory_snapshot=memory.snapshot(),
+                retention_certificates=(retention,),
+            )
+        )
+
+    def test_branch_influence_certificate_rejects_tampering(self) -> None:
+        engine = TransactionEngine(CounterfactualChoiceAdapter(), ledger=Ledger())
+        outcome = BranchRuntime(engine, CounterfactualChoiceProjector()).step(
+            CounterfactualChoiceState(),
+            make_counterfactual_traces(0),
+        )
+        branch_certificate = build_branch_selection_certificate(outcome.receipts, verifier_call_count=outcome.verifier_calls)
+        memory = AncestralBranchMemory()
+        retention = memory.retain_branch(
+            _branch_context(CONTEXT),
+            outcome.receipts,
+            branch_certificate,
+            retention_reason="retain_counterfactual_training_branch",
+        )
+        target_context = _branch_context("counterfactual-target")
+        certificate = build_ancestral_branch_influence_certificate(
+            target_context=target_context,
+            memory_snapshot=memory.snapshot(),
+            query_context_ids=(CONTEXT,),
+            candidates=("a_slow", "b_fast", "c_unsafe"),
+            retention_certificates=(retention,),
+            influence_reason="rank_target_candidates_from_retained_branch",
+        )
+        tampered = replace(certificate, ranked_actions=("a_slow", "b_fast", "c_unsafe"), certificate_hash="")
+
+        self.assertFalse(
+            validate_ancestral_branch_influence_certificate(
+                tampered,
+                target_context=target_context,
+                memory_snapshot=memory.snapshot(),
+                retention_certificates=(retention,),
             )
         )
 

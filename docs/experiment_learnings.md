@@ -139,18 +139,21 @@ refinement commits, the committed target branch is retained with a
 pre-memory snapshot hash, post-memory snapshot hash, retained context
 descriptor hash, retained receipt hash, audited branch-selection certificate
 hash, and memory row/receipt deltas. A sibling target then uses the retained
-target context as its only ancestor and commits in all three toy domains under
-the same hard verifier. This turns the loop into:
+target context as its only ancestor. The new
+`trwm.ancestral_branch_influence_certificate.v1` artifact binds the exact
+memory snapshot, query context, candidate action set, ranked order, top action,
+and supporting receipt hashes before the sibling target spends verifier budget.
+The sibling target commits in all three toy domains under the same hard
+verifier. This turns the loop into:
 
 ```text
-retrieve -> fail -> refine -> commit -> retain -> improve sibling exploration
+retrieve -> fail -> refine -> commit -> retain -> certify influence -> improve sibling exploration
 ```
 
-The substrate implication is that world-model memory needs certified mutation,
-not only certified query. A programmable transactional world model should be
-able to prove when a branch becomes reusable future evidence, which memory
-snapshot it entered, and which later exploration was influenced by that
-retained branch.
+The substrate implication is that world-model memory needs certified mutation
+and certified query. A programmable transactional world model should be able to
+prove when a branch becomes reusable future evidence, which memory snapshot it
+entered, and which later proposal order was derived from that retained branch.
 
 The boundary remains narrow. This is a deterministic G1 canary inspired by
 experience replay, counterfactual regret evidence, and selective tree-search
