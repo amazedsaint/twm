@@ -159,6 +159,11 @@ This repository currently targets `G1` evidence:
   low-credit target rejects, credit-guided target commits, and same-budget
   verifier-call evidence before correlated source-valid branch fragments can
   influence target exploration,
+- branch-propensity-match certificates that bind target/source covariates,
+  propensity-style scores, caliper distances, covariate-balance distances,
+  mismatched and matched source receipts, static mismatched target rejects,
+  matched target commits, and same-budget verifier-call evidence before
+  context-mismatched source-valid branches can influence target exploration,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can
@@ -676,6 +681,9 @@ search.
   https://www.w3.org/TR/prov-overview/
 - Shapley, A Value for n-Person Games:
   https://doi.org/10.1515/9781400881970-018
+- Rosenbaum and Rubin, The Central Role of the Propensity Score in
+  Observational Studies for Causal Effects:
+  https://doi.org/10.1093/biomet/70.1.41
 - ISO/IEC/IEEE 15026-2 assurance case structure and terminology:
   https://standards.iteh.ai/catalog/standards/iso/4734d411-2bff-428f-8f4a-164859f171b8/iso-iec-ieee-15026-2-2022
 - OpenTelemetry Semantic Conventions:
