@@ -43,6 +43,7 @@ python3 -m examples.branch_credit_assignment_transfer
 python3 -m examples.branch_propensity_match_transfer
 python3 -m examples.branch_robustness_transfer
 python3 -m examples.branch_calibration_transfer
+python3 -m examples.branch_conformal_transfer
 python3 -m examples.branch_pruning_transfer
 python3 -m examples.branch_diversity_transfer
 python3 -m examples.branch_budget_transfer
@@ -167,6 +168,11 @@ branch-calibration command adds
 ids, predicted confidence values, empirical accept rates, calibration gaps,
 overconfident source rejects, calibrated source receipts, failed
 overconfident target replay, and same-budget calibrated target commit. The
+branch-conformal command adds
+`trwm.branch_conformal_certificate.v1` artifacts that bind source calibration
+receipts, nonconformity scores, alpha, quantile rank, out-of-envelope source
+reject, failed out-of-envelope target replay, and same-budget in-envelope
+target commit. The
 branch-pruning command adds `trwm.branch_pruning_certificate.v1` artifacts
 showing that rejected source branch receipts can prune known-dead target
 candidates before scarce verifier budget is spent. The
@@ -192,7 +198,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the thirty-seven branch-memory stages into one bounded G1 report. The physical
+the thirty-eight branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -744,6 +750,26 @@ analogy here; this is not neural-network calibration, statistical calibration,
 probability estimation, or model reliability assurance:
 https://arxiv.org/abs/1706.04599
 
+### Branch Conformal Transfer
+
+`examples.branch_conformal_transfer` tests receipt-bound nonconformity
+envelopes for source branch reuse. Each domain records three in-envelope source
+calibration commits and one out-of-envelope source reject. The static target
+spends one verifier call replaying an out-of-envelope source-like action and
+fails. The conformal target spends the same one verifier call on an
+in-envelope action and commits only after fresh hard verification.
+
+Learning: branches of the past can improve exploration only when source replay
+admission is separated from raw similarity.
+`trwm.branch_conformal_certificate.v1` binds calibration action ids,
+nonconformity scores, alpha, quantile rank, quantile value, out-of-envelope
+source reject, failed static target replay, conformal target commit,
+branch-selection certificates, and same-budget comparison before claiming
+nonconformity-guided exploration lift. Conformal prediction is only the
+nonconformity-envelope analogy here; this is not conformal prediction,
+distribution-free coverage, conditional coverage, or uncertainty
+quantification: https://arxiv.org/abs/1604.04173
+
 ### Branch Pruning Transfer
 
 `examples.branch_pruning_transfer` tests negative branch evidence. Each domain
@@ -845,7 +871,7 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the thirty-seven branch-history experiments and
+`examples.branch_history_frontier` runs the thirty-eight branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
@@ -856,7 +882,7 @@ diagnostic probing, residual-template repair, boundary bracketing, source
 consensus, contrastive invariant transfer, trust-region radius transfer, analogical ancestor reuse, certified context selection,
 counterexample refinement,
 conflict-aware query-policy transfer,
-drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, confidence calibration, receipt-bound branch pruning, diversity-certified family
+drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, confidence calibration, conformal transfer, receipt-bound branch pruning, diversity-certified family
 coverage, branch budget allocation, no-good stop-rule abstention, branch composition, and retained-memory
 influence.
 
@@ -876,7 +902,7 @@ receipts and fresh target verification, source consensus is admitted only
 through majority receipts plus fresh target verification, contrastive invariants
 are admitted only through positive/negative source receipts plus fresh target
 verification, context selection is certified, failed branches refine retrieval,
-conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, Pareto dominance is certificate-bound, outlier filtering is certificate-bound, source provenance is certificate-bound, source-fragment credit is certificate-bound, source-context matching is certificate-bound, uncertainty-set coverage is certificate-bound, confidence-bin calibration is certificate-bound, rejected branches prune
+conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, Pareto dominance is certificate-bound, outlier filtering is certificate-bound, source provenance is certificate-bound, source-fragment credit is certificate-bound, source-context matching is certificate-bound, uncertainty-set coverage is certificate-bound, confidence-bin calibration is certificate-bound, nonconformity quantiles are certificate-bound, rejected branches prune
 known-dead target candidates, same-family failures force coverage only through
 a certificate, verifier budget is allocated only through a cost-bound
 certificate, branch fragments compose
@@ -923,6 +949,9 @@ certificates before claim promotion.
 - Reliability diagrams and expected calibration error are the confidence-bin
   analogy for branch calibration, not a model calibration guarantee:
   https://arxiv.org/abs/1706.04599
+- Conformal prediction/nonconformity quantiles are the envelope analogy for
+  branch-conformal transfer, not a coverage guarantee:
+  https://arxiv.org/abs/1604.04173
 - UCT/MCTS is the planning analogy for spending samples selectively:
   https://doi.org/10.1007/11871842_29
 - Case-based reasoning is the retrieval/reuse/revision analogy for solving a

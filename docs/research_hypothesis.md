@@ -174,6 +174,10 @@ This repository currently targets `G1` evidence:
   source rejects, calibrated source receipts, static overconfident target
   rejects, calibrated target commits, and same-budget verifier-call evidence
   before soft proposer scores can influence target exploration,
+- branch-conformal certificates that bind alpha, quantile rank, calibration
+  receipt hashes, nonconformity scores, out-of-envelope source rejects, static
+  target rejects, conformal target commits, and same-budget verifier-call
+  evidence before source replay is admitted by a nonconformity envelope,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can
@@ -698,6 +702,8 @@ search.
   https://doi.org/10.1287/moor.23.4.769
 - Guo et al., On Calibration of Modern Neural Networks:
   https://arxiv.org/abs/1706.04599
+- Lei et al., Distribution-Free Predictive Inference for Regression:
+  https://arxiv.org/abs/1604.04173
 - ISO/IEC/IEEE 15026-2 assurance case structure and terminology:
   https://standards.iteh.ai/catalog/standards/iso/4734d411-2bff-428f-8f4a-164859f171b8/iso-iec-ieee-15026-2-2022
 - OpenTelemetry Semantic Conventions:

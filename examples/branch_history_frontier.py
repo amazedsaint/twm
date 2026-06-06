@@ -80,6 +80,10 @@ from examples.branch_calibration_transfer import (
     run_branch_calibration_transfer_certified_experiment,
     validate_branch_calibration_transfer_certificate,
 )
+from examples.branch_conformal_transfer import (
+    run_branch_conformal_transfer_certified_experiment,
+    validate_branch_conformal_transfer_certificate,
+)
 from examples.branch_consensus_transfer import (
     run_branch_consensus_transfer_certified_experiment,
     validate_branch_consensus_transfer_certificate,
@@ -192,6 +196,7 @@ BRANCH_HISTORY_FRONTIER_SOURCES = (
     "https://itl.nist.gov/div898/handbook/prc/section2/prc241.htm",
     "https://doi.org/10.1287/moor.23.4.769",
     "https://arxiv.org/abs/1706.04599",
+    "https://arxiv.org/abs/1604.04173",
     "https://doi.org/10.1109/4235.996017",
     "https://doi.org/10.1145/358669.358692",
     "https://doi.org/10.1145/357172.357176",
@@ -204,7 +209,7 @@ BRANCH_HISTORY_FRONTIER_CLAIM_BOUNDARY = (
     "prerequisite ordering, curriculum sequencing, regime-conditioned contingency reuse, hindsight goal relabeling, receipt-bound "
     "field intervention, diagnostic probing, residual-template repair, boundary bracketing, source consensus, "
     "contrastive invariant transfer, context selection, retrieval refinement, query-policy reuse, conflict resolution, "
-    "drift quarantine, recency-weighted source freshness, restart-anchor backtracking, symmetry-transform transfer, pairwise-constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, calibration transfer, branch pruning, branch diversity, budget allocation, trust-region radius transfer, "
+    "drift quarantine, recency-weighted source freshness, restart-anchor backtracking, symmetry-transform transfer, pairwise-constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, calibration transfer, conformal transfer, branch pruning, branch diversity, budget allocation, trust-region radius transfer, "
     "stop-rule abstention, branch composition, and retained-memory influence. "
     "It is not a statistical exploration algorithm, regret guarantee, MCTS result, contextual-bandit "
     "result, Hindsight Experience Replay result, causal inference result, do-calculus result, Bayesian "
@@ -216,7 +221,8 @@ BRANCH_HISTORY_FRONTIER_CLAIM_BOUNDARY = (
     "propensity-score estimator, covariate-balance proof, treatment-effect estimate, causal inference result, "
     "reinforcement-learning credit-assignment result, robust optimization, worst-case guarantee, "
     "distributional robustness, neural-network calibration, statistical calibration, probability "
-    "estimation, model reliability assurance, or scientific-discovery claim."
+    "estimation, model reliability assurance, conformal prediction, distribution-free coverage, "
+    "conditional coverage, uncertainty quantification, or scientific-discovery claim."
 )
 
 
@@ -305,6 +311,8 @@ class BranchHistoryFrontierReport:
     robust_success_count: int
     branch_calibration_certificate_count: int
     calibrated_success_count: int
+    branch_conformal_certificate_count: int
+    conformal_success_count: int
     branch_pruning_certificate_count: int
     pruned_action_count: int
     branch_diversity_certificate_count: int
@@ -361,6 +369,7 @@ def run_branch_history_frontier_experiment() -> BranchHistoryFrontierResult:
             run_branch_propensity_match_transfer_certified_experiment(),
             run_branch_robustness_transfer_certified_experiment(),
             run_branch_calibration_transfer_certified_experiment(),
+            run_branch_conformal_transfer_certified_experiment(),
             run_branch_pruning_transfer_certified_experiment(),
             run_branch_diversity_transfer_certified_experiment(),
             run_branch_budget_transfer_certified_experiment(),
@@ -449,6 +458,8 @@ def build_branch_history_frontier_result(
         robust_success_count=_metric_for(children, "branch_robustness_transfer", "robust_success_count"),
         branch_calibration_certificate_count=_metric(children, "branch_calibration_certificate_count"),
         calibrated_success_count=_metric_for(children, "branch_calibration_transfer", "calibrated_success_count"),
+        branch_conformal_certificate_count=_metric(children, "branch_conformal_certificate_count"),
+        conformal_success_count=_metric_for(children, "branch_conformal_transfer", "conformal_success_count"),
         branch_pruning_certificate_count=_metric(children, "branch_pruning_certificate_count"),
         pruned_action_count=_metric(children, "pruned_action_count"),
         branch_diversity_certificate_count=_metric(children, "branch_diversity_certificate_count"),
@@ -476,10 +487,10 @@ def build_branch_history_frontier_result(
             "Pareto-front transfer twenty-fifth, outlier-filter transfer twenty-sixth, "
             "provenance-guard transfer twenty-seventh, credit-assignment transfer twenty-eighth, "
             "propensity-match transfer twenty-ninth, robustness transfer thirtieth, "
-            "calibration transfer thirty-first, receipt-bound branch pruning thirty-second, "
-            "diversity-certified family coverage thirty-third, budget-allocation transfer thirty-fourth, "
-            "no-good stop-rule abstention thirty-fifth, branch composition thirty-sixth, and "
-            "retained-memory influence with matched ablation thirty-seventh."
+            "calibration transfer thirty-first, conformal transfer thirty-second, "
+            "receipt-bound branch pruning thirty-third, diversity-certified family coverage thirty-fourth, "
+            "budget-allocation transfer thirty-fifth, no-good stop-rule abstention thirty-sixth, "
+            "branch composition thirty-seventh, and retained-memory influence with matched ablation thirty-eighth."
         ),
     )
     claim = certify_claim(
@@ -487,7 +498,7 @@ def build_branch_history_frontier_result(
         claim_text=(
             "The certified branch-history examples identify a local G1 substrate path where branches of "
             "the past improve exploration only through audited proposal ordering, selection, refinement, "
-            "query-policy, conflict-resolution, drift-quarantine, recency weighting, restart-anchor backtracking, symmetry-transform transfer, pairwise-constraint transfer, confidence-bound support, Pareto-front transfer, outlier filtering, provenance guarding, credit assignment, propensity matching, robustness transfer, confidence calibration, pruning, diversity, budget-allocation, "
+            "query-policy, conflict-resolution, drift-quarantine, recency weighting, restart-anchor backtracking, symmetry-transform transfer, pairwise-constraint transfer, confidence-bound support, Pareto-front transfer, outlier filtering, provenance guarding, credit assignment, propensity matching, robustness transfer, confidence calibration, nonconformity quantiles, pruning, diversity, budget-allocation, "
             "counterfactual accepted-loser reuse, option-family abstraction, prerequisite ordering, "
             "regime-conditioned contingency reuse, hindsight goal relabeling, field intervention, diagnostic "
             "probing, residual-template repair, boundary bracketing, source consensus, contrastive invariant transfer, "
@@ -496,7 +507,7 @@ def build_branch_history_frontier_result(
         evidence_grade="G1",
         scope="branch_history_frontier",
         requirements=(
-            requirement("exactly_thirty_seven_branch_history_stages", report.stage_count == 37),
+            requirement("exactly_thirty_eight_branch_history_stages", report.stage_count == 38),
             requirement(
                 "expected_child_experiments",
                 set(report.child_experiment_ids)
@@ -532,6 +543,7 @@ def build_branch_history_frontier_result(
                     "branch_propensity_match_transfer",
                     "branch_robustness_transfer",
                     "branch_calibration_transfer",
+                    "branch_conformal_transfer",
                     "branch_pruning_transfer",
                     "branch_diversity_transfer",
                     "branch_budget_transfer",
@@ -646,6 +658,10 @@ def build_branch_history_frontier_result(
                 "branch_calibration_certificates_present",
                 report.branch_calibration_certificate_count == 3 and report.calibrated_success_count == 3,
             ),
+            requirement(
+                "branch_conformal_certificates_present",
+                report.branch_conformal_certificate_count == 3 and report.conformal_success_count == 3,
+            ),
             requirement("branch_pruning_certificates_present", report.branch_pruning_certificate_count == 3 and report.pruned_action_count == 6),
             requirement("branch_diversity_certificates_present", report.branch_diversity_certificate_count == 3 and report.diverse_family_count == 3),
             requirement("branch_budget_certificates_present", report.branch_budget_certificate_count == 3 and report.static_abstain_count == 3),
@@ -717,6 +733,8 @@ def build_branch_history_frontier_result(
             "robust_success_count": report.robust_success_count,
             "branch_calibration_certificate_count": report.branch_calibration_certificate_count,
             "calibrated_success_count": report.calibrated_success_count,
+            "branch_conformal_certificate_count": report.branch_conformal_certificate_count,
+            "conformal_success_count": report.conformal_success_count,
             "branch_pruning_certificate_count": report.branch_pruning_certificate_count,
             "pruned_action_count": report.pruned_action_count,
             "branch_diversity_certificate_count": report.branch_diversity_certificate_count,
@@ -834,6 +852,8 @@ def _primary_certificate(child: CertifiedExampleResult) -> Any:
         return child.branch_robustness_transfer_certificate
     if experiment_id == "branch_calibration_transfer":
         return child.branch_calibration_transfer_certificate
+    if experiment_id == "branch_conformal_transfer":
+        return child.branch_conformal_transfer_certificate
     if experiment_id == "branch_pruning_transfer":
         return child.branch_pruning_transfer_certificate
     if experiment_id == "branch_diversity_transfer":
@@ -929,6 +949,11 @@ def _primary_certificate_valid(child: CertifiedExampleResult) -> bool:
     if experiment_id == "branch_calibration_transfer":
         return validate_branch_calibration_transfer_certificate(
             child.branch_calibration_transfer_certificate,
+            child.report,
+        )
+    if experiment_id == "branch_conformal_transfer":
+        return validate_branch_conformal_transfer_certificate(
+            child.branch_conformal_transfer_certificate,
             child.report,
         )
     if experiment_id == "branch_pruning_transfer":
@@ -1227,6 +1252,15 @@ def _stage_fields(child: CertifiedExampleResult) -> tuple[str, str, str, str, bo
             f"calibration certificates {report.branch_calibration_certificate_count}",
             True,
             "confidence-bin calibration certificates before trusting proposer scores",
+        )
+    if experiment_id == "branch_conformal_transfer":
+        return (
+            "receipt_bound_nonconformity_quantile",
+            f"out-of-envelope target commits {report.static_success_count}/{report.domain_count}",
+            f"in-envelope target commits {report.conformal_success_count}/{report.domain_count}",
+            f"conformal certificates {report.branch_conformal_certificate_count}",
+            True,
+            "nonconformity-quantile certificates before source replay admission",
         )
     if experiment_id == "branch_composition_transfer":
         return (
