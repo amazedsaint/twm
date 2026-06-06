@@ -12,6 +12,10 @@ from examples.ancestral_branch_exploration import (
     run_ancestral_branch_exploration_certified_experiment,
     validate_ancestral_branch_exploration_certificate,
 )
+from examples.branch_abstraction_transfer import (
+    run_branch_abstraction_transfer_certified_experiment,
+    validate_branch_abstraction_transfer_certificate,
+)
 from examples.branch_counterfactual_transfer import (
     run_branch_counterfactual_transfer_certified_experiment,
     validate_branch_counterfactual_transfer_certificate,
@@ -73,14 +77,15 @@ BRANCH_HISTORY_FRONTIER_SOURCES = (
     "https://arxiv.org/abs/1504.04909",
     "https://jmlr.org/papers/v18/16-558.html",
     "https://arxiv.org/abs/1603.06560",
+    "https://doi.org/10.1016/S0004-3702(99)00052-1",
 )
 BRANCH_HISTORY_FRONTIER_CLAIM_BOUNDARY = (
     "G1 aggregate over local deterministic branch-history examples only. It shows a staged evidence "
-    "path for proposal ordering, counterfactual accepted-loser reuse, context selection, retrieval "
-    "refinement, query-policy reuse, conflict resolution, drift quarantine, branch pruning, branch "
-    "diversity, budget allocation, branch composition, and retained-memory influence. It is not a "
-    "statistical exploration algorithm, regret guarantee, MCTS result, automatic similarity metric, or "
-    "scientific-discovery claim."
+    "path for proposal ordering, counterfactual accepted-loser reuse, option-family abstraction, context "
+    "selection, retrieval refinement, query-policy reuse, conflict resolution, drift quarantine, branch "
+    "pruning, branch diversity, budget allocation, branch composition, and retained-memory influence. "
+    "It is not a statistical exploration algorithm, regret guarantee, MCTS result, automatic similarity "
+    "metric, or scientific-discovery claim."
 )
 
 
@@ -116,6 +121,7 @@ class BranchHistoryFrontierReport:
     total_rejected_count: int
     total_invalid_commit_count: int
     same_budget_stage_count: int
+    branch_abstraction_certificate_count: int
     branch_conflict_certificate_count: int
     counterfactual_certificate_count: int
     rolled_back_counterfactual_count: int
@@ -146,6 +152,7 @@ def run_branch_history_frontier_experiment() -> BranchHistoryFrontierResult:
         (
             run_ancestral_branch_exploration_certified_experiment(),
             run_branch_counterfactual_transfer_certified_experiment(),
+            run_branch_abstraction_transfer_certified_experiment(),
             run_analogical_branch_transfer_certified_experiment(),
             run_context_selection_transfer_certified_experiment(),
             run_context_refinement_transfer_certified_experiment(),
@@ -185,6 +192,7 @@ def build_branch_history_frontier_result(
         total_rejected_count=sum(child.evidence_certificate.rejected_count for child in children),
         total_invalid_commit_count=sum(child.evidence_certificate.invalid_commit_count for child in children),
         same_budget_stage_count=sum(1 for row in rows if row.same_budget_comparison),
+        branch_abstraction_certificate_count=_metric(children, "branch_abstraction_certificate_count"),
         branch_conflict_certificate_count=_metric(children, "branch_conflict_certificate_count"),
         counterfactual_certificate_count=_metric(children, "counterfactual_certificate_count"),
         rolled_back_counterfactual_count=_metric(children, "rolled_back_counterfactual_count"),
@@ -203,11 +211,12 @@ def build_branch_history_frontier_result(
         aggregate_sources=tuple(sorted({source for child in children for source in child.evidence_certificate.sources})),
         learning=(
             "The branch-history evidence path is now staged: receipt-bound ordering first, explicit "
-            "accepted-loser counterfactual reuse second, explicit ancestor reuse third, certified context "
-            "selection fourth, counterexample-driven refinement fifth, reusable query-policy and "
-            "conflict-resolution certificates sixth, drift quarantine seventh, receipt-bound branch pruning "
-            "eighth, diversity-certified family coverage ninth, budget-allocation transfer tenth, branch "
-            "composition eleventh, and retained-memory influence with matched ablation twelfth."
+            "accepted-loser counterfactual reuse second, option-family abstraction third, explicit "
+            "ancestor reuse fourth, certified context selection fifth, counterexample-driven refinement "
+            "sixth, reusable query-policy and conflict-resolution certificates seventh, drift quarantine "
+            "eighth, receipt-bound branch pruning ninth, diversity-certified family coverage tenth, "
+            "budget-allocation transfer eleventh, branch composition twelfth, and retained-memory "
+            "influence with matched ablation thirteenth."
         ),
     )
     claim = certify_claim(
@@ -216,18 +225,20 @@ def build_branch_history_frontier_result(
             "The certified branch-history examples identify a local G1 substrate path where branches of "
             "the past improve exploration only through audited proposal ordering, selection, refinement, "
             "query-policy, conflict-resolution, drift-quarantine, pruning, diversity, budget-allocation, "
-            "counterfactual accepted-loser reuse, composition, retention, and influence certificates."
+            "counterfactual accepted-loser reuse, option-family abstraction, composition, retention, and "
+            "influence certificates."
         ),
         evidence_grade="G1",
         scope="branch_history_frontier",
         requirements=(
-            requirement("exactly_twelve_branch_history_stages", report.stage_count == 12),
+            requirement("exactly_thirteen_branch_history_stages", report.stage_count == 13),
             requirement(
                 "expected_child_experiments",
                 set(report.child_experiment_ids)
                 == {
                     "ancestral_branch_exploration",
                     "branch_counterfactual_transfer",
+                    "branch_abstraction_transfer",
                     "analogical_branch_transfer",
                     "context_selection_transfer",
                     "context_refinement_transfer",
@@ -249,6 +260,7 @@ def build_branch_history_frontier_result(
                 "counterfactual_certificates_present",
                 report.counterfactual_certificate_count == 3 and report.rolled_back_counterfactual_count == 3,
             ),
+            requirement("branch_abstraction_certificates_present", report.branch_abstraction_certificate_count == 3),
             requirement("query_policy_conflict_certificates_present", report.branch_conflict_certificate_count == 6),
             requirement(
                 "drift_quarantine_certificates_present",
@@ -266,6 +278,7 @@ def build_branch_history_frontier_result(
             "total_receipt_count": report.total_receipt_count,
             "total_committed_count": report.total_committed_count,
             "total_rejected_count": report.total_rejected_count,
+            "branch_abstraction_certificate_count": report.branch_abstraction_certificate_count,
             "counterfactual_certificate_count": report.counterfactual_certificate_count,
             "rolled_back_counterfactual_count": report.rolled_back_counterfactual_count,
             "branch_conflict_certificate_count": report.branch_conflict_certificate_count,
@@ -328,6 +341,8 @@ def _primary_certificate(child: CertifiedExampleResult) -> Any:
         return child.exploration_certificate
     if experiment_id == "branch_counterfactual_transfer":
         return child.branch_counterfactual_transfer_certificate
+    if experiment_id == "branch_abstraction_transfer":
+        return child.branch_abstraction_transfer_certificate
     if experiment_id == "analogical_branch_transfer":
         return child.analogical_certificate
     if experiment_id == "context_selection_transfer":
@@ -357,6 +372,8 @@ def _primary_certificate_valid(child: CertifiedExampleResult) -> bool:
         return validate_ancestral_branch_exploration_certificate(child.exploration_certificate, child.report)
     if experiment_id == "branch_counterfactual_transfer":
         return validate_branch_counterfactual_transfer_certificate(child.branch_counterfactual_transfer_certificate, child.report)
+    if experiment_id == "branch_abstraction_transfer":
+        return validate_branch_abstraction_transfer_certificate(child.branch_abstraction_transfer_certificate, child.report)
     if experiment_id == "analogical_branch_transfer":
         return validate_analogical_branch_transfer_certificate(child.analogical_certificate, child.report)
     if experiment_id == "context_selection_transfer":
@@ -400,6 +417,15 @@ def _stage_fields(child: CertifiedExampleResult) -> tuple[str, str, str, str, bo
             f"rolled-back counterfactual receipts {report.rolled_back_counterfactual_count}",
             True,
             "accepted-loser counterfactual certificates before proposal reuse",
+        )
+    if experiment_id == "branch_abstraction_transfer":
+        return (
+            "option_family_branch_abstraction",
+            f"exact replay commits {report.exact_replay_success_count}/{report.domain_count}",
+            f"same-family target action commits {report.abstraction_success_count}/{report.domain_count}",
+            f"abstraction certificates {report.branch_abstraction_certificate_count}",
+            True,
+            "option-family abstraction certificates before adapting past branch actions",
         )
     if experiment_id == "analogical_branch_transfer":
         return (

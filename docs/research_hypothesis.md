@@ -73,6 +73,10 @@ This repository currently targets `G1` evidence:
   losers, stale target-winner rejects, counterfactual target commits, and
   same-budget verifier-call evidence before rollback losers can guide target
   proposal order,
+- branch-abstraction certificates that bind source option-family evidence,
+  stale exact-action target rejects, same-family target commits, and
+  same-budget verifier-call evidence before abstract branch families can adapt
+  exact actions across target contexts,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can

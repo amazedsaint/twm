@@ -14,6 +14,7 @@ python3 -m examples.molecular_dynamics_verlet
 python3 -m examples.material_lattice_metropolis
 python3 -m examples.ancestral_branch_exploration
 python3 -m examples.branch_counterfactual_transfer
+python3 -m examples.branch_abstraction_transfer
 python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
@@ -35,7 +36,10 @@ branch receipts to later budgeted proposal ordering. The branch-counterfactual
 command adds
 `trwm.branch_counterfactual_certificate.v1` artifacts showing that
 accepted-but-rolled-back branch losers can become proposal evidence when the
-old winner is stale in a target context. The analogical branch
+old winner is stale in a target context. The branch-abstraction command adds
+`trwm.branch_abstraction_certificate.v1` artifacts showing that an abstract
+option family can guide a target-specific same-family action when exact
+source-action replay is stale. The analogical branch
 command adds an `analogical_certificate` that binds explicit ancestor-context
 reuse and misleading-ancestor rejection. The context-selection command adds
 descriptor-level `trwm.ancestral_context_selection_certificate.v1` artifacts
@@ -71,7 +75,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the twelve branch-memory stages into one bounded G1 report. The physical
+the thirteen branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -139,6 +143,21 @@ winner receipts, rolled-back accepted loser receipts, stale target rejects,
 counterfactual target commits, branch-selection certificates, and the
 same-budget comparison before claiming that counterfactual reuse improved
 exploration.
+
+### Branch Abstraction Transfer
+
+`examples.branch_abstraction_transfer` tests abstract branch-family reuse. Each
+domain records a source branch where a concrete action commits inside an
+abstract option family. The target makes that exact source action stale, so
+exact one-call replay fails. A different target-specific action in the same
+abstract family then commits under the same one-call budget after hard
+verification.
+
+Learning: branches of the past sometimes transfer as certified abstractions,
+not exact action replays. `trwm.branch_abstraction_certificate.v1` binds the
+source family, source commit receipts, stale exact target rejects,
+same-family target commits, branch-selection certificates, and same-budget
+comparison before claiming abstraction-level exploration lift.
 
 ### Analogical Branch Transfer
 
@@ -300,18 +319,19 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the twelve branch-history experiments and
+`examples.branch_history_frontier` runs the thirteen branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
-ordering through accepted-loser counterfactual reuse, conflict-aware
-query-policy transfer, drift quarantine, receipt-bound branch pruning,
-diversity-certified family coverage, branch budget allocation, branch
-composition, and retained-memory influence.
+ordering through accepted-loser counterfactual reuse, option-family
+abstraction, conflict-aware query-policy transfer, drift quarantine,
+receipt-bound branch pruning, diversity-certified family coverage, branch
+budget allocation, branch composition, and retained-memory influence.
 
 Learning: the current branch-history direction is only coherent when every
 stage validates: raw past branches reorder proposals, explicit ancestor reuse is
 bounded, accepted losers are reused only through a counterfactual certificate,
+option families adapt exact actions only through an abstraction certificate,
 context selection is certified, failed branches refine retrieval, conflicts are
 certificate-bound, drift is quarantined, rejected branches prune known-dead
 target candidates, same-family failures force coverage only through a
@@ -352,6 +372,9 @@ certificates before claim promotion.
 - Case-based reasoning is the retrieval/reuse/revision analogy for solving a
   new problem from prior cases: Aamodt and Plaza, AI Communications 7(1),
   39-59 (1994), doi:10.3233/AIC-1994-7104.
+- The options framework is the temporal-abstraction analogy for treating a
+  reusable branch family separately from an exact primitive action:
+  https://doi.org/10.1016/S0004-3702(99)00052-1
 - Holland's adaptive-system work is the design analogy for treating useful
   past branch fragments as recombinable proposal building blocks:
   https://direct.mit.edu/books/monograph/2574/Adaptation-in-Natural-and-Artificial-SystemsAn

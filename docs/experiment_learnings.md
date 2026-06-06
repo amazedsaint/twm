@@ -115,6 +115,18 @@ same-budget comparison. The substrate implication is that rollback is not just
 undo machinery: accepted losers are reusable counterfactual evidence, but only
 after a certificate separates them from committed authority.
 
+The branch-abstraction transfer example adds option-family evidence. Each
+domain records a source branch where a concrete source action commits inside an
+abstract family. The target makes that exact source action stale, so exact
+one-call replay fails in all three domains. A different target-specific action
+in the same family commits in all three domains under the same one-call budget.
+The new `trwm.branch_abstraction_certificate.v1` artifact binds source family,
+source commit receipts, stale exact target rejects, same-family target commits,
+branch-selection certificates, and the same-budget comparison. The substrate
+implication is that past branch evidence needs typed abstraction levels: exact
+action reuse, family-level reuse, and composed reuse should be separate
+certified surfaces rather than one memory score.
+
 The analogical branch transfer example adds one more design constraint:
 cross-context reuse must name its ancestor contexts explicitly. For each toy
 domain, two positive ancestor contexts reorder the target budget-one search
@@ -260,14 +272,15 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the twelve local branch-memory
+The branch-history frontier report now aggregates the thirteen local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
-receipt-bound ordering, accepted-loser counterfactual reuse, analogical
-ancestor reuse, certified context selection, counterexample refinement,
-conflict-aware query-policy transfer, drift quarantine, receipt-bound branch
-pruning, diversity-certified family coverage, receipt-bound budget allocation,
-branch composition, and retained memory influence.
+receipt-bound ordering, accepted-loser counterfactual reuse, option-family
+abstraction, analogical ancestor reuse, certified context selection,
+counterexample refinement, conflict-aware query-policy transfer, drift
+quarantine, receipt-bound branch pruning, diversity-certified family coverage,
+receipt-bound budget allocation, branch composition, and retained memory
+influence.
 This changes the design posture from isolated demos to a staged substrate map:
 each branch-history capability must expose its own certificate, and later
 stages are only meaningful if earlier evidence still validates.
@@ -275,8 +288,9 @@ stages are only meaningful if earlier evidence still validates.
 The boundary remains narrow. This is a deterministic G1 canary inspired by
 experience replay, counterfactual regret evidence, and selective tree-search
 sampling plus nogood-style pruning, diversity pressure, and recombinable
-building-block search plus successive resource allocation; it is not a
-statistical exploration algorithm, regret guarantee, MCTS implementation,
-automatic similarity metric, CEGAR system, CDCL solver, novelty-search result,
-MAP-Elites implementation, Hyperband implementation, genetic algorithm, program
-synthesizer, or cross-domain scientific discovery result.
+building-block search plus successive resource allocation and temporal
+abstraction; it is not a statistical exploration algorithm, regret guarantee,
+MCTS implementation, automatic similarity metric, CEGAR system, CDCL solver,
+novelty-search result, MAP-Elites implementation, Hyperband implementation,
+options-framework result, genetic algorithm, program synthesizer, or
+cross-domain scientific discovery result.
