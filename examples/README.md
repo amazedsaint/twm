@@ -34,8 +34,12 @@ adds `trwm.ancestral_branch_retention_certificate.v1` artifacts that bind
 committed target branches into a hash-checked future-memory update, plus
 `trwm.ancestral_branch_influence_certificate.v1` artifacts that bind the later
 sibling proposal order to the exact memory snapshot and retained context. The
-frontier command aggregates the three physical certified examples into a
-cross-domain report and bounded G1 claim certificate.
+context-retention report also emits
+`trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
+the static sibling baseline with the influence-ranked sibling branch under the
+same one-call verifier budget. The frontier command aggregates the three
+physical certified examples into a cross-domain report and bounded G1 claim
+certificate.
 
 ## Experiments
 
@@ -136,13 +140,16 @@ committed target receipt to memory. Before the sibling target spends verifier
 budget, a `trwm.ancestral_branch_influence_certificate.v1` certificate binds
 the memory snapshot, retained target context, candidate action set, ranked
 order, top action, and supporting retained receipt hashes. The sibling target
-then commits under the same hard verifier.
+then commits under the same hard verifier. The report also records a
+same-budget ablation certificate: the static sibling pass spends one verifier
+call on the old first proposal and fails, while the influence-ranked sibling
+pass spends one verifier call and commits.
 
 Learning: the closed loop is now retrieve, fail, refine, commit, retain, then
-certify influence for the next exploration. Retention and influence are still
-evidence, not authority: the sibling branch must pass verification,
-branch-selection audit, ledger audit, replay audit, and rollback audit before
-commit.
+certify influence for the next exploration, with a matched static baseline.
+Retention and influence are still evidence, not authority: the sibling branch
+must pass verification, branch-selection audit, ledger audit, replay audit, and
+rollback audit before commit.
 
 ### Programmable World Model Frontier
 

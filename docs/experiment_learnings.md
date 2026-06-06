@@ -143,17 +143,24 @@ target context as its only ancestor. The new
 `trwm.ancestral_branch_influence_certificate.v1` artifact binds the exact
 memory snapshot, query context, candidate action set, ranked order, top action,
 and supporting receipt hashes before the sibling target spends verifier budget.
-The sibling target commits in all three toy domains under the same hard
-verifier. This turns the loop into:
+The same report now adds
+`trwm.context_retention_influence_ablation_certificate.v1`, comparing a static
+sibling pass and an influence-ranked sibling pass under one verifier call each.
+The static sibling pass fails in all three toy domains; the influence-ranked
+sibling pass commits in all three under the same hard verifier. This turns the
+loop into:
 
 ```text
-retrieve -> fail -> refine -> commit -> retain -> certify influence -> improve sibling exploration
+retrieve -> fail -> refine -> commit -> retain -> certify influence -> compare same-budget baseline -> improve sibling exploration
 ```
 
 The substrate implication is that world-model memory needs certified mutation
-and certified query. A programmable transactional world model should be able to
-prove when a branch becomes reusable future evidence, which memory snapshot it
-entered, and which later proposal order was derived from that retained branch.
+and certified query, plus a matched ablation certificate before claiming
+exploration improvement. A programmable transactional world model should be
+able to prove when a branch becomes reusable future evidence, which memory
+snapshot it entered, which later proposal order was derived from that retained
+branch, and whether that proposal order beat a same-budget non-influenced
+baseline.
 
 The boundary remains narrow. This is a deterministic G1 canary inspired by
 experience replay, counterfactual regret evidence, and selective tree-search

@@ -60,9 +60,9 @@ contexts may influence target exploration; the context-refinement example uses
 a rejected target branch to refine ancestor retrieval; the context-retention
 example retains the successful target branch as certified future proposal
 evidence for a sibling target and certifies the memory query that ranks the
-sibling proposals; the frontier example aggregates the three physical
-certified domains. See `examples/README.md` and
-`docs/experiment_learnings.md`.
+sibling proposals against a same-budget static sibling baseline; the frontier
+example aggregates the three physical certified domains. See
+`examples/README.md` and `docs/experiment_learnings.md`.
 
 ## Package Layout
 
