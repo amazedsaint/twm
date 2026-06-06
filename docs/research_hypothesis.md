@@ -81,6 +81,10 @@ This repository currently targets `G1` evidence:
   static target rejects, guided prerequisite/final commits, and same-budget
   verifier-call evidence before past branches can impose stateful target
   exploration order,
+- branch-contingency certificates that bind stale and matched source regimes,
+  static target rejects, contingent target commits, selected/rejected source
+  contexts, and same-budget verifier-call evidence before past branches can be
+  reused through a context-feature switchpoint,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can

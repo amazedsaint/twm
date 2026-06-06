@@ -20,6 +20,10 @@ from examples.branch_counterfactual_transfer import (
     run_branch_counterfactual_transfer_certified_experiment,
     validate_branch_counterfactual_transfer_certificate,
 )
+from examples.branch_contingency_transfer import (
+    run_branch_contingency_transfer_certified_experiment,
+    validate_branch_contingency_transfer_certificate,
+)
 from examples.branch_prerequisite_transfer import (
     run_branch_prerequisite_transfer_certified_experiment,
     validate_branch_prerequisite_transfer_certificate,
@@ -82,14 +86,16 @@ BRANCH_HISTORY_FRONTIER_SOURCES = (
     "https://jmlr.org/papers/v18/16-558.html",
     "https://arxiv.org/abs/1603.06560",
     "https://doi.org/10.1016/S0004-3702(99)00052-1",
+    "https://papers.nips.cc/paper/3178-the-epoch-greedy-algorithm-for-multi-armed-bandits-with-side-information",
 )
 BRANCH_HISTORY_FRONTIER_CLAIM_BOUNDARY = (
     "G1 aggregate over local deterministic branch-history examples only. It shows a staged evidence "
     "path for proposal ordering, counterfactual accepted-loser reuse, option-family abstraction, "
-    "prerequisite ordering, context selection, retrieval refinement, query-policy reuse, conflict "
-    "resolution, drift quarantine, branch pruning, branch diversity, budget allocation, branch "
-    "composition, and retained-memory influence. It is not a statistical exploration algorithm, regret "
-    "guarantee, MCTS result, automatic similarity metric, or scientific-discovery claim."
+    "prerequisite ordering, regime-conditioned contingency reuse, context selection, retrieval "
+    "refinement, query-policy reuse, conflict resolution, drift quarantine, branch pruning, branch "
+    "diversity, budget allocation, branch composition, and retained-memory influence. It is not a "
+    "statistical exploration algorithm, regret guarantee, MCTS result, contextual-bandit result, "
+    "automatic similarity metric, or scientific-discovery claim."
 )
 
 
@@ -127,6 +133,8 @@ class BranchHistoryFrontierReport:
     same_budget_stage_count: int
     branch_abstraction_certificate_count: int
     branch_prerequisite_certificate_count: int
+    branch_contingency_certificate_count: int
+    matched_source_context_count: int
     branch_conflict_certificate_count: int
     counterfactual_certificate_count: int
     rolled_back_counterfactual_count: int
@@ -159,6 +167,7 @@ def run_branch_history_frontier_experiment() -> BranchHistoryFrontierResult:
             run_branch_counterfactual_transfer_certified_experiment(),
             run_branch_abstraction_transfer_certified_experiment(),
             run_branch_prerequisite_transfer_certified_experiment(),
+            run_branch_contingency_transfer_certified_experiment(),
             run_analogical_branch_transfer_certified_experiment(),
             run_context_selection_transfer_certified_experiment(),
             run_context_refinement_transfer_certified_experiment(),
@@ -200,6 +209,8 @@ def build_branch_history_frontier_result(
         same_budget_stage_count=sum(1 for row in rows if row.same_budget_comparison),
         branch_abstraction_certificate_count=_metric(children, "branch_abstraction_certificate_count"),
         branch_prerequisite_certificate_count=_metric(children, "branch_prerequisite_certificate_count"),
+        branch_contingency_certificate_count=_metric(children, "branch_contingency_certificate_count"),
+        matched_source_context_count=_metric_for(children, "branch_contingency_transfer", "selected_context_count"),
         branch_conflict_certificate_count=_metric(children, "branch_conflict_certificate_count"),
         counterfactual_certificate_count=_metric(children, "counterfactual_certificate_count"),
         rolled_back_counterfactual_count=_metric(children, "rolled_back_counterfactual_count"),
@@ -219,11 +230,12 @@ def build_branch_history_frontier_result(
         learning=(
             "The branch-history evidence path is now staged: receipt-bound ordering first, explicit "
             "accepted-loser counterfactual reuse second, option-family abstraction third, explicit "
-            "prerequisite ordering fourth, explicit ancestor reuse fifth, certified context selection "
-            "sixth, counterexample-driven refinement seventh, reusable query-policy and "
-            "conflict-resolution certificates eighth, drift quarantine ninth, receipt-bound branch pruning "
-            "tenth, diversity-certified family coverage eleventh, budget-allocation transfer twelfth, "
-            "branch composition thirteenth, and retained-memory influence with matched ablation fourteenth."
+            "prerequisite ordering fourth, regime-conditioned contingency reuse fifth, explicit ancestor "
+            "reuse sixth, certified context selection seventh, counterexample-driven refinement eighth, "
+            "reusable query-policy and conflict-resolution certificates ninth, drift quarantine tenth, "
+            "receipt-bound branch pruning eleventh, diversity-certified family coverage twelfth, "
+            "budget-allocation transfer thirteenth, branch composition fourteenth, and retained-memory "
+            "influence with matched ablation fifteenth."
         ),
     )
     claim = certify_claim(
@@ -233,12 +245,12 @@ def build_branch_history_frontier_result(
             "the past improve exploration only through audited proposal ordering, selection, refinement, "
             "query-policy, conflict-resolution, drift-quarantine, pruning, diversity, budget-allocation, "
             "counterfactual accepted-loser reuse, option-family abstraction, prerequisite ordering, "
-            "composition, retention, and influence certificates."
+            "regime-conditioned contingency reuse, composition, retention, and influence certificates."
         ),
         evidence_grade="G1",
         scope="branch_history_frontier",
         requirements=(
-            requirement("exactly_fourteen_branch_history_stages", report.stage_count == 14),
+            requirement("exactly_fifteen_branch_history_stages", report.stage_count == 15),
             requirement(
                 "expected_child_experiments",
                 set(report.child_experiment_ids)
@@ -247,6 +259,7 @@ def build_branch_history_frontier_result(
                     "branch_counterfactual_transfer",
                     "branch_abstraction_transfer",
                     "branch_prerequisite_transfer",
+                    "branch_contingency_transfer",
                     "analogical_branch_transfer",
                     "context_selection_transfer",
                     "context_refinement_transfer",
@@ -270,6 +283,10 @@ def build_branch_history_frontier_result(
             ),
             requirement("branch_abstraction_certificates_present", report.branch_abstraction_certificate_count == 3),
             requirement("branch_prerequisite_certificates_present", report.branch_prerequisite_certificate_count == 3),
+            requirement(
+                "branch_contingency_certificates_present",
+                report.branch_contingency_certificate_count == 3 and report.matched_source_context_count == 3,
+            ),
             requirement("query_policy_conflict_certificates_present", report.branch_conflict_certificate_count == 6),
             requirement(
                 "drift_quarantine_certificates_present",
@@ -289,6 +306,8 @@ def build_branch_history_frontier_result(
             "total_rejected_count": report.total_rejected_count,
             "branch_abstraction_certificate_count": report.branch_abstraction_certificate_count,
             "branch_prerequisite_certificate_count": report.branch_prerequisite_certificate_count,
+            "branch_contingency_certificate_count": report.branch_contingency_certificate_count,
+            "matched_source_context_count": report.matched_source_context_count,
             "counterfactual_certificate_count": report.counterfactual_certificate_count,
             "rolled_back_counterfactual_count": report.rolled_back_counterfactual_count,
             "branch_conflict_certificate_count": report.branch_conflict_certificate_count,
@@ -355,6 +374,8 @@ def _primary_certificate(child: CertifiedExampleResult) -> Any:
         return child.branch_abstraction_transfer_certificate
     if experiment_id == "branch_prerequisite_transfer":
         return child.branch_prerequisite_transfer_certificate
+    if experiment_id == "branch_contingency_transfer":
+        return child.branch_contingency_transfer_certificate
     if experiment_id == "analogical_branch_transfer":
         return child.analogical_certificate
     if experiment_id == "context_selection_transfer":
@@ -388,6 +409,8 @@ def _primary_certificate_valid(child: CertifiedExampleResult) -> bool:
         return validate_branch_abstraction_transfer_certificate(child.branch_abstraction_transfer_certificate, child.report)
     if experiment_id == "branch_prerequisite_transfer":
         return validate_branch_prerequisite_transfer_certificate(child.branch_prerequisite_transfer_certificate, child.report)
+    if experiment_id == "branch_contingency_transfer":
+        return validate_branch_contingency_transfer_certificate(child.branch_contingency_transfer_certificate, child.report)
     if experiment_id == "analogical_branch_transfer":
         return validate_analogical_branch_transfer_certificate(child.analogical_certificate, child.report)
     if experiment_id == "context_selection_transfer":
@@ -449,6 +472,15 @@ def _stage_fields(child: CertifiedExampleResult) -> tuple[str, str, str, str, bo
             f"prerequisite certificates {report.branch_prerequisite_certificate_count}",
             True,
             "stateful prerequisite-order certificates before final-branch verification",
+        )
+    if experiment_id == "branch_contingency_transfer":
+        return (
+            "regime_conditioned_branch_reuse",
+            f"stale regime reuse commits {report.static_success_count}/{report.domain_count}",
+            f"matched regime reuse commits {report.contingent_success_count}/{report.domain_count}",
+            f"contingency certificates {report.branch_contingency_certificate_count}",
+            True,
+            "receipt-bound context-feature switchpoints before reusing past branches",
         )
     if experiment_id == "analogical_branch_transfer":
         return (
@@ -545,6 +577,14 @@ def _stage_fields(child: CertifiedExampleResult) -> tuple[str, str, str, str, bo
 
 def _metric(children: tuple[CertifiedExampleResult, ...], name: str) -> int:
     return sum(int(getattr(child.report, name, 0)) for child in children)
+
+
+def _metric_for(children: tuple[CertifiedExampleResult, ...], experiment_id: str, name: str) -> int:
+    return sum(
+        int(getattr(child.report, name, 0))
+        for child in children
+        if child.evidence_certificate.experiment_id == experiment_id
+    )
 
 
 def main() -> None:

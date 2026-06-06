@@ -140,6 +140,19 @@ same-budget comparison. The substrate implication is that branch memory needs
 stateful ordering certificates: a useful branch of the past may say what must
 be true before another proposal is worth spending verifier budget on.
 
+The branch-contingency transfer example adds context-feature switchpoints. Each
+domain records one source branch for a stale/default regime and one source
+branch for the target regime. The target static branch spends one verifier call
+on the stale-regime action and fails. The contingent target spends the same one
+verifier call on the source branch whose regime tag matches the target, and it
+commits through the hard verifier. The new
+`trwm.branch_contingency_certificate.v1` artifact binds stale and matched
+source receipts, static target rejects, contingent target commits,
+branch-selection certificates, selected/rejected source contexts, and the
+same-budget comparison. The substrate implication is that branch memory needs
+conditional reuse certificates: a past branch may be useful only under a typed
+target-context feature, and stale unconditional reuse should fail closed.
+
 The analogical branch transfer example adds one more design constraint:
 cross-context reuse must name its ancestor contexts explicitly. For each toy
 domain, two positive ancestor contexts reorder the target budget-one search
@@ -285,15 +298,16 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the fourteen local branch-memory
+The branch-history frontier report now aggregates the fifteen local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
 receipt-bound ordering, accepted-loser counterfactual reuse, option-family
-abstraction, stateful prerequisite ordering, analogical ancestor reuse,
-certified context selection, counterexample refinement, conflict-aware
-query-policy transfer, drift quarantine, receipt-bound branch pruning,
-diversity-certified family coverage, receipt-bound budget allocation, branch
-composition, and retained memory influence.
+abstraction, stateful prerequisite ordering, regime-conditioned contingency
+reuse, analogical ancestor reuse, certified context selection, counterexample
+refinement, conflict-aware query-policy transfer, drift quarantine,
+receipt-bound branch pruning, diversity-certified family coverage,
+receipt-bound budget allocation, branch composition, and retained memory
+influence.
 This changes the design posture from isolated demos to a staged substrate map:
 each branch-history capability must expose its own certificate, and later
 stages are only meaningful if earlier evidence still validates.
@@ -302,8 +316,9 @@ The boundary remains narrow. This is a deterministic G1 canary inspired by
 experience replay, counterfactual regret evidence, and selective tree-search
 sampling plus nogood-style pruning, diversity pressure, and recombinable
 building-block search plus successive resource allocation and temporal
-abstraction; it is not a statistical exploration algorithm, regret guarantee,
-MCTS implementation, automatic similarity metric, CEGAR system, CDCL solver,
-novelty-search result, MAP-Elites implementation, Hyperband implementation,
-options-framework result, genetic algorithm, program synthesizer, or
+abstraction plus contextual bandits with side information; it is not a
+statistical exploration algorithm, regret guarantee, MCTS implementation,
+automatic similarity metric, CEGAR system, CDCL solver, novelty-search result,
+MAP-Elites implementation, Hyperband implementation, options-framework result,
+contextual-bandit result, genetic algorithm, program synthesizer, or
 cross-domain scientific discovery result.
