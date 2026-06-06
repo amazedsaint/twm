@@ -113,6 +113,10 @@ This repository currently targets `G1` evidence:
   source receipts, invariant field keys, static target rejects, invariant target
   commits, and same-budget verifier-call evidence before contrastive source
   signatures can prioritize target proposals,
+- branch-trust-region certificates that bind source reject/commit receipts,
+  proposal-radius fields, trusted radius caps, static target rejects,
+  trust-region target commits, and same-budget verifier-call evidence before
+  past branches can size target proposal steps,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can

@@ -24,6 +24,7 @@ python3 -m examples.branch_residual_template_transfer
 python3 -m examples.branch_boundary_bracket_transfer
 python3 -m examples.branch_consensus_transfer
 python3 -m examples.branch_invariant_transfer
+python3 -m examples.branch_trust_region_transfer
 python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
@@ -85,6 +86,10 @@ The branch-invariant command adds `trwm.branch_invariant_certificate.v1`
 artifacts showing that positive and negative source branch receipts can define
 a contrastive target proposal signature, while the target candidate still
 commits only after fresh hard verification.
+The branch-trust-region command adds
+`trwm.branch_trust_region_certificate.v1` artifacts showing that a source
+reject/commit radius can cap target proposal size, while the bounded target
+candidate still commits only after fresh hard verification.
 The analogical branch
 command adds an `analogical_certificate` that binds explicit ancestor-context
 reuse and misleading-ancestor rejection. The context-selection command adds
@@ -124,7 +129,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the twenty-three branch-memory stages into one bounded G1 report. The physical
+the twenty-four branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -352,6 +357,22 @@ source receipts, negative source receipts, invariant field keys, static target
 reject, invariant target commit, branch-selection certificates, and matched
 one-call budget before claiming invariant-guided exploration lift.
 
+### Branch Trust-Region Transfer
+
+`examples.branch_trust_region_transfer` tests receipt-bound proposal-radius
+control. Each domain records one source branch outside a radius cap that
+rejects and one bounded source branch that commits. The target static pass
+spends one verifier call on an oversized proposal and fails. The trust-region
+pass spends the same one verifier call on a bounded target proposal and commits
+only after fresh hard verification.
+
+Learning: branches of the past can improve exploration by sizing target
+proposal steps before verification, not only by ranking whole actions.
+`trwm.branch_trust_region_certificate.v1` binds source reject/commit receipts,
+source and target proposal radii, the trusted radius cap, static target reject,
+trust-region target commit, branch-selection certificates, and matched
+one-call budget before claiming trust-region-guided exploration lift.
+
 ### Analogical Branch Transfer
 
 `examples.analogical_branch_transfer` runs the same three toy domains with two
@@ -527,7 +548,7 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the twenty-three branch-history experiments and
+`examples.branch_history_frontier` runs the twenty-four branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
@@ -535,7 +556,7 @@ ordering through accepted-loser counterfactual reuse, option-family
 abstraction, prerequisite ordering, regime-conditioned contingency reuse,
 hindsight goal relabeling, receipt-bound field intervention, receipt-bound
 diagnostic probing, residual-template repair, boundary bracketing, source
-consensus, contrastive invariant transfer, analogical ancestor reuse, certified context selection,
+consensus, contrastive invariant transfer, trust-region radius transfer, analogical ancestor reuse, certified context selection,
 counterexample refinement,
 conflict-aware query-policy transfer,
 drift quarantine, receipt-bound branch pruning, diversity-certified family

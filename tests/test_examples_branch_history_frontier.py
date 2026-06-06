@@ -20,6 +20,7 @@ from examples.branch_prerequisite_transfer import run_branch_prerequisite_transf
 from examples.branch_pruning_transfer import run_branch_pruning_transfer_certified_experiment
 from examples.branch_residual_template_transfer import run_branch_residual_template_transfer_certified_experiment
 from examples.branch_stop_rule_transfer import run_branch_stop_rule_transfer_certified_experiment
+from examples.branch_trust_region_transfer import run_branch_trust_region_transfer_certified_experiment
 from examples.branch_history_frontier import (
     build_branch_history_frontier_result,
     run_branch_history_frontier_experiment,
@@ -40,7 +41,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         claim = result.claim_certificate
 
         self.assertEqual(report.schema_version, "trwm.example.branch_history_frontier.v1")
-        self.assertEqual(report.stage_count, 23)
+        self.assertEqual(report.stage_count, 24)
         self.assertEqual(
             report.child_experiment_ids,
             (
@@ -56,6 +57,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
                 "branch_boundary_bracket_transfer",
                 "branch_consensus_transfer",
                 "branch_invariant_transfer",
+                "branch_trust_region_transfer",
                 "analogical_branch_transfer",
                 "context_selection_transfer",
                 "context_refinement_transfer",
@@ -84,6 +86,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
                 "receipt_bound_boundary_bracket",
                 "receipt_bound_source_consensus",
                 "contrastive_branch_invariant",
+                "receipt_bound_trust_region_radius",
                 "explicit_ancestor_reuse",
                 "certified_context_selection",
                 "counterexample_refinement",
@@ -100,11 +103,11 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         self.assertTrue(report.all_evidence_valid)
         self.assertTrue(report.all_claims_supported)
         self.assertTrue(report.all_primary_certificates_valid)
-        self.assertEqual(report.total_receipt_count, 510)
-        self.assertEqual(report.total_committed_count, 201)
-        self.assertEqual(report.total_rejected_count, 204)
+        self.assertEqual(report.total_receipt_count, 522)
+        self.assertEqual(report.total_committed_count, 207)
+        self.assertEqual(report.total_rejected_count, 210)
         self.assertEqual(report.total_invalid_commit_count, 0)
-        self.assertEqual(report.same_budget_stage_count, 23)
+        self.assertEqual(report.same_budget_stage_count, 24)
         self.assertEqual(report.branch_abstraction_certificate_count, 3)
         self.assertEqual(report.branch_prerequisite_certificate_count, 3)
         self.assertEqual(report.branch_contingency_certificate_count, 3)
@@ -124,6 +127,8 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         self.assertEqual(report.consensus_success_count, 3)
         self.assertEqual(report.branch_invariant_certificate_count, 3)
         self.assertEqual(report.invariant_success_count, 3)
+        self.assertEqual(report.branch_trust_region_certificate_count, 3)
+        self.assertEqual(report.trust_region_success_count, 3)
         self.assertEqual(report.counterfactual_certificate_count, 3)
         self.assertEqual(report.rolled_back_counterfactual_count, 3)
         self.assertEqual(report.branch_conflict_certificate_count, 6)
@@ -160,6 +165,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
             run_branch_boundary_bracket_transfer_certified_experiment(),
             run_branch_consensus_transfer_certified_experiment(),
             run_branch_invariant_transfer_certified_experiment(),
+            run_branch_trust_region_transfer_certified_experiment(),
             run_analogical_branch_transfer_certified_experiment(),
             run_context_selection_transfer_certified_experiment(),
             run_context_refinement_transfer_certified_experiment(),

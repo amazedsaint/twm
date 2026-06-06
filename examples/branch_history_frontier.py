@@ -48,6 +48,10 @@ from examples.branch_invariant_transfer import (
     run_branch_invariant_transfer_certified_experiment,
     validate_branch_invariant_transfer_certificate,
 )
+from examples.branch_trust_region_transfer import (
+    run_branch_trust_region_transfer_certified_experiment,
+    validate_branch_trust_region_transfer_certificate,
+)
 from examples.branch_intervention_transfer import (
     run_branch_intervention_transfer_certified_experiment,
     validate_branch_intervention_transfer_certificate,
@@ -125,6 +129,7 @@ BRANCH_HISTORY_FRONTIER_SOURCES = (
     "https://proceedings.mlr.press/v37/sui15.html",
     "https://doi.org/10.1145/130385.130417",
     "https://www.ijcai.org/Proceedings/77-1/Papers/048.pdf",
+    "https://epubs.siam.org/doi/book/10.1137/1.9780898719857",
     "https://www.sciencedirect.com/science/article/pii/0004370290900463",
 )
 BRANCH_HISTORY_FRONTIER_CLAIM_BOUNDARY = (
@@ -133,8 +138,8 @@ BRANCH_HISTORY_FRONTIER_CLAIM_BOUNDARY = (
     "prerequisite ordering, regime-conditioned contingency reuse, hindsight goal relabeling, receipt-bound "
     "field intervention, diagnostic probing, residual-template repair, boundary bracketing, source consensus, "
     "contrastive invariant transfer, context selection, retrieval refinement, query-policy reuse, conflict resolution, "
-    "drift quarantine, branch pruning, branch diversity, budget allocation, stop-rule abstention, branch composition, "
-    "and retained-memory influence. "
+    "drift quarantine, branch pruning, branch diversity, budget allocation, trust-region radius transfer, "
+    "stop-rule abstention, branch composition, and retained-memory influence. "
     "It is not a statistical exploration algorithm, regret guarantee, MCTS result, contextual-bandit "
     "result, Hindsight Experience Replay result, causal inference result, do-calculus result, Bayesian "
     "experimental-design result, active-learning result, case-based reasoning system, automatic similarity "
@@ -193,6 +198,8 @@ class BranchHistoryFrontierReport:
     consensus_success_count: int
     branch_invariant_certificate_count: int
     invariant_success_count: int
+    branch_trust_region_certificate_count: int
+    trust_region_success_count: int
     branch_conflict_certificate_count: int
     counterfactual_certificate_count: int
     rolled_back_counterfactual_count: int
@@ -236,6 +243,7 @@ def run_branch_history_frontier_experiment() -> BranchHistoryFrontierResult:
             run_branch_boundary_bracket_transfer_certified_experiment(),
             run_branch_consensus_transfer_certified_experiment(),
             run_branch_invariant_transfer_certified_experiment(),
+            run_branch_trust_region_transfer_certified_experiment(),
             run_analogical_branch_transfer_certified_experiment(),
             run_context_selection_transfer_certified_experiment(),
             run_context_refinement_transfer_certified_experiment(),
@@ -295,6 +303,8 @@ def build_branch_history_frontier_result(
         consensus_success_count=_metric_for(children, "branch_consensus_transfer", "consensus_success_count"),
         branch_invariant_certificate_count=_metric(children, "branch_invariant_certificate_count"),
         invariant_success_count=_metric_for(children, "branch_invariant_transfer", "invariant_success_count"),
+        branch_trust_region_certificate_count=_metric(children, "branch_trust_region_certificate_count"),
+        trust_region_success_count=_metric_for(children, "branch_trust_region_transfer", "trust_region_success_count"),
         branch_conflict_certificate_count=_metric(children, "branch_conflict_certificate_count"),
         counterfactual_certificate_count=_metric(children, "counterfactual_certificate_count"),
         rolled_back_counterfactual_count=_metric(children, "rolled_back_counterfactual_count"),
@@ -320,12 +330,12 @@ def build_branch_history_frontier_result(
             "prerequisite ordering fourth, regime-conditioned contingency reuse fifth, hindsight goal "
             "relabeling sixth, receipt-bound field intervention seventh, diagnostic probe transfer eighth, "
             "residual-template repair ninth, boundary bracketing tenth, source consensus eleventh, contrastive "
-            "invariant transfer twelfth, explicit ancestor reuse thirteenth, certified context selection fourteenth, "
-            "counterexample-driven refinement fifteenth, reusable query-policy and conflict-resolution certificates "
-            "sixteenth, drift quarantine seventeenth, receipt-bound branch pruning eighteenth, diversity-certified "
-            "family coverage nineteenth, budget-allocation transfer twentieth, no-good stop-rule abstention "
-            "twenty-first, branch composition twenty-second, and retained-memory influence with matched ablation "
-            "twenty-third."
+            "invariant transfer twelfth, trust-region radius transfer thirteenth, explicit ancestor reuse fourteenth, "
+            "certified context selection fifteenth, counterexample-driven refinement sixteenth, reusable query-policy "
+            "and conflict-resolution certificates seventeenth, drift quarantine eighteenth, receipt-bound branch pruning "
+            "nineteenth, diversity-certified family coverage twentieth, budget-allocation transfer twenty-first, "
+            "no-good stop-rule abstention twenty-second, branch composition twenty-third, and retained-memory influence "
+            "with matched ablation twenty-fourth."
         ),
     )
     claim = certify_claim(
@@ -342,7 +352,7 @@ def build_branch_history_frontier_result(
         evidence_grade="G1",
         scope="branch_history_frontier",
         requirements=(
-            requirement("exactly_twenty_three_branch_history_stages", report.stage_count == 23),
+            requirement("exactly_twenty_four_branch_history_stages", report.stage_count == 24),
             requirement(
                 "expected_child_experiments",
                 set(report.child_experiment_ids)
@@ -359,6 +369,7 @@ def build_branch_history_frontier_result(
                     "branch_boundary_bracket_transfer",
                     "branch_consensus_transfer",
                     "branch_invariant_transfer",
+                    "branch_trust_region_transfer",
                     "analogical_branch_transfer",
                     "context_selection_transfer",
                     "context_refinement_transfer",
@@ -417,6 +428,10 @@ def build_branch_history_frontier_result(
                 "branch_invariant_certificates_present",
                 report.branch_invariant_certificate_count == 3 and report.invariant_success_count == 3,
             ),
+            requirement(
+                "branch_trust_region_certificates_present",
+                report.branch_trust_region_certificate_count == 3 and report.trust_region_success_count == 3,
+            ),
             requirement("query_policy_conflict_certificates_present", report.branch_conflict_certificate_count == 6),
             requirement(
                 "drift_quarantine_certificates_present",
@@ -459,6 +474,8 @@ def build_branch_history_frontier_result(
             "consensus_success_count": report.consensus_success_count,
             "branch_invariant_certificate_count": report.branch_invariant_certificate_count,
             "invariant_success_count": report.invariant_success_count,
+            "branch_trust_region_certificate_count": report.branch_trust_region_certificate_count,
+            "trust_region_success_count": report.trust_region_success_count,
             "counterfactual_certificate_count": report.counterfactual_certificate_count,
             "rolled_back_counterfactual_count": report.rolled_back_counterfactual_count,
             "branch_conflict_certificate_count": report.branch_conflict_certificate_count,
@@ -544,6 +561,8 @@ def _primary_certificate(child: CertifiedExampleResult) -> Any:
         return child.branch_consensus_transfer_certificate
     if experiment_id == "branch_invariant_transfer":
         return child.branch_invariant_transfer_certificate
+    if experiment_id == "branch_trust_region_transfer":
+        return child.branch_trust_region_transfer_certificate
     if experiment_id == "analogical_branch_transfer":
         return child.analogical_certificate
     if experiment_id == "context_selection_transfer":
@@ -595,6 +614,8 @@ def _primary_certificate_valid(child: CertifiedExampleResult) -> bool:
         return validate_branch_consensus_transfer_certificate(child.branch_consensus_transfer_certificate, child.report)
     if experiment_id == "branch_invariant_transfer":
         return validate_branch_invariant_transfer_certificate(child.branch_invariant_transfer_certificate, child.report)
+    if experiment_id == "branch_trust_region_transfer":
+        return validate_branch_trust_region_transfer_certificate(child.branch_trust_region_transfer_certificate, child.report)
     if experiment_id == "analogical_branch_transfer":
         return validate_analogical_branch_transfer_certificate(child.analogical_certificate, child.report)
     if experiment_id == "context_selection_transfer":
@@ -730,6 +751,15 @@ def _stage_fields(child: CertifiedExampleResult) -> tuple[str, str, str, str, bo
             f"invariant certificates {report.branch_invariant_certificate_count}",
             True,
             "positive/negative branch invariant certificates before prioritizing target proposals",
+        )
+    if experiment_id == "branch_trust_region_transfer":
+        return (
+            "receipt_bound_trust_region_radius",
+            f"static overshoot commits {report.static_success_count}/{report.domain_count}",
+            f"trust-region target commits {report.trust_region_success_count}/{report.domain_count}",
+            f"trust-region certificates {report.branch_trust_region_certificate_count}",
+            True,
+            "reject/commit radius-cap certificates before sizing target proposal steps",
         )
     if experiment_id == "analogical_branch_transfer":
         return (

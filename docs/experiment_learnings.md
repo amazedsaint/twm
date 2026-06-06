@@ -244,6 +244,19 @@ certificates, and same-budget comparison. The substrate implication is that
 positive/negative past branches can filter target proposals, but the filter is
 not a classifier or commit authority.
 
+The branch-trust-region transfer example adds proposal-radius evidence. Each
+domain records one source branch outside a radius cap that rejects and one
+bounded source branch that commits. The static target spends one verifier call
+on an oversized proposal and fails; the trust-region target spends the same
+one verifier call on a bounded proposal and commits only after fresh target
+hard verification. The new `trwm.branch_trust_region_certificate.v1` artifact
+binds source reject/commit receipts, source and target proposal radii, the
+trusted radius cap, static target reject, trust-region target commit,
+branch-selection certificates, and same-budget comparison. The substrate
+implication is that past branches can shape the scale of exploration before
+they shape action ranking: a proposal radius cap is evidence for candidate
+construction, not commit authority.
+
 The analogical branch transfer example adds one more design constraint:
 cross-context reuse must name its ancestor contexts explicitly. For each toy
 domain, two positive ancestor contexts reorder the target budget-one search
@@ -402,14 +415,14 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the twenty-three local branch-memory
+The branch-history frontier report now aggregates the twenty-four local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
 receipt-bound ordering, accepted-loser counterfactual reuse, option-family
 abstraction, stateful prerequisite ordering, regime-conditioned contingency
 reuse, hindsight goal relabeling, receipt-bound field intervention,
 receipt-bound diagnostic probing, residual-template repair, boundary
-bracketing, source consensus, contrastive invariant transfer, analogical
+bracketing, source consensus, contrastive invariant transfer, trust-region radius transfer, analogical
 ancestor reuse, certified context selection, counterexample refinement,
 conflict-aware query-policy transfer,
 drift quarantine, receipt-bound branch pruning, diversity-certified family
@@ -429,6 +442,7 @@ experimental-design information as a probe-selection analogy plus case-based
 reuse/revise as a residual-template analogy plus safe exploration as a
 boundary-bracketing analogy plus query-by-committee as a source-consensus
 analogy plus version-space learning as a positive/negative invariant analogy
+plus trust-region methods as a proposal-radius analogy
 plus nogood learning and backjumping as a stop-rule analogy;
 it is not a
 statistical exploration algorithm, regret guarantee, MCTS implementation,
