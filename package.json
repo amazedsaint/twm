@@ -1,0 +1,16 @@
+{
+  "name": "trwm-browser",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "TypeScript browser library for transactional reversible world models",
+  "scripts": {
+    "build": "node --disable-warning=ExperimentalWarning scripts/build.mjs",
+    "check:dist": "node --disable-warning=ExperimentalWarning scripts/check-dist-fresh.mjs",
+    "test:ts": "node --test test-ts/*.test.mjs",
+    "verify:ts": "node --disable-warning=ExperimentalWarning scripts/build.mjs && node --disable-warning=ExperimentalWarning scripts/check-dist-fresh.mjs && node --test test-ts/*.test.mjs"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  }
+}

@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SDK Domain Manifest</title>
+  <style>
+    :root {
+      --bg: #f7f8f4;
+      --ink: #17211c;
+      --muted: #657068;
+      --line: #d7ddd4;
+      --panel: #ffffff;
+      --accent: #0b7760;
+      --warn: #a14f21;
+      --blue: #265f91;
+      --dark: #25322d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    main { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 42px; }
+    nav a { color: var(--accent); text-decoration: none; font-weight: 740; }
+    h1 { margin: 26px 0 8px; font-size: clamp(2rem, 4vw, 4rem); line-height: 1; letter-spacing: 0; }
+    p { color: var(--muted); max-width: 920px; }
+    button {
+      border: 1px solid #0a6b56;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 12px;
+      font-weight: 760;
+      cursor: pointer;
+    }
+    button.secondary { background: #fff; color: var(--accent); }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+    .metrics { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin: 16px 0; }
+    .metric {
+      min-height: 74px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      padding: 10px;
+      box-shadow: 0 10px 24px rgba(20, 35, 31, 0.06);
+    }
+    .metric strong, .domain strong { display: block; color: var(--muted); font-size: 0.78rem; }
+    .metric span, .domain span {
+      display: block;
+      color: var(--dark);
+      font: 760 0.96rem/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-wrap: anywhere;
+    }
+    .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 16px;
+      box-shadow: 0 12px 30px rgba(20, 35, 31, 0.07);
+      min-width: 0;
+    }
+    .domains { display: grid; gap: 12px; }
+    .domain {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      min-height: 110px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fff;
+    }
+    .domain[data-status="commit"] { box-shadow: inset 4px 0 0 var(--accent); }
+    .domain[data-status="mixed"] { box-shadow: inset 4px 0 0 var(--blue); }
+    .tag {
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      padding: 6px 10px;
+      font: 760 0.78rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: var(--dark);
+      background: #fbfcfa;
+      white-space: nowrap;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 0.78rem; }
+    th:first-child, td:first-child { width: 13rem; }
+    td { font: 650 0.86rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; word-break: break-word; }
+    tr:last-child td { border-bottom: 0; }
+    pre {
+      overflow: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      margin: 12px 0 0;
+      padding: 12px;
+      border-radius: 8px;
+      background: #101916;
+      color: #dce8df;
+      font-size: 0.82rem;
+    }
+    @media (max-width: 960px) {
+      .metrics, .layout { grid-template-columns: 1fr; }
+      .domain { grid-template-columns: 1fr; }
+      .tag { justify-self: start; }
+      th:first-child, td:first-child { width: 9rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="./index.html">Back to demos</a></nav>
+    <h1>SDK Domain Manifest</h1>
+    <p>Registered domains publish hash-checked manifests for verifier identity, candidate types, projection schemas, receipt counts, ledger heads, cost accounting, and zero invalid commits.</p>
+    <div class="toolbar">
+      <button id="run">Run SDK manifest audit</button>
+      <button class="secondary" id="reset">Reset</button>
+    </div>
+    <section class="metrics">
+      <div class="metric"><strong>Domains</strong><span id="domains">0</span></div>
+      <div class="metric"><strong>Valid manifests</strong><span id="valid">0</span></div>
+      <div class="metric"><strong>Audited manifests</strong><span id="audited">0</span></div>
+      <div class="metric"><strong>Receipts</strong><span id="receipts">0</span></div>
+      <div class="metric"><strong>Tamper detected</strong><span id="tamper">false</span></div>
+      <div class="metric"><strong>Invalid commits</strong><span id="invalid">0</span></div>
+    </section>
+    <section class="layout">
+      <div class="panel">
+        <div class="domains" id="domainRows"></div>
+      </div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>Check</th><th>Value</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <pre id="log"></pre>
+      </div>
+    </section>
+  </main>
+  <script type="module">
+    import { runSdkManifestBenchmark } from "../dist/index.js";
+
+    const els = {
+      run: document.querySelector("#run"),
+      reset: document.querySelector("#reset"),
+      domains: document.querySelector("#domains"),
+      valid: document.querySelector("#valid"),
+      audited: document.querySelector("#audited"),
+      receipts: document.querySelector("#receipts"),
+      tamper: document.querySelector("#tamper"),
+      invalid: document.querySelector("#invalid"),
+      domainRows: document.querySelector("#domainRows"),
+      rows: document.querySelector("#rows"),
+      log: document.querySelector("#log")
+    };
+
+    function setRows(rows) {
+      els.rows.replaceChildren(...rows.map(([key, value]) => {
+        const tr = document.createElement("tr");
+        const keyCell = document.createElement("td");
+        const valueCell = document.createElement("td");
+        keyCell.textContent = key;
+        valueCell.textContent = value;
+        tr.append(keyCell, valueCell);
+        return tr;
+      }));
+    }
+
+    function domainRow(title, body, tag, status) {
+      const node = document.createElement("div");
+      node.className = "domain";
+      node.dataset.status = status;
+      const copy = document.createElement("div");
+      const heading = document.createElement("strong");
+      const value = document.createElement("span");
+      heading.textContent = title;
+      value.textContent = body;
+      copy.append(heading, value);
+      const statusTag = document.createElement("div");
+      statusTag.className = "tag";
+      statusTag.textContent = tag;
+      node.append(copy, statusTag);
+      return node;
+    }
+
+    function render(report) {
+      els.domains.textContent = String(report.domainCount);
+      els.valid.textContent = String(report.manifestValidCount);
+      els.audited.textContent = String(report.manifestAuditCount);
+      els.receipts.textContent = String(report.totalReceiptCount);
+      els.tamper.textContent = String(report.tamperDetected);
+      els.invalid.textContent = String(report.invalidCommitCount);
+      els.domainRows.replaceChildren(
+        domainRow("scalar", `${report.scalarVerifierId}; ${report.scalarCandidateTypes.join(", ")}`, `${report.scalarReceiptCount} receipt`, "commit"),
+        domainRow("life", `${report.lifeVerifierId}; ${report.lifeProjectionSchemas.join(", ")}`, `${report.lifeReceiptCount} receipts`, "mixed")
+      );
+      setRows([
+        ["schema", report.schemaVersion],
+        ["accepted / rejected", `${report.acceptedCount} / ${report.rejectedCount}`],
+        ["hard verifier calls", String(report.hardVerifierCalls)],
+        ["verifier cost", String(report.totalVerifierCost)],
+        ["manifest hashes stable", String(report.manifestHashesStable)],
+        ["ledger audit", String(report.ledgerAudit)],
+        ["replay rollback", report.replayRollbackRate.toFixed(1)]
+      ]);
+      els.log.textContent = JSON.stringify(report, null, 2);
+    }
+
+    async function run() {
+      els.run.disabled = true;
+      els.run.textContent = "Running...";
+      try {
+        render(await runSdkManifestBenchmark());
+      } catch (error) {
+        els.log.textContent = String(error.stack || error);
+      } finally {
+        els.run.disabled = false;
+        els.run.textContent = "Run SDK manifest audit";
+      }
+    }
+
+    function reset() {
+      render({
+        schemaVersion: "-",
+        domainCount: 0,
+        manifestValidCount: 0,
+        manifestAuditCount: 0,
+        scalarCandidateTypes: [],
+        lifeProjectionSchemas: [],
+        scalarVerifierId: "-",
+        lifeVerifierId: "-",
+        scalarReceiptCount: 0,
+        lifeReceiptCount: 0,
+        totalReceiptCount: 0,
+        acceptedCount: 0,
+        rejectedCount: 0,
+        hardVerifierCalls: 0,
+        totalVerifierCost: 0,
+        manifestHashesStable: false,
+        tamperDetected: false,
+        invalidCommitCount: 0,
+        ledgerAudit: false,
+        replayRollbackRate: 0
+      });
+    }
+
+    els.run.addEventListener("click", run);
+    els.reset.addEventListener("click", reset);
+    reset();
+  </script>
+</body>
+</html>

@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exact Reversible Coupling</title>
+  <style>
+    :root {
+      --bg: #f7f8f5;
+      --ink: #18201c;
+      --muted: #667067;
+      --line: #d8ddd5;
+      --panel: #ffffff;
+      --accent: #0e7c66;
+      --warn: #9b4d1f;
+      --code: #101916;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    main { width: min(1160px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 40px; }
+    nav a { color: var(--accent); text-decoration: none; font-weight: 650; }
+    header { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 24px; align-items: end; margin-top: 28px; }
+    h1 { margin: 0; font-size: clamp(2rem, 4vw, 4rem); line-height: 1; letter-spacing: 0; }
+    p { color: var(--muted); margin: 10px 0 0; }
+    .equation {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      font: 600 1rem/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: var(--code);
+    }
+    .layout { display: grid; grid-template-columns: 360px 1fr; gap: 18px; margin-top: 22px; }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 16px;
+      box-shadow: 0 12px 30px rgba(20, 35, 31, 0.07);
+    }
+    .controls { display: grid; gap: 12px; }
+    label { display: grid; gap: 5px; color: var(--muted); font-size: 0.86rem; }
+    input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px 11px;
+      color: var(--ink);
+      font: 600 0.96rem/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: #fbfcfa;
+    }
+    .buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    button {
+      border: 1px solid #0d6d5a;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 12px;
+      font-weight: 750;
+      cursor: pointer;
+    }
+    button.secondary { background: #fff; color: var(--accent); }
+    button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid rgba(14, 124, 102, 0.25); outline-offset: 2px; }
+    .status { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .metric { border: 1px solid var(--line); border-radius: 6px; padding: 10px; background: #fbfcfa; }
+    .metric strong { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+    .metric span { font: 700 1rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    canvas { width: 100%; height: 330px; border: 1px solid var(--line); border-radius: 8px; background: #fbfcfa; display: block; }
+    pre {
+      overflow: auto;
+      margin: 12px 0 0;
+      padding: 12px;
+      border-radius: 8px;
+      background: #101916;
+      color: #dce8df;
+      font-size: 0.82rem;
+    }
+    @media (max-width: 900px) {
+      header, .layout { grid-template-columns: 1fr; }
+      .status { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="./index.html">Back to demos</a></nav>
+    <header>
+      <div>
+        <h1>Exact Reversible Coupling</h1>
+        <p>All values are integer ticks on a dyadic lattice. The inverse recomputes the same integer increments, so quantization changes prediction quality but not cycle exactness.</p>
+      </div>
+      <div class="equation">
+        u' = u + (gainF * v + biasF)<br>
+        v' = v + (gainG * u' + biasG)<br>
+        inverse: subtract in reverse dependency order
+      </div>
+    </header>
+    <section class="layout">
+      <aside class="panel controls">
+        <label>Tick vector [u0,u1,v0,v1]
+          <input id="vector" value="1,2,5,-1" spellcheck="false">
+        </label>
+        <label>gainF,biasF,gainG,biasG
+          <input id="params" value="1,2,-1,3" spellcheck="false">
+        </label>
+        <div class="buttons">
+          <button id="cpu">Run CPU</button>
+          <button class="secondary" id="gpu">Run WebGPU</button>
+        </div>
+        <div class="status">
+          <div class="metric"><strong>Engine</strong><span id="engine">idle</span></div>
+          <div class="metric"><strong>Cycle</strong><span id="cycle">unknown</span></div>
+          <div class="metric"><strong>GPU</strong><span id="gpuState">checking</span></div>
+        </div>
+      </aside>
+      <section>
+        <canvas id="canvas" width="900" height="330" aria-label="Vector transport plot"></canvas>
+        <pre id="log"></pre>
+      </section>
+    </section>
+  </main>
+  <script type="module">
+    import {
+      affineForward,
+      affineInverse,
+      runAffineCouplingCpu,
+      runAffineCouplingWebGpu,
+      webGpuAvailable
+    } from "../dist/index.js";
+
+    const vectorInput = document.querySelector("#vector");
+    const paramsInput = document.querySelector("#params");
+    const logEl = document.querySelector("#log");
+    const engineEl = document.querySelector("#engine");
+    const cycleEl = document.querySelector("#cycle");
+    const gpuStateEl = document.querySelector("#gpuState");
+    const canvas = document.querySelector("#canvas");
+    const ctx = canvas.getContext("2d");
+
+    gpuStateEl.textContent = webGpuAvailable() ? "detected" : "fallback";
+
+    function parseTicks(input) {
+      return input.split(",").map((part) => BigInt(part.trim()));
+    }
+    function parseParams(input) {
+      const [gainF, biasF, gainG, biasG] = parseTicks(input);
+      return { split: 2, gainF, biasF, gainG, biasG };
+    }
+    function asText(values) {
+      return "[" + values.map((value) => value.toString()).join(", ") + "]";
+    }
+    function draw(original, forward, inverse) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#fbfcfa";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = "#d8ddd5";
+      for (let x = 40; x < canvas.width; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 20);
+        ctx.lineTo(x, canvas.height - 20);
+        ctx.stroke();
+      }
+      const rows = [
+        ["z", original, "#33423c"],
+        ["T(z)", forward, "#0e7c66"],
+        ["T^-1(T(z))", inverse, "#9b4d1f"]
+      ];
+      rows.forEach(([label, values, color], row) => {
+        const y = 70 + row * 92;
+        ctx.fillStyle = "#18201c";
+        ctx.font = "700 18px ui-monospace, Menlo, monospace";
+        ctx.fillText(label, 34, y);
+        values.forEach((value, idx) => {
+          const x = 230 + idx * 145;
+          const height = Number(value) * 8;
+          ctx.fillStyle = color;
+          ctx.fillRect(x, y - height, 42, height || 4);
+          ctx.fillStyle = "#18201c";
+          ctx.font = "700 15px ui-monospace, Menlo, monospace";
+          ctx.fillText(value.toString(), x - 4, y + 26);
+        });
+      });
+    }
+    async function run(engine) {
+      const z = parseTicks(vectorInput.value);
+      const params = parseParams(paramsInput.value);
+      let actualEngine = engine;
+      let gpuError = null;
+      let forward;
+      let inverse;
+      if (engine === "gpu") {
+        try {
+          forward = await runAffineCouplingWebGpu(z, params, "forward");
+          inverse = await runAffineCouplingWebGpu(forward, params, "inverse");
+          gpuStateEl.textContent = "adapter";
+        } catch (error) {
+          gpuError = String(error.message || error);
+          actualEngine = "cpu fallback";
+          gpuStateEl.textContent = "adapter unavailable";
+          forward = runAffineCouplingCpu(z, params, "forward");
+          inverse = affineInverse(forward, params);
+        }
+      } else {
+        forward = runAffineCouplingCpu(z, params, "forward");
+        inverse = affineInverse(forward, params);
+      }
+      const expectedForward = affineForward(z, params);
+      const ok = inverse.every((value, idx) => value === z[idx]) && forward.every((value, idx) => value === expectedForward[idx]);
+      engineEl.textContent = actualEngine;
+      cycleEl.textContent = ok ? "exact" : "failed";
+      logEl.textContent = JSON.stringify({
+        original: asText(z),
+        forward: asText(forward),
+        inverse: asText(inverse),
+        exactCycle: ok,
+        gpuError
+      }, null, 2);
+      draw(z, forward, inverse);
+    }
+    document.querySelector("#cpu").addEventListener("click", () => run("cpu").catch(showError));
+    document.querySelector("#gpu").addEventListener("click", () => run("gpu").catch(showError));
+    function showError(error) {
+      logEl.textContent = String(error.stack || error);
+      cycleEl.textContent = "failed";
+    }
+    run("cpu").catch(showError);
+  </script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAT/CSP Residual Repair</title>
+  <style>
+    :root {
+      --bg: #f7f8f5;
+      --ink: #18201c;
+      --muted: #667067;
+      --line: #d8ddd5;
+      --panel: #ffffff;
+      --accent: #0e7c66;
+      --warn: #9b4d1f;
+      --dark: #23302b;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.5; }
+    main { width: min(1160px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 40px; }
+    nav a { color: var(--accent); text-decoration: none; font-weight: 650; }
+    h1 { margin: 28px 0 8px; font-size: clamp(2rem, 4vw, 4rem); line-height: 1; letter-spacing: 0; }
+    p { color: var(--muted); max-width: 840px; }
+    .layout { display: grid; grid-template-columns: 280px 1fr; gap: 18px; margin-top: 20px; }
+    .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 16px; box-shadow: 0 12px 30px rgba(20, 35, 31, 0.07); }
+    button { width: 100%; border: 1px solid #0d6d5a; border-radius: 6px; background: var(--accent); color: #fff; padding: 10px 12px; font-weight: 750; cursor: pointer; }
+    button.secondary { margin-top: 10px; background: #fff; color: var(--accent); }
+    .assignment { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 14px; }
+    .bit { display: grid; place-items: center; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; background: #eef2ec; color: var(--muted); font: 800 0.9rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .bit.true { background: #dceee9; color: var(--accent); border-color: #b5d8cf; }
+    .bit.false { background: #f4e7dc; color: var(--warn); border-color: #d9b997; }
+    .metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 14px; }
+    .metric { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 10px; min-height: 72px; }
+    .metric strong { display: block; color: var(--muted); font-size: 0.78rem; }
+    .metric span { display: block; font: 750 1rem/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+    .bars { display: grid; gap: 12px; margin: 14px 0; }
+    .bar-row strong { display: block; margin-bottom: 5px; color: var(--muted); font-size: 0.8rem; }
+    .track { height: 24px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: #eef2ec; }
+    .fill { height: 100%; width: 0; background: var(--accent); transition: width 220ms ease; }
+    .fill.static { background: var(--warn); }
+    table { width: 100%; margin-top: 12px; border-collapse: collapse; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+    th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 0.78rem; }
+    td { font: 650 0.88rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    tr:last-child td { border-bottom: 0; }
+    pre { overflow: auto; margin: 14px 0 0; padding: 12px; border-radius: 8px; background: #101916; color: #dce8df; font-size: 0.82rem; }
+    @media (max-width: 940px) {
+      .layout, .metrics { grid-template-columns: 1fr; }
+      .assignment { grid-template-columns: repeat(4, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="./index.html">Back to demos</a></nav>
+    <h1>SAT/CSP Residual Repair</h1>
+    <p>CNF assignments are typed candidates. The hard verifier returns unsatisfied clauses as residuals; the repair proposer flips residual-named variables, but every repaired assignment still needs hard-verifier acceptance before commit.</p>
+    <section class="layout">
+      <aside class="panel">
+        <button id="run">Run SAT/CSP benchmark</button>
+        <button class="secondary" id="reset">Reset</button>
+        <p>Example target assignment for seven variables. The benchmark compares exhaustive static assignment order against residual-guided repair on the same formulas.</p>
+        <div class="assignment" id="assignment"></div>
+      </aside>
+      <section>
+        <div class="metrics">
+          <div class="metric"><strong>Static calls/success</strong><span id="static">0</span></div>
+          <div class="metric"><strong>Repair calls/success</strong><span id="repair">0</span></div>
+          <div class="metric"><strong>Repair gain</strong><span id="gain">0.00x</span></div>
+          <div class="metric"><strong>Audit</strong><span id="audit">false</span></div>
+          <div class="metric"><strong>Invalid commits</strong><span id="invalid">0</span></div>
+        </div>
+        <div class="panel">
+          <div class="bars">
+            <div class="bar-row">
+              <strong>Static verifier calls per success</strong>
+              <div class="track"><div class="fill static" id="staticBar"></div></div>
+            </div>
+            <div class="bar-row">
+              <strong>Residual repair verifier calls per success</strong>
+              <div class="track"><div class="fill" id="repairBar"></div></div>
+            </div>
+          </div>
+          <table>
+            <thead><tr><th>Residual canary</th><th>Value</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+          <pre id="log"></pre>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script type="module">
+    import {
+      CnfSatAdapter,
+      formulaFromTarget,
+      makeCnfCandidate,
+      runSatCspBenchmark,
+      unsatisfiedClauses
+    } from "../dist/index.js";
+
+    const target = [true, false, true, true, false, true, false];
+    const initial = Array.from({ length: target.length }, () => false);
+    const formula = formulaFromTarget(target);
+    const els = {
+      run: document.querySelector("#run"),
+      assignment: document.querySelector("#assignment"),
+      static: document.querySelector("#static"),
+      repair: document.querySelector("#repair"),
+      gain: document.querySelector("#gain"),
+      audit: document.querySelector("#audit"),
+      invalid: document.querySelector("#invalid"),
+      staticBar: document.querySelector("#staticBar"),
+      repairBar: document.querySelector("#repairBar"),
+      rows: document.querySelector("#rows"),
+      log: document.querySelector("#log")
+    };
+
+    function fmt(value) {
+      return Number.isFinite(value) ? value.toFixed(2) : "inf";
+    }
+
+    function drawAssignment(values) {
+      els.assignment.innerHTML = values.map((value, idx) =>
+        `<div class="bit ${value ? "true" : "false"}">x${idx + 1}<br>${value ? "T" : "F"}</div>`
+      ).join("");
+    }
+
+    async function renderResidualExample() {
+      const candidate = await makeCnfCandidate(formula, initial, "sat-demo", 1);
+      const result = new CnfSatAdapter().verify(candidate);
+      const residual = result.residual;
+      els.rows.innerHTML = [
+        ["target", JSON.stringify(target)],
+        ["initialAssignment", JSON.stringify(initial)],
+        ["unsatisfiedIndices", JSON.stringify(unsatisfiedClauses(formula, initial))],
+        ["firstResidualRepair", JSON.stringify(residual.repair)]
+      ].map(([key, value]) => `<tr><td>${key}</td><td>${value}</td></tr>`).join("");
+    }
+
+    function renderReport(report) {
+      els.static.textContent = fmt(report.staticCallsPerSuccess);
+      els.repair.textContent = fmt(report.repairCallsPerSuccess);
+      els.gain.textContent = `${fmt(report.repairGain)}x`;
+      els.audit.textContent = String(report.ledgerAudit);
+      els.invalid.textContent = String(report.invalidCommitCount);
+      const max = Math.max(report.staticCallsPerSuccess, report.repairCallsPerSuccess, 1);
+      els.staticBar.style.width = `${Math.max(4, (report.staticCallsPerSuccess / max) * 100)}%`;
+      els.repairBar.style.width = `${Math.max(4, (report.repairCallsPerSuccess / max) * 100)}%`;
+      els.log.textContent = JSON.stringify(report, null, 2);
+    }
+
+    async function run() {
+      els.run.disabled = true;
+      els.run.textContent = "Running...";
+      try {
+        renderReport(await runSatCspBenchmark(29, 32, 7));
+      } catch (error) {
+        els.log.textContent = String(error.stack || error);
+      } finally {
+        els.run.disabled = false;
+        els.run.textContent = "Run SAT/CSP benchmark";
+      }
+    }
+
+    async function reset() {
+      drawAssignment(target);
+      els.static.textContent = "0";
+      els.repair.textContent = "0";
+      els.gain.textContent = "0.00x";
+      els.audit.textContent = "false";
+      els.invalid.textContent = "0";
+      els.staticBar.style.width = "0";
+      els.repairBar.style.width = "0";
+      els.log.textContent = "";
+      await renderResidualExample();
+    }
+
+    document.querySelector("#run").addEventListener("click", run);
+    document.querySelector("#reset").addEventListener("click", reset);
+    reset();
+  </script>
+</body>
+</html>

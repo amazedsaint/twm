@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Redacted Receipt Disclosure</title>
+  <style>
+    :root {
+      --bg: #f6f7f3;
+      --ink: #18211d;
+      --muted: #657069;
+      --line: #d8ddd4;
+      --panel: #ffffff;
+      --accent: #0b7760;
+      --rust: #9b4d1f;
+      --blue: #265f91;
+      --dark: #101916;
+      --soft: #edf2ee;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.5; }
+    main { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 42px; }
+    nav a { color: var(--accent); text-decoration: none; font-weight: 740; }
+    h1 { margin: 26px 0 8px; font-size: clamp(2rem, 4vw, 4rem); line-height: 1; letter-spacing: 0; }
+    p { color: var(--muted); max-width: 920px; }
+    button { border: 1px solid #0a6b56; border-radius: 6px; background: var(--accent); color: #fff; padding: 10px 12px; font-weight: 760; cursor: pointer; }
+    button.secondary { background: #fff; color: var(--accent); }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+    .metrics { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin: 16px 0; }
+    .metric { min-height: 74px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 10px; box-shadow: 0 10px 24px rgba(20, 35, 31, 0.06); }
+    .metric strong, .commitment strong { display: block; color: var(--muted); font-size: 0.78rem; }
+    .metric span, .commitment span { display: block; color: var(--dark); font: 760 0.94rem/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+    .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+    .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 16px; box-shadow: 0 12px 30px rgba(20, 35, 31, 0.07); min-width: 0; }
+    .commitment-list { display: grid; gap: 10px; }
+    .commitment { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 12px; display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; min-height: 94px; box-shadow: inset 4px 0 0 var(--blue); }
+    .commitment[data-kind="order"] { box-shadow: inset 4px 0 0 var(--rust); }
+    .commitment[data-kind="pre"] { box-shadow: inset 4px 0 0 var(--accent); }
+    .tag { border-radius: 999px; border: 1px solid var(--line); padding: 6px 10px; font: 760 0.78rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--dark); background: #fbfcfa; white-space: nowrap; }
+    .formula { margin: 0 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--dark); color: #dce8df; padding: 12px; font: 760 0.88rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+    th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 0.78rem; }
+    th:first-child, td:first-child { width: 13rem; }
+    td { font: 650 0.86rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; word-break: break-word; }
+    tr:last-child td { border-bottom: 0; }
+    pre { overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 12px 0 0; padding: 12px; border-radius: 8px; background: var(--dark); color: #dce8df; font-size: 0.82rem; }
+    @media (max-width: 960px) {
+      .metrics, .layout { grid-template-columns: 1fr; }
+      .commitment { grid-template-columns: 1fr; }
+      .tag { justify-self: start; }
+      th:first-child, td:first-child { width: 9rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="./index.html">Back to demos</a></nav>
+    <h1>Redacted Receipt Disclosure</h1>
+    <p>A committed receipt keeps its original audit hash. A shareable view redacts selected replay and rollback fields behind salted commitments, then proves one field only when its value and salt are disclosed.</p>
+    <div class="toolbar">
+      <button id="run">Run redaction benchmark</button>
+      <button class="secondary" id="reset">Reset</button>
+    </div>
+    <section class="metrics">
+      <div class="metric"><strong>Redacted paths</strong><span id="paths">0</span></div>
+      <div class="metric"><strong>Commit</strong><span id="commit">-</span></div>
+      <div class="metric"><strong>Verifier</strong><span id="verifier">-</span></div>
+      <div class="metric"><strong>Disclosure</strong><span id="disclosure">false</span></div>
+      <div class="metric"><strong>Tamper</strong><span id="tamper">false</span></div>
+      <div class="metric"><strong>Replay view</strong><span id="replay">false</span></div>
+    </section>
+    <section class="layout">
+      <div class="panel">
+        <div class="commitment-list" id="commitments"></div>
+      </div>
+      <div class="panel">
+        <div class="formula">commitment = H(schema, path, salt, value)</div>
+        <table>
+          <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <pre id="log"></pre>
+      </div>
+    </section>
+  </main>
+  <script type="module">
+    import { REDACTION_DEMO_PATHS, runRedactedReceiptBenchmark } from "../dist/index.js";
+
+    const els = {
+      run: document.querySelector("#run"),
+      reset: document.querySelector("#reset"),
+      paths: document.querySelector("#paths"),
+      commit: document.querySelector("#commit"),
+      verifier: document.querySelector("#verifier"),
+      disclosure: document.querySelector("#disclosure"),
+      tamper: document.querySelector("#tamper"),
+      replay: document.querySelector("#replay"),
+      commitments: document.querySelector("#commitments"),
+      rows: document.querySelector("#rows"),
+      log: document.querySelector("#log")
+    };
+
+    function setRows(rows) {
+      els.rows.replaceChildren(...rows.map(([key, value]) => {
+        const tr = document.createElement("tr");
+        const keyCell = document.createElement("td");
+        const valueCell = document.createElement("td");
+        keyCell.textContent = key;
+        valueCell.textContent = value;
+        tr.append(keyCell, valueCell);
+        return tr;
+      }));
+    }
+
+    function commitment(path, ok, kind) {
+      const node = document.createElement("div");
+      node.className = "commitment";
+      node.dataset.kind = kind;
+      const copy = document.createElement("div");
+      const label = document.createElement("strong");
+      const value = document.createElement("span");
+      label.textContent = path;
+      value.textContent = ok ? "redacted commitment present" : "visible";
+      copy.append(label, value);
+      const tag = document.createElement("div");
+      tag.className = "tag";
+      tag.textContent = ok ? "commitment" : "clear";
+      node.append(copy, tag);
+      return node;
+    }
+
+    function render(report) {
+      els.paths.textContent = String(report.redactedPathCount);
+      els.commit.textContent = report.visibleCommitDecision;
+      els.verifier.textContent = report.visibleVerifierResult;
+      els.disclosure.textContent = String(report.selectiveDisclosureOk);
+      els.tamper.textContent = String(report.tamperDetected);
+      els.replay.textContent = String(!report.redactedViewIsNotReplayable);
+      els.commitments.replaceChildren(
+        commitment(REDACTION_DEMO_PATHS[0], report.orderIdRedacted, "order"),
+        commitment(REDACTION_DEMO_PATHS[1], report.preStateRedacted, "pre"),
+        commitment(REDACTION_DEMO_PATHS[2], report.preStateRedacted, "pre")
+      );
+      setRows([
+        ["schema", report.schemaVersion],
+        ["original receipt", report.originalReceiptHash],
+        ["redacted hash", report.redactedHash],
+        ["policy hash", report.policyHash],
+        ["wrong disclosure rejected", String(report.wrongDisclosureRejected)],
+        ["redacted hash stable", String(report.redactedHashStable)],
+        ["original ledger audit", String(report.originalReceiptStillAudits)],
+        ["invalid commits", String(report.invalidCommitCount)]
+      ]);
+      els.log.textContent = JSON.stringify(report, null, 2);
+    }
+
+    async function run() {
+      els.run.disabled = true;
+      els.run.textContent = "Running...";
+      try {
+        render(await runRedactedReceiptBenchmark());
+      } catch (error) {
+        els.log.textContent = String(error.stack || error);
+      } finally {
+        els.run.disabled = false;
+        els.run.textContent = "Run redaction benchmark";
+      }
+    }
+
+    function reset() {
+      render({
+        schemaVersion: "-",
+        originalReceiptHash: "-",
+        redactedHash: "-",
+        policyHash: "-",
+        redactedPathCount: 0,
+        visibleCommitDecision: "-",
+        visibleVerifierResult: "-",
+        orderIdRedacted: false,
+        preStateRedacted: false,
+        selectiveDisclosureOk: false,
+        wrongDisclosureRejected: false,
+        tamperDetected: false,
+        redactedHashStable: false,
+        originalReceiptStillAudits: false,
+        redactedViewIsNotReplayable: true,
+        invalidCommitCount: 0
+      });
+    }
+
+    els.run.addEventListener("click", run);
+    els.reset.addEventListener("click", reset);
+    reset();
+  </script>
+</body>
+</html>

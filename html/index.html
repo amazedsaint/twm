@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TRWM Demos</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8f5;
+      --ink: #18201c;
+      --muted: #667067;
+      --line: #d8ddd5;
+      --panel: #ffffff;
+      --accent: #0e7c66;
+      --accent-2: #9b4d1f;
+      --code: #14231f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    main {
+      width: min(1080px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(2rem, 5vw, 4.5rem);
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+    p { color: var(--muted); max-width: 760px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 28px;
+    }
+    a.demo {
+      display: flex;
+      flex-direction: column;
+      min-height: 260px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: inherit;
+      text-decoration: none;
+      box-shadow: 0 12px 30px rgba(20, 35, 31, 0.08);
+    }
+    .viz {
+      display: grid;
+      place-items: center;
+      height: 118px;
+      margin-bottom: 18px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background:
+        linear-gradient(90deg, rgba(14, 124, 102, 0.12) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(155, 77, 31, 0.12) 1px, transparent 1px),
+        #fbfcfa;
+      background-size: 16px 16px;
+    }
+    svg { width: 84px; height: 84px; }
+    h2 { margin: 0 0 8px; font-size: 1.05rem; }
+    .demo p { margin: 0; font-size: 0.92rem; }
+    .inline-code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: var(--code);
+      font-weight: 700;
+    }
+    code {
+      display: block;
+      margin-top: auto;
+      padding-top: 18px;
+      color: var(--code);
+      font-size: 0.82rem;
+    }
+    @media (max-width: 820px) {
+      .grid { grid-template-columns: 1fr; }
+      a.demo { min-height: 220px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Transactional Reversible World Model</h1>
+    <p>Static demos backed by the TypeScript ESM library in <span class="inline-code">dist/index.js</span>. They show exact dyadic transport, hard-verifier commits, receipt-backed search, and verifier-call learning metrics.</p>
+    <section class="grid" aria-label="Demos">
+      <a class="demo" href="./reversible-coupling.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <path d="M20 30h48" stroke="#0e7c66" stroke-width="8" stroke-linecap="round"/>
+            <path d="M58 18l22 12-22 12" stroke="#0e7c66" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M80 70H32" stroke="#9b4d1f" stroke-width="8" stroke-linecap="round"/>
+            <path d="M42 58L20 70l22 12" stroke="#9b4d1f" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>Exact Reversible Coupling</h2>
+        <p>Run integer dyadic forward and inverse transport on CPU or WebGPU when available.</p>
+        <code>u' = u + f(v), v' = v + g(u')</code>
+      </a>
+      <a class="demo" href="./transaction-ledger.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="18" y="18" width="64" height="18" rx="4" stroke="#0e7c66" stroke-width="6"/>
+            <rect x="18" y="42" width="64" height="18" rx="4" stroke="#9b4d1f" stroke-width="6"/>
+            <rect x="18" y="66" width="64" height="18" rx="4" stroke="#33423c" stroke-width="6"/>
+            <path d="M50 36v6M50 60v6" stroke="#33423c" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Hard-Authority Ledger</h2>
+        <p>Commit accepted transitions, reject fake verifier accepts, audit tampering, and roll back.</p>
+        <code>commit iff hard accept + replay + rollback + manifest</code>
+      </a>
+      <a class="demo" href="./parallel-replay.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <path d="M18 28h28M18 50h28M18 72h28" stroke="#0e7c66" stroke-width="7" stroke-linecap="round"/>
+            <path d="M58 28h24M58 50h24M58 72h24" stroke="#9b4d1f" stroke-width="7" stroke-linecap="round"/>
+            <path d="M46 28h12M46 50h12M46 72h12" stroke="#23302b" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 8"/>
+            <path d="M34 28c8 0 8 22 16 22s8-22 16-22" stroke="#265f91" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Parallel Replay Certificate</h2>
+        <p>Schedule read/write tokens into conflict-free batches and certify equality to sequential replay.</p>
+        <code>read/write conflicts -> batches -> state_hash(seq) == state_hash(par)</code>
+      </a>
+      <a class="demo" href="./branch-selection.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <path d="M20 26h44" stroke="#a14f21" stroke-width="7" stroke-linecap="round"/>
+            <path d="M20 50h58" stroke="#0e7c66" stroke-width="7" stroke-linecap="round"/>
+            <path d="M20 74h58" stroke="#0e7c66" stroke-width="7" stroke-linecap="round"/>
+            <path d="M64 50l14 24" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M78 74l-10-1 5-9" stroke="#23302b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M65 25l12 12M77 25L65 37" stroke="#a14f21" stroke-width="5" stroke-linecap="round"/>
+            <circle cx="82" cy="74" r="8" fill="#265f91"/>
+          </svg>
+        </div>
+        <h2>Branch Selection Certificate</h2>
+        <p>Prove ranking happened after hard filtering and accepted losers were rolled back.</p>
+        <code>accepted_indices -> selected_index -> loser rollback certificate</code>
+      </a>
+      <a class="demo" href="./circular-token-log.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <circle cx="50" cy="50" r="30" stroke="#0e7c66" stroke-width="7"/>
+            <path d="M50 20a30 30 0 0 1 30 30" stroke="#9b4d1f" stroke-width="7" stroke-linecap="round"/>
+            <path d="M31 50h38" stroke="#23302b" stroke-width="6" stroke-linecap="round"/>
+            <path d="M58 38l13 12-13 12" stroke="#23302b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M30 78h40" stroke="#265f91" stroke-width="6" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Circular Token Log</h2>
+        <p>Compact old reversible deltas into a prefix block while retaining a bounded suffix ring.</p>
+        <code>full replay == compacted prefix + suffix replay</code>
+      </a>
+      <a class="demo" href="./life-predecessor.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="20" y="20" width="18" height="18" fill="#0e7c66"/>
+            <rect x="41" y="20" width="18" height="18" fill="#dfe6de"/>
+            <rect x="62" y="20" width="18" height="18" fill="#0e7c66"/>
+            <rect x="20" y="41" width="18" height="18" fill="#dfe6de"/>
+            <rect x="41" y="41" width="18" height="18" fill="#9b4d1f"/>
+            <rect x="62" y="41" width="18" height="18" fill="#dfe6de"/>
+            <rect x="20" y="62" width="18" height="18" fill="#0e7c66"/>
+            <rect x="41" y="62" width="18" height="18" fill="#dfe6de"/>
+            <rect x="62" y="62" width="18" height="18" fill="#0e7c66"/>
+          </svg>
+        </div>
+        <h2>Game of Life Predecessor</h2>
+        <p>Search visible irreversible dynamics with typed forward verification and receipts.</p>
+        <code>Life(predecessor) == target</code>
+      </a>
+      <a class="demo" href="./sokoban-reverse.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="16" y="22" width="68" height="56" rx="4" fill="#eef2ec" stroke="#23302b" stroke-width="6"/>
+            <rect x="18" y="24" width="20" height="20" fill="#23302b"/>
+            <rect x="62" y="24" width="20" height="20" fill="#23302b"/>
+            <rect x="28" y="50" width="16" height="16" rx="3" fill="#9b4d1f"/>
+            <circle cx="60" cy="58" r="9" fill="#0e7c66"/>
+            <path d="M62 58H40" stroke="#0e7c66" stroke-width="5" stroke-linecap="round"/>
+            <path d="M48 48l-10 10 10 10" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>Sokoban Reverse Certificate</h2>
+        <p>Pull a solved crate state backward, then replay the proposed push certificate forward.</p>
+        <code>reverse_pull -> forward_push verifier -> commit</code>
+      </a>
+      <a class="demo" href="./sat-csp.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="18" y="22" width="16" height="16" rx="3" fill="#0e7c66"/>
+            <rect x="42" y="22" width="16" height="16" rx="3" fill="#9b4d1f"/>
+            <rect x="66" y="22" width="16" height="16" rx="3" fill="#0e7c66"/>
+            <path d="M26 48v18M50 48v18M74 48v18" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M24 72h52" stroke="#23302b" stroke-width="6" stroke-linecap="round"/>
+            <path d="M36 56l12 10 18-26" stroke="#0e7c66" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>SAT/CSP Residual Repair</h2>
+        <p>Use unsatisfied CNF clauses as verifier residuals for local assignment repair.</p>
+        <code>CNF(assign) -> residual clause -> flip variable -> verify</code>
+      </a>
+      <a class="demo" href="./operations.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="18" y="24" width="28" height="24" rx="4" fill="#0e7c66"/>
+            <rect x="54" y="24" width="28" height="24" rx="4" fill="#9b4d1f"/>
+            <path d="M32 58v16h36V58" stroke="#23302b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M26 60h48" stroke="#23302b" stroke-width="6" stroke-linecap="round"/>
+            <path d="M40 36h20" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Operations Transaction Repair</h2>
+        <p>Reserve inventory with typed diffs, accounting checks, and stock-shortage residual repair.</p>
+        <code>stock_delta + reserved_delta == 0 before commit</code>
+      </a>
+      <a class="demo" href="./formal-proof.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <circle cx="24" cy="28" r="8" fill="#0e7c66"/>
+            <circle cx="50" cy="50" r="8" fill="#9b4d1f"/>
+            <circle cx="76" cy="72" r="8" fill="#23302b"/>
+            <path d="M31 34l12 10M57 56l12 10" stroke="#23302b" stroke-width="6" stroke-linecap="round"/>
+            <rect x="18" y="68" width="28" height="12" rx="3" stroke="#0e7c66" stroke-width="5"/>
+            <path d="M20 18h26M54 40h26" stroke="#0e7c66" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Formal Proof Kernel Canary</h2>
+        <p>Append residual-suggested Horn rules, then commit only after the proof kernel derives the goal.</p>
+        <code>hypotheses + rule script -> kernel check -> theorem receipt</code>
+      </a>
+      <a class="demo" href="./circuit-repair.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <circle cx="22" cy="30" r="8" fill="#0e7c66"/>
+            <circle cx="22" cy="70" r="8" fill="#0e7c66"/>
+            <rect x="44" y="22" width="24" height="24" rx="5" fill="#9b4d1f"/>
+            <rect x="44" y="58" width="24" height="24" rx="5" fill="#23302b"/>
+            <path d="M30 30h14M30 70h14M68 34h12M68 70h12M56 46v12" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M80 52l8 8-8 8" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>Circuit Netlist Repair</h2>
+        <p>Compare exact Boolean truth tables and repair one mutable gate through verifier residuals.</p>
+        <code>netlist truth table mismatch -> gate op repair -> reverify</code>
+      </a>
+      <a class="demo" href="./molecule-repair.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <circle cx="24" cy="52" r="12" fill="#0e7c66"/>
+            <circle cx="50" cy="32" r="12" fill="#23302b"/>
+            <circle cx="74" cy="58" r="12" fill="#9b4d1f"/>
+            <path d="M34 44l10-8M58 40l14 12" stroke="#23302b" stroke-width="6" stroke-linecap="round"/>
+            <path d="M18 76h64" stroke="#0e7c66" stroke-width="5" stroke-linecap="round"/>
+            <path d="M62 76l12-12 12 12" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>Molecule Graph Repair</h2>
+        <p>Check organic-subset valence and formula, then repair one atom and bond edit.</p>
+        <code>valence + formula residual -> atom/bond edit -> reverify</code>
+      </a>
+      <a class="demo" href="./code-repair.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="18" y="20" width="64" height="18" rx="4" stroke="#23302b" stroke-width="6"/>
+            <path d="M28 34h18M54 34h18" stroke="#0e7c66" stroke-width="5" stroke-linecap="round"/>
+            <rect x="18" y="48" width="64" height="18" rx="4" stroke="#9b4d1f" stroke-width="6"/>
+            <path d="M30 57l8 7 16-20" stroke="#0e7c66" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M22 78h38" stroke="#23302b" stroke-width="6" stroke-linecap="round"/>
+            <path d="M62 68l12 10-12 10" stroke="#0e7c66" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>Code Patch Repair</h2>
+        <p>Patch one bounded expression operator using full test-suite residuals and file-hash checks.</p>
+        <code>failed test -> operator repair -> reverify -> receipt</code>
+      </a>
+      <a class="demo" href="./robot-trajectory.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="16" y="18" width="68" height="64" rx="4" fill="#eef2ec" stroke="#23302b" stroke-width="5"/>
+            <circle cx="50" cy="50" r="19" fill="rgba(155,77,31,0.22)" stroke="#9b4d1f" stroke-width="4"/>
+            <circle cx="50" cy="50" r="10" fill="#9b4d1f"/>
+            <path d="M24 50h52" stroke="#9b4d1f" stroke-width="5" stroke-linecap="round"/>
+            <path d="M24 50l18-24h24l18 24" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="24" cy="50" r="5" fill="#23302b"/>
+            <circle cx="76" cy="50" r="5" fill="#23302b"/>
+          </svg>
+        </div>
+        <h2>Robot Trajectory Shield</h2>
+        <p>Verify swept-circle clearance and speed before committing a detoured action chunk.</p>
+        <code>unsafe path -> shield residual -> safe detour -> receipt</code>
+      </a>
+      <a class="demo" href="./chess-ancestry.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="18" y="18" width="64" height="64" rx="4" fill="#eef2ec" stroke="#23302b" stroke-width="5"/>
+            <path d="M18 34h64M18 50h64M18 66h64M34 18v64M50 18v64M66 18v64" stroke="#9fb0a1" stroke-width="3"/>
+            <rect x="50" y="50" width="16" height="16" fill="#0e7c66"/>
+            <rect x="50" y="34" width="16" height="16" fill="rgba(14,124,102,0.26)" stroke="#0e7c66" stroke-width="4"/>
+            <rect x="18" y="50" width="16" height="16" fill="rgba(155,77,31,0.26)" stroke="#9b4d1f" stroke-width="4"/>
+            <path d="M58 42v16" stroke="#0e7c66" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Chess Ancestry Reconstruction</h2>
+        <p>Enumerate legal king/rook last-move histories and commit only replay-valid predecessors.</p>
+        <code>predecessor + last_move -> legal replay -> history receipt</code>
+      </a>
+      <a class="demo" href="./counterfactual-rollback.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="18" y="18" width="64" height="18" rx="4" stroke="#9b4d1f" stroke-width="6"/>
+            <rect x="18" y="42" width="64" height="18" rx="4" stroke="#0e7c66" stroke-width="6"/>
+            <rect x="18" y="66" width="64" height="18" rx="4" stroke="#23302b" stroke-width="6"/>
+            <path d="M72 27l10 10M82 27l-10 10" stroke="#9b4d1f" stroke-width="5" stroke-linecap="round"/>
+            <path d="M28 51l8 7 16-20" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M28 75h44" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Counterfactual Rollback Learning</h2>
+        <p>Use accepted-but-rolled-back branch losers as ranking evidence without granting commit authority.</p>
+        <code>commit winner + rollback loser -> rank future branch set</code>
+      </a>
+      <a class="demo" href="./projection-contract.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="18" y="20" width="64" height="20" rx="4" stroke="#0e7c66" stroke-width="6"/>
+            <rect x="18" y="48" width="46" height="20" rx="4" stroke="#9b4d1f" stroke-width="6"/>
+            <path d="M70 54l12 10-12 10" stroke="#9b4d1f" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M28 30h18M54 30h18M28 58h18" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M58 76h18" stroke="#0e7c66" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Projection Contract Guard</h2>
+        <p>Reject typed projections that omit safety-critical verifier fields before any commit can occur.</p>
+        <code>required fields + field hashes -> guard -> verifier</code>
+      </a>
+      <a class="demo" href="./verifier-cost.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="18" y="24" width="22" height="54" rx="4" fill="#9b4d1f"/>
+            <rect x="58" y="48" width="22" height="30" rx="4" fill="#0e7c66"/>
+            <path d="M14 82h72" stroke="#23302b" stroke-width="6" stroke-linecap="round"/>
+            <path d="M22 18h28M58 38h28" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M60 28l14-14 14 14" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>Verifier Cost Routing</h2>
+        <p>Rank equally successful domains by exact committed successes per verifier-cost unit.</p>
+        <code>success_per_cost = commits / verifier_cost</code>
+      </a>
+      <a class="demo" href="./sdk-manifest.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="16" y="20" width="68" height="18" rx="4" stroke="#0e7c66" stroke-width="5"/>
+            <rect x="16" y="46" width="68" height="18" rx="4" stroke="#265f91" stroke-width="5"/>
+            <rect x="16" y="72" width="68" height="14" rx="4" stroke="#9b4d1f" stroke-width="5"/>
+            <path d="M26 29h24M26 55h28M26 79h18" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M68 25l6 6 12-16" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="74" cy="55" r="7" fill="#265f91"/>
+            <path d="M68 78h18" stroke="#9b4d1f" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>SDK Domain Manifest</h2>
+        <p>Certify registered domain verifier IDs, schemas, receipts, ledger heads, and audit status.</p>
+        <code>domain adapter + ledger -> manifest hash</code>
+      </a>
+      <a class="demo" href="./sdk-transfer-guard.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="14" y="20" width="30" height="18" rx="4" stroke="#265f91" stroke-width="5"/>
+            <rect x="56" y="20" width="30" height="18" rx="4" stroke="#9b4d1f" stroke-width="5"/>
+            <rect x="56" y="62" width="30" height="18" rx="4" stroke="#0e7c66" stroke-width="5"/>
+            <path d="M44 29h12" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M70 40v18" stroke="#23302b" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 8"/>
+            <path d="M60 26l12 12M72 26L60 38" stroke="#9b4d1f" stroke-width="5" stroke-linecap="round"/>
+            <path d="M52 71H30" stroke="#0e7c66" stroke-width="5" stroke-linecap="round"/>
+            <path d="M40 61L28 71l12 10" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M62 66l7 7 13-18" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>SDK Transfer Guard Route</h2>
+        <p>Reorder source and target proposal domains with validated negative-transfer admission memory.</p>
+        <code>base route source -> guard route target -> hard verify</code>
+      </a>
+      <a class="demo" href="./world-loop.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="16" y="20" width="64" height="16" rx="4" stroke="#9b4d1f" stroke-width="5"/>
+            <rect x="16" y="48" width="64" height="16" rx="4" stroke="#0e7c66" stroke-width="5"/>
+            <path d="M26 28h20M26 56h30" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M50 36v12" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M60 36l10 10-10 10" stroke="#265f91" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M62 24l10 10M72 24L62 34" stroke="#9b4d1f" stroke-width="5" stroke-linecap="round"/>
+            <path d="M62 52l8 8 14-18" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>Transactional World Loop</h2>
+        <p>Close the proposer, projector, hard verifier, receipt, and learner loop with checked step certificates.</p>
+        <code>reject residual -> learner update -> verified commit</code>
+      </a>
+      <a class="demo" href="./verifier-budget.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="16" y="24" width="68" height="16" rx="4" stroke="#23302b" stroke-width="5"/>
+            <rect x="16" y="24" width="44" height="16" rx="4" fill="#0e7c66"/>
+            <path d="M24 62h24" stroke="#9b4d1f" stroke-width="7" stroke-linecap="round"/>
+            <path d="M62 62h14" stroke="#0e7c66" stroke-width="7" stroke-linecap="round"/>
+            <path d="M30 54l-8 8 8 8M70 54l8 8-8 8" stroke="#23302b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="50" cy="32" r="5" fill="#23302b"/>
+          </svg>
+        </div>
+        <h2>Verifier Budget Abstention</h2>
+        <p>Record over-budget branches as zero-spend abstain receipts and commit only verified winners.</p>
+        <code>budget 4 -> abstain 7, verify 2 + 2 -> commit</code>
+      </a>
+      <a class="demo" href="./budget-policy.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="14" y="22" width="30" height="18" rx="4" stroke="#9b4d1f" stroke-width="5"/>
+            <rect x="14" y="50" width="30" height="18" rx="4" stroke="#9b4d1f" stroke-width="5"/>
+            <rect x="56" y="36" width="30" height="18" rx="4" stroke="#0e7c66" stroke-width="5"/>
+            <path d="M44 31h16M44 59h16" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M64 70h22" stroke="#0e7c66" stroke-width="6" stroke-linecap="round"/>
+            <path d="M78 62l10 8-10 8" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M22 31h14M22 59h12M64 45h16" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Receipt Budget Policy</h2>
+        <p>Plan an exact integer-cost verifier subset from receipt success lower bounds.</p>
+        <code>receipts -> Wilson lower bound -> cost-bounded plan</code>
+      </a>
+      <a class="demo" href="./claim-audit.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="16" y="20" width="68" height="18" rx="4" stroke="#0e7c66" stroke-width="5"/>
+            <rect x="16" y="46" width="68" height="18" rx="4" stroke="#9b4d1f" stroke-width="5"/>
+            <rect x="16" y="72" width="44" height="14" rx="4" stroke="#265f91" stroke-width="5"/>
+            <path d="M26 29h22M26 55h18M26 79h28" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M60 24l8 8 14-18" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M62 50l14 14M76 50L62 64" stroke="#9b4d1f" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Claim Evidence Audit</h2>
+        <p>Hash-check claim certificates and reject overclaims when evidence does not support them.</p>
+        <code>requirements + metrics + boundary -> certificate</code>
+      </a>
+      <a class="demo" href="./learning-evaluation.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="16" y="22" width="28" height="18" rx="4" stroke="#265f91" stroke-width="5"/>
+            <rect x="56" y="22" width="28" height="18" rx="4" stroke="#265f91" stroke-width="5"/>
+            <rect x="16" y="62" width="28" height="18" rx="4" stroke="#9b4d1f" stroke-width="5"/>
+            <rect x="56" y="62" width="28" height="18" rx="4" stroke="#0e7c66" stroke-width="5"/>
+            <path d="M44 31h12M30 40v22M70 40v22" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M44 71h12" stroke="#23302b" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 8"/>
+            <path d="M62 66l8 8 14-18" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>Learning Evaluation Certificate</h2>
+        <p>Bind train receipts, held-out evaluation receipts, and same-budget baselines before promoting learning claims.</p>
+        <code>train hashes / eval hashes: disjoint</code>
+      </a>
+      <a class="demo" href="./transfer-audit.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="14" y="22" width="28" height="18" rx="4" stroke="#265f91" stroke-width="5"/>
+            <rect x="58" y="22" width="28" height="18" rx="4" stroke="#9b4d1f" stroke-width="5"/>
+            <rect x="58" y="62" width="28" height="18" rx="4" stroke="#0e7c66" stroke-width="5"/>
+            <path d="M42 31h16M72 40v20" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M62 27l14 14M76 27L62 41" stroke="#9b4d1f" stroke-width="5" stroke-linecap="round"/>
+            <path d="M64 66l7 7 13-18" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>Transfer Audit Certificate</h2>
+        <p>Reject positive transfer claims when source-trained receipt policy loses to a target-local baseline.</p>
+        <code>source success -> target failure -> overclaim rejected</code>
+      </a>
+      <a class="demo" href="./transfer-guard.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="14" y="20" width="28" height="18" rx="4" stroke="#265f91" stroke-width="5"/>
+            <rect x="58" y="20" width="28" height="18" rx="4" stroke="#9b4d1f" stroke-width="5"/>
+            <rect x="58" y="62" width="28" height="18" rx="4" stroke="#0e7c66" stroke-width="5"/>
+            <path d="M42 29h16" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M72 39v20" stroke="#23302b" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 8"/>
+            <path d="M62 26l14 14M76 26L62 40" stroke="#9b4d1f" stroke-width="5" stroke-linecap="round"/>
+            <path d="M54 71H33" stroke="#0e7c66" stroke-width="5" stroke-linecap="round"/>
+            <path d="M42 61l-12 10 12 10" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M64 66l7 7 13-18" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>Transfer Guard Snapshot</h2>
+        <p>Use negative transfer evidence as admission memory that blocks source-policy reuse before execution.</p>
+        <code>negative certificate -> block source -> target fallback commits</code>
+      </a>
+      <a class="demo" href="./verifier-guard.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="14" y="24" width="34" height="22" rx="4" stroke="#9b4d1f" stroke-width="5"/>
+            <rect x="52" y="24" width="34" height="22" rx="4" stroke="#0e7c66" stroke-width="5"/>
+            <path d="M24 58h18M58 58h18" stroke="#23302b" stroke-width="6" stroke-linecap="round"/>
+            <path d="M34 70h32" stroke="#0e7c66" stroke-width="6" stroke-linecap="round"/>
+            <path d="M30 35h10M60 35h16" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M20 76l10 10 20-26" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M70 70l10 10M80 70L70 80" stroke="#9b4d1f" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Verifier Agreement Guard</h2>
+        <p>Require an independent audit verifier to agree before a primary accept can commit.</p>
+        <code>primary accept + audit reject -> hard_reject receipt</code>
+      </a>
+      <a class="demo" href="./reliability-audit.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="16" y="24" width="28" height="42" rx="4" fill="#9b4d1f"/>
+            <rect x="56" y="38" width="28" height="28" rx="4" fill="#0e7c66"/>
+            <path d="M14 76h72" stroke="#23302b" stroke-width="6" stroke-linecap="round"/>
+            <path d="M30 20v-8M70 34v-8" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M24 48h12M62 52h16" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+            <path d="M24 86l12-10 12 10M56 76l12 10 18-22" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>Reliability Audit Memory</h2>
+        <p>Use agreement receipts to rank scarce audit slots toward primaries with observed false positives.</p>
+        <code>Wilson lower bound -> audit risky verifier first</code>
+      </a>
+      <a class="demo" href="./residual-topk.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="18" y="22" width="64" height="16" rx="4" stroke="#23302b" stroke-width="5"/>
+            <rect x="18" y="46" width="64" height="16" rx="4" stroke="#9b4d1f" stroke-width="5"/>
+            <rect x="18" y="70" width="64" height="16" rx="4" stroke="#0e7c66" stroke-width="5"/>
+            <path d="M28 30h16M28 54h12M28 78h28" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M64 66l12 12-12 12" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M66 42l10 10M76 42L66 52" stroke="#9b4d1f" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Residual Top-K Submitter</h2>
+        <p>Use learned residual hints to spend scarce verifier calls on likely repair candidates first.</p>
+        <code>stock_shortage -> quantity=5 -> commit in top-k</code>
+      </a>
+      <a class="demo" href="./residual-taxonomy.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="16" y="22" width="28" height="18" rx="4" stroke="#9b4d1f" stroke-width="5"/>
+            <rect x="56" y="22" width="28" height="18" rx="4" stroke="#265f91" stroke-width="5"/>
+            <rect x="36" y="62" width="28" height="18" rx="4" stroke="#0e7c66" stroke-width="5"/>
+            <path d="M44 31h12M30 40l10 22M70 40L60 62" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M44 71h12" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Residual Taxonomy</h2>
+        <p>Normalize resource, coverage, and budget residual receipts into a stable learning envelope.</p>
+        <code>raw residual hash + normalized learning hash</code>
+      </a>
+      <a class="demo" href="./redacted-receipt.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="18" y="22" width="64" height="18" rx="4" stroke="#23302b" stroke-width="5"/>
+            <rect x="18" y="48" width="64" height="18" rx="4" stroke="#0e7c66" stroke-width="5"/>
+            <path d="M30 31h28M30 57h18" stroke="#9b4d1f" stroke-width="5" stroke-linecap="round"/>
+            <path d="M62 31h8M54 57h16" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M34 78h32" stroke="#0e7c66" stroke-width="6" stroke-linecap="round"/>
+            <path d="M42 72l-8 6 8 6M58 72l8 6-8 6" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>Redacted Receipt Disclosure</h2>
+        <p>Share receipt views with salted commitments while preserving original audit handles.</p>
+        <code>original receipt hash + policy hash + selective disclosure</code>
+      </a>
+      <a class="demo" href="./checkpoint-compaction.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="16" y="20" width="68" height="16" rx="4" stroke="#23302b" stroke-width="5"/>
+            <rect x="16" y="44" width="32" height="16" rx="4" fill="#9b4d1f"/>
+            <rect x="58" y="44" width="26" height="16" rx="4" fill="#0e7c66"/>
+            <path d="M32 68h36" stroke="#265f91" stroke-width="7" stroke-linecap="round"/>
+            <path d="M58 60l12 8-12 8" stroke="#265f91" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M28 28h44M24 52h18M62 52h14" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Checkpoint Compaction</h2>
+        <p>Replace an audited receipt prefix with a replay checkpoint while suffix receipts keep chain authority.</p>
+        <code>checkpoint state hash + suffix parent-head audit</code>
+      </a>
+      <a class="demo" href="./memory-consolidation.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="18" y="22" width="24" height="18" rx="4" fill="#0e7c66"/>
+            <rect x="56" y="22" width="24" height="18" rx="4" fill="#9b4d1f"/>
+            <rect x="18" y="60" width="24" height="18" rx="4" fill="#0e7c66"/>
+            <path d="M42 31h14M30 40v20M68 40v12" stroke="#23302b" stroke-width="5" stroke-linecap="round"/>
+            <path d="M56 68H42" stroke="#265f91" stroke-width="6" stroke-linecap="round"/>
+            <path d="M50 58l-10 10 10 10" stroke="#265f91" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>Memory Consolidation</h2>
+        <p>Merge duplicate macro receipts, retain strong evidence, and forget weak stale rows under capacity.</p>
+        <code>bounded macro memory + hash-checked snapshot</code>
+      </a>
+      <a class="demo" href="./shape-learning.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="18" y="62" width="12" height="18" fill="#9b4d1f"/>
+            <rect x="36" y="44" width="12" height="36" fill="#0e7c66"/>
+            <rect x="54" y="30" width="12" height="50" fill="#0e7c66"/>
+            <rect x="72" y="52" width="12" height="28" fill="#23302b"/>
+            <path d="M14 82h74M18 22l12 8 12-8 12 8 12-8 12 8" stroke="#23302b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>Shape Conditionality</h2>
+        <p>Compare static search, receipt ranking, and HDC memory on low-rank versus random defects.</p>
+        <code>calls_per_success = calls / verified_successes</code>
+      </a>
+      <a class="demo" href="./repair-program.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="18" y="24" width="64" height="14" rx="3" stroke="#23302b" stroke-width="6"/>
+            <path d="M30 56h28" stroke="#9b4d1f" stroke-width="8" stroke-linecap="round"/>
+            <path d="M58 44l18 12-18 12" stroke="#9b4d1f" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="18" y="72" width="64" height="14" rx="3" stroke="#0e7c66" stroke-width="6"/>
+          </svg>
+        </div>
+        <h2>Residual Program Repair</h2>
+        <p>Use verifier residuals to patch typed integer programs, then commit only after hard accept.</p>
+        <code>set(g) -> reject(delta) -> add(delta) -> commit</code>
+      </a>
+      <a class="demo" href="./macro-grid.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <rect x="20" y="20" width="18" height="18" fill="#0e7c66"/>
+            <rect x="41" y="20" width="18" height="18" fill="#dfe6de"/>
+            <rect x="62" y="20" width="18" height="18" fill="#dfe6de"/>
+            <rect x="20" y="41" width="18" height="18" fill="#dfe6de"/>
+            <rect x="41" y="41" width="18" height="18" fill="#9b4d1f"/>
+            <rect x="62" y="41" width="18" height="18" fill="#dfe6de"/>
+            <rect x="20" y="62" width="18" height="18" fill="#dfe6de"/>
+            <rect x="41" y="62" width="18" height="18" fill="#dfe6de"/>
+            <rect x="62" y="62" width="18" height="18" fill="#23302b"/>
+            <path d="M29 29h42v42" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>Prefix-Safe Macro Grid</h2>
+        <p>Reject unsafe macro prefixes before terminal verification and reuse accepted routes.</p>
+        <code>prefix_safe(step*) before terminal_commit</code>
+      </a>
+      <a class="demo" href="./rrlm-proposer.html">
+        <div class="viz" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none">
+            <path d="M18 70h64" stroke="#23302b" stroke-width="6" stroke-linecap="round"/>
+            <rect x="22" y="34" width="12" height="36" fill="#9b4d1f"/>
+            <rect x="44" y="18" width="12" height="52" fill="#0e7c66"/>
+            <rect x="66" y="48" width="12" height="22" fill="#23302b"/>
+            <path d="M24 82l52-64" stroke="#0e7c66" stroke-width="5" stroke-linecap="round"/>
+            <path d="M66 18h10v10" stroke="#0e7c66" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>RRLM Macro Proposer</h2>
+        <p>Use reversible receipt-learned latent transport to rank macros before hard verification.</p>
+        <code>T([s,t,a,r]) = [s + 64a - 32r, t - len, a, r]</code>
+      </a>
+    </section>
+  </main>
+</body>
+</html>

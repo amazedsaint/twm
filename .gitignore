@@ -1,0 +1,22 @@
+.DS_Store
+.claude/
+
+# Python caches and local test output.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# JavaScript dependency and coverage output.
+node_modules/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local environment files.
+.env
+.env.*
+
+# dist/ is intentionally committed: the standalone HTML demos import it.

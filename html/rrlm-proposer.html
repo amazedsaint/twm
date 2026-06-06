@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RRLM Macro Proposer</title>
+  <style>
+    :root {
+      --bg: #f7f8f5;
+      --ink: #18201c;
+      --muted: #667067;
+      --line: #d8ddd5;
+      --panel: #ffffff;
+      --accent: #0e7c66;
+      --accent-2: #9b4d1f;
+      --code: #101916;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    main { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 40px; }
+    nav a { color: var(--accent); text-decoration: none; font-weight: 650; }
+    header { display: grid; grid-template-columns: 1.08fr 0.92fr; gap: 24px; align-items: end; margin-top: 28px; }
+    h1 { margin: 0; font-size: clamp(2rem, 4vw, 3.8rem); line-height: 1; letter-spacing: 0; }
+    p { color: var(--muted); margin: 10px 0 0; }
+    .equation {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--code);
+      font: 650 0.96rem/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .layout { display: grid; grid-template-columns: 360px 1fr; gap: 18px; margin-top: 22px; }
+    .layout > * { min-width: 0; }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 16px;
+      box-shadow: 0 12px 30px rgba(20, 35, 31, 0.07);
+    }
+    .controls { display: grid; gap: 12px; align-content: start; }
+    label { display: grid; gap: 5px; color: var(--muted); font-size: 0.86rem; }
+    input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px 11px;
+      color: var(--ink);
+      font: 700 0.96rem/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: #fbfcfa;
+    }
+    button {
+      border: 1px solid #0d6d5a;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 12px;
+      font-weight: 750;
+      cursor: pointer;
+    }
+    button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid rgba(14, 124, 102, 0.25); outline-offset: 2px; }
+    .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .metric { border: 1px solid var(--line); border-radius: 6px; padding: 10px; background: #fbfcfa; min-width: 0; }
+    .metric strong { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 4px; }
+    .metric span { display: block; font: 750 1rem/1.15 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+    canvas { width: 100%; height: 250px; border: 1px solid var(--line); border-radius: 8px; background: #fbfcfa; display: block; margin-top: 12px; }
+    .table-wrap { width: 100%; overflow: auto; border: 1px solid var(--line); border-radius: 8px; margin-top: 12px; background: #fff; }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    th, td { padding: 9px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 0.78rem; font-weight: 750; background: #fbfcfa; }
+    td { font-size: 0.9rem; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 750; color: var(--code); }
+    pre {
+      overflow: auto;
+      margin: 12px 0 0;
+      padding: 12px;
+      border-radius: 8px;
+      background: #101916;
+      color: #dce8df;
+      font-size: 0.82rem;
+    }
+    @media (max-width: 930px) {
+      header, .layout { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 560px) {
+      .metrics { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="./index.html">Back to demos</a></nav>
+    <header>
+      <div>
+        <h1>RRLM Macro Proposer</h1>
+        <p>Receipts update proposal order. The latent transport is reversible and cycle-checked, while the prefix and terminal hard verifiers still own every ledger decision.</p>
+      </div>
+      <div class="equation">
+        z = [score, tie, accepted, rejected]<br>
+        T(z) = [score + 64a - 32r, tie - length, a, r]<br>
+        T^-1 subtracts the same integer deltas
+      </div>
+    </header>
+    <section class="layout">
+      <aside class="panel controls">
+        <label>Episodes
+          <input id="episodes" value="16" inputmode="numeric" spellcheck="false">
+        </label>
+        <button id="run">Run RRLM benchmark</button>
+        <div class="metrics">
+          <div class="metric"><strong>RRLM attempts</strong><span id="rrlmAttempts">...</span></div>
+          <div class="metric"><strong>Reversible only</strong><span id="revOnly">...</span></div>
+          <div class="metric"><strong>Matched baseline</strong><span id="matched">...</span></div>
+          <div class="metric"><strong>Reuse gain</strong><span id="reuse">...</span></div>
+          <div class="metric"><strong>Cycle failures</strong><span id="cycle">...</span></div>
+          <div class="metric"><strong>Audit / invalid</strong><span id="audit">...</span></div>
+          <div class="metric"><strong>WebGPU</strong><span id="gpuState">checking</span></div>
+          <div class="metric"><strong>GPU cycle</strong><span id="gpuCycle">...</span></div>
+          <div class="metric"><strong>Non-rev gain</strong><span id="nonRevGain">...</span></div>
+          <div class="metric"><strong>Snapshot</strong><span id="snapshot">...</span></div>
+          <div class="metric"><strong>Certificate</strong><span id="certificate">...</span></div>
+          <div class="metric"><strong>Transport cert</strong><span id="transportCert">...</span></div>
+          <div class="metric"><strong>i32 lane</strong><span id="i32Lane">...</span></div>
+          <div class="metric"><strong>Tamper</strong><span id="tamper">...</span></div>
+        </div>
+      </aside>
+      <section>
+        <div class="panel">
+          <div class="metrics">
+            <div class="metric"><strong>Initial order</strong><span id="initialOrder">...</span></div>
+            <div class="metric"><strong>After receipts</strong><span id="learnedOrder">...</span></div>
+            <div class="metric"><strong>Prefix rejects</strong><span id="rejects">...</span></div>
+          </div>
+          <canvas id="chart" width="900" height="250" aria-label="RRLM latent score chart"></canvas>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Lane</th>
+                  <th>Macro</th>
+                  <th>z before</th>
+                  <th>T(z)</th>
+                  <th>Score</th>
+                  <th>Cycle</th>
+                </tr>
+              </thead>
+              <tbody id="rows"></tbody>
+            </table>
+          </div>
+          <pre id="log"></pre>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script type="module">
+    import {
+      Ledger,
+      RrlmMacroProposer,
+      defaultGridMacros,
+      runPrefixSafeGridSequence,
+      runRrlmMacroBenchmark,
+      rrlmTransportCpu,
+      runRrlmTransportWebGpu,
+      webGpuAvailable
+    } from "../dist/index.js";
+
+    const els = {
+      episodes: document.querySelector("#episodes"),
+      run: document.querySelector("#run"),
+      rrlmAttempts: document.querySelector("#rrlmAttempts"),
+      revOnly: document.querySelector("#revOnly"),
+      matched: document.querySelector("#matched"),
+      reuse: document.querySelector("#reuse"),
+      cycle: document.querySelector("#cycle"),
+      audit: document.querySelector("#audit"),
+      gpuState: document.querySelector("#gpuState"),
+      gpuCycle: document.querySelector("#gpuCycle"),
+      nonRevGain: document.querySelector("#nonRevGain"),
+      snapshot: document.querySelector("#snapshot"),
+      certificate: document.querySelector("#certificate"),
+      transportCert: document.querySelector("#transportCert"),
+      i32Lane: document.querySelector("#i32Lane"),
+      tamper: document.querySelector("#tamper"),
+      initialOrder: document.querySelector("#initialOrder"),
+      learnedOrder: document.querySelector("#learnedOrder"),
+      rejects: document.querySelector("#rejects"),
+      rows: document.querySelector("#rows"),
+      log: document.querySelector("#log"),
+      chart: document.querySelector("#chart")
+    };
+    const ctx = els.chart.getContext("2d");
+
+    function fmt(value) {
+      return Number(value).toFixed(2);
+    }
+    function ticks(values) {
+      return "[" + values.map((value) => value.toString()).join(", ") + "]";
+    }
+    function sameTicks(a, b) {
+      return a.length === b.length && a.every((value, idx) => value === b[idx]);
+    }
+    function orderLabel(ranking) {
+      return ranking.rankedMacros.map((macro) => macro.macroId.replace(/-/g, " ")).join(" -> ");
+    }
+    function proposalRows(label, ranking) {
+      return ranking.proposals.map((proposal) => ({ label, proposal }));
+    }
+    function draw(rows) {
+      ctx.clearRect(0, 0, els.chart.width, els.chart.height);
+      ctx.fillStyle = "#fbfcfa";
+      ctx.fillRect(0, 0, els.chart.width, els.chart.height);
+      ctx.strokeStyle = "#d8ddd5";
+      ctx.beginPath();
+      ctx.moveTo(44, 126);
+      ctx.lineTo(860, 126);
+      ctx.stroke();
+      const values = rows.map((row) => Number(row.proposal.score));
+      const maxAbs = Math.max(1, ...values.map((value) => Math.abs(value)));
+      rows.forEach((row, idx) => {
+        const x = 80 + idx * 190;
+        const score = Number(row.proposal.score);
+        const bar = Math.round((score / maxAbs) * 86);
+        ctx.fillStyle = score >= 0 ? "#0e7c66" : "#9b4d1f";
+        ctx.fillRect(x, 126 - Math.max(bar, 0), 72, Math.abs(bar) || 4);
+        ctx.fillStyle = "#18201c";
+        ctx.font = "750 13px ui-monospace, Menlo, monospace";
+        ctx.fillText(String(score), x + 4, score >= 0 ? 112 - Math.max(bar, 0) : 146 + Math.abs(bar));
+        ctx.fillStyle = "#667067";
+        ctx.font = "650 12px ui-sans-serif, system-ui";
+        ctx.fillText(row.label, x - 12, 220);
+        ctx.fillText(row.proposal.macro.macroId.slice(0, 17), x - 18, 236);
+      });
+    }
+    async function buildLearnedRankings() {
+      const macros = defaultGridMacros();
+      const proposer = new RrlmMacroProposer();
+      const initial = proposer.propose("grid-3x3", macros);
+      const ledger = new Ledger();
+      await runPrefixSafeGridSequence(initial.rankedMacros, ledger, proposer);
+      const learned = proposer.propose("grid-3x3", macros);
+      return { macros, initial, learned };
+    }
+    async function runGpuCanary(proposal) {
+      const params = {
+        acceptedGain: 64n,
+        rejectPenalty: 32n,
+        lengthPenalty: 1n,
+        length: proposal.macro.steps.length
+      };
+      const cpuForward = rrlmTransportCpu(proposal.latentBefore, params, "forward");
+      const cpuInverse = rrlmTransportCpu(cpuForward, params, "inverse");
+      if (!webGpuAvailable()) {
+        els.gpuState.textContent = "fallback";
+        els.gpuCycle.textContent = sameTicks(cpuInverse, proposal.latentBefore) ? "cpu exact" : "failed";
+        return { engine: "cpu", forward: cpuForward, inverse: cpuInverse };
+      }
+      try {
+        const gpuForward = await runRrlmTransportWebGpu(proposal.latentBefore, params, "forward");
+        const gpuInverse = await runRrlmTransportWebGpu(gpuForward, params, "inverse");
+        const ok = sameTicks(gpuForward, cpuForward) && sameTicks(gpuInverse, proposal.latentBefore);
+        els.gpuState.textContent = "adapter";
+        els.gpuCycle.textContent = ok ? "exact" : "failed";
+        return { engine: "webgpu", forward: gpuForward, inverse: gpuInverse };
+      } catch (error) {
+        els.gpuState.textContent = "fallback";
+        els.gpuCycle.textContent = sameTicks(cpuInverse, proposal.latentBefore) ? "cpu exact" : "failed";
+        return { engine: "cpu fallback", forward: cpuForward, inverse: cpuInverse, error: String(error.message || error) };
+      }
+    }
+    async function run() {
+      els.run.disabled = true;
+      els.run.textContent = "Running...";
+      try {
+        const episodes = Math.max(1, Number.parseInt(els.episodes.value, 10) || 16);
+        const report = await runRrlmMacroBenchmark(episodes);
+        const { initial, learned } = await buildLearnedRankings();
+        const rows = [
+          ...proposalRows("initial", initial),
+          ...proposalRows("learned", learned)
+        ];
+        const acceptedProposal = learned.proposals.find((row) => row.acceptedCount > 0) || learned.proposals[0];
+        const gpu = await runGpuCanary(acceptedProposal);
+        els.rrlmAttempts.textContent = fmt(report.rrlmAttemptsPerSuccess);
+        els.revOnly.textContent = fmt(report.reversibleOnlyAttemptsPerSuccess);
+        els.matched.textContent = fmt(report.matchedNonReversibleAttemptsPerSuccess);
+        els.reuse.textContent = `${fmt(report.rrlmReuseGain)}x`;
+        els.cycle.textContent = String(report.rrlmCycleFailureCount);
+        els.audit.textContent = `${report.ledgerAudit ? "pass" : "fail"} / ${report.invalidCommitCount}`;
+        els.nonRevGain.textContent = `${fmt(report.rrlmVsNonReversibleGain)}x`;
+        els.snapshot.textContent = String(report.snapshotValid);
+        els.certificate.textContent = String(report.proposalCertificateValid);
+        els.transportCert.textContent = String(report.transportCertificateValid);
+        els.i32Lane.textContent = `${report.transportCertificateI32AdmissibleCount}/${report.transportCertificateI32RejectedCount}`;
+        els.tamper.textContent = [report.snapshotTamperDetected, report.proposalTamperDetected, report.transportTamperDetected].every(Boolean) ? "3/3" : "fail";
+        els.initialOrder.textContent = orderLabel(initial);
+        els.learnedOrder.textContent = orderLabel(learned);
+        els.rejects.textContent = `${report.rrlmPrefixRejectCount} / ${report.reversibleOnlyPrefixRejectCount}`;
+        els.rows.innerHTML = rows.map(({ label, proposal }) => `
+          <tr>
+            <td>${label}</td>
+            <td><code>${proposal.macro.macroId}</code></td>
+            <td><code>${ticks(proposal.latentBefore)}</code></td>
+            <td><code>${ticks(proposal.latentAfter)}</code></td>
+            <td><code>${proposal.score.toString()}</code></td>
+            <td>${proposal.cycleOk ? "exact" : "failed"}</td>
+          </tr>
+        `).join("");
+        draw(rows);
+        els.log.textContent = JSON.stringify({
+          episodes,
+          rrlm_attempts_per_success: report.rrlmAttemptsPerSuccess,
+          reversible_only_attempts_per_success: report.reversibleOnlyAttemptsPerSuccess,
+          matched_non_reversible_attempts_per_success: report.matchedNonReversibleAttemptsPerSuccess,
+          rrlm_vs_non_reversible_gain: report.rrlmVsNonReversibleGain,
+          snapshot_valid: report.snapshotValid,
+          proposal_certificate_valid: report.proposalCertificateValid,
+          transport_certificate_valid: report.transportCertificateValid,
+          transport_i32_admissible_count: report.transportCertificateI32AdmissibleCount,
+          transport_i32_rejected_count: report.transportCertificateI32RejectedCount,
+          snapshot_tamper_detected: report.snapshotTamperDetected,
+          proposal_tamper_detected: report.proposalTamperDetected,
+          transport_tamper_detected: report.transportTamperDetected,
+          snapshot_hash: report.snapshotHash,
+          proposal_certificate_hash: report.proposalCertificateHash,
+          transport_certificate_hash: report.transportCertificateHash,
+          gpu_engine: gpu.engine,
+          gpu_forward: ticks(gpu.forward),
+          gpu_inverse: ticks(gpu.inverse),
+          gpu_error: gpu.error || null
+        }, null, 2);
+      } finally {
+        els.run.disabled = false;
+        els.run.textContent = "Run RRLM benchmark";
+      }
+    }
+
+    els.run.addEventListener("click", run);
+    run();
+  </script>
+</body>
+</html>

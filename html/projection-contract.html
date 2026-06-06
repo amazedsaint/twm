@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Projection Contract Guard</title>
+  <style>
+    :root {
+      --bg: #f6f7f3;
+      --ink: #17211c;
+      --muted: #657068;
+      --line: #d7ddd4;
+      --panel: #ffffff;
+      --accent: #0b7760;
+      --warn: #a14f21;
+      --dark: #26342e;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.5; }
+    main { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 42px; }
+    nav a { color: var(--accent); text-decoration: none; font-weight: 700; }
+    h1 { margin: 26px 0 8px; font-size: clamp(2rem, 4vw, 4rem); line-height: 1; letter-spacing: 0; }
+    p { color: var(--muted); max-width: 900px; }
+    .layout { display: grid; grid-template-columns: 350px 1fr; gap: 18px; margin-top: 20px; }
+    .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 16px; box-shadow: 0 12px 30px rgba(20, 35, 31, 0.07); min-width: 0; }
+    button { width: 100%; border: 1px solid #0a6b56; border-radius: 6px; background: var(--accent); color: #fff; padding: 10px 12px; font-weight: 760; cursor: pointer; }
+    button.secondary { margin-top: 10px; background: #fff; color: var(--accent); }
+    .state { display: grid; gap: 10px; margin-top: 16px; }
+    .state div { border: 1px solid var(--line); border-radius: 6px; background: #fbfcfa; padding: 10px; }
+    .state strong, .metric strong, .card strong { display: block; color: var(--muted); font-size: 0.78rem; }
+    .state span, .metric span, .card span { display: block; color: var(--dark); font: 760 0.96rem/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+    .metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 14px; }
+    .metric { min-height: 72px; border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 10px; }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+    .card { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: #fff; min-height: 132px; }
+    .card.reject { border-color: #c99a7a; box-shadow: inset 4px 0 0 var(--warn); }
+    .card.commit { border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent); }
+    .formula { margin: 0 0 14px; border: 1px solid var(--line); border-radius: 8px; background: #101916; color: #dce8df; padding: 12px; font: 760 0.9rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+    th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 0.78rem; }
+    th:first-child, td:first-child { width: 12rem; }
+    td { font: 650 0.86rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; word-break: break-word; }
+    tr:last-child td { border-bottom: 0; }
+    pre { overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 14px 0 0; padding: 12px; border-radius: 8px; background: #101916; color: #dce8df; font-size: 0.82rem; }
+    @media (max-width: 960px) {
+      .layout, .metrics, .cards { grid-template-columns: 1fr; }
+      th:first-child, td:first-child { width: 8rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="./index.html">Back to demos</a></nav>
+    <h1>Projection Contract Guard</h1>
+    <p>A typed projection must declare the state fields it exposes to the verifier. Here, omitting safety clearance makes a fast stop look safe to an unguarded verifier, but the contract rejects it before commit.</p>
+    <section class="layout">
+      <aside class="panel">
+        <button id="run">Run projection guard</button>
+        <button class="secondary" id="reset">Reset</button>
+        <div class="state">
+          <div><strong>Distance</strong><span>5 ticks</span></div>
+          <div><strong>Brake</strong><span>2 ticks per step^2</span></div>
+          <div><strong>Clearance</strong><span>2 ticks</span></div>
+        </div>
+      </aside>
+      <section>
+        <div class="metrics">
+          <div class="metric"><strong>Candidates</strong><span id="candidates">0</span></div>
+          <div class="metric"><strong>Verifier calls</strong><span id="calls">0</span></div>
+          <div class="metric"><strong>Missing fields</strong><span id="missing">-</span></div>
+          <div class="metric"><strong>Safe margin</strong><span id="safeMargin">0</span></div>
+          <div class="metric"><strong>Invalid commits</strong><span id="invalid">0</span></div>
+        </div>
+        <div class="panel">
+          <div class="formula">safety check: speed^2 + 2 * brake * clearance <= 2 * brake * distance</div>
+          <div class="cards">
+            <div class="card reject"><strong>fast_partial</strong><span>unguarded accepts; guard rejects missing clearance</span></div>
+            <div class="card reject"><strong>fast_complete</strong><span>complete projection, exact margin -4</span></div>
+            <div class="card commit"><strong>crawl_complete</strong><span>complete projection, exact margin +8, committed</span></div>
+          </div>
+          <table>
+            <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+          <pre id="log"></pre>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script type="module">
+    import { runProjectionContractBenchmark } from "../dist/index.js";
+
+    const els = {
+      run: document.querySelector("#run"),
+      candidates: document.querySelector("#candidates"),
+      calls: document.querySelector("#calls"),
+      missing: document.querySelector("#missing"),
+      safeMargin: document.querySelector("#safeMargin"),
+      invalid: document.querySelector("#invalid"),
+      rows: document.querySelector("#rows"),
+      log: document.querySelector("#log")
+    };
+
+    function setRows(rows) {
+      els.rows.replaceChildren(...rows.map(([key, value]) => {
+        const tr = document.createElement("tr");
+        const keyCell = document.createElement("td");
+        const valueCell = document.createElement("td");
+        keyCell.textContent = key;
+        valueCell.textContent = value;
+        tr.append(keyCell, valueCell);
+        return tr;
+      }));
+    }
+
+    function render(report) {
+      els.candidates.textContent = String(report.candidateCount);
+      els.calls.textContent = String(report.verifierCalls);
+      els.missing.textContent = report.missingFields.length ? report.missingFields.map(formatLabel).join(", ") : "-";
+      els.safeMargin.textContent = String(report.safeMarginNumerator);
+      els.invalid.textContent = String(report.invalidCommitCount);
+      setRows([
+        ["unguarded false positive", String(report.unguardedFalsePositiveAccepts)],
+        ["partial rejected", String(report.guardedPartialRejected)],
+        ["fast rejected", String(report.guardedFastCompleteRejected)],
+        ["safe commit", String(report.guardedSafeCommit)],
+        ["unsafe margin", String(report.unsafeMarginNumerator)],
+        ["ledger audit", String(report.ledgerAudit)],
+        ["replay rollback", report.replayRollbackRate.toFixed(1)]
+      ]);
+      els.log.textContent = JSON.stringify(report, null, 2);
+    }
+
+    function formatLabel(value) {
+      return String(value).replace(/([a-z])([A-Z])/g, "$1 $2").replaceAll("_", " ").toLowerCase();
+    }
+
+    async function run() {
+      els.run.disabled = true;
+      els.run.textContent = "Running...";
+      try {
+        render(await runProjectionContractBenchmark());
+      } catch (error) {
+        els.log.textContent = String(error.stack || error);
+      } finally {
+        els.run.disabled = false;
+        els.run.textContent = "Run projection guard";
+      }
+    }
+
+    function reset() {
+      render({
+        candidateCount: 0,
+        verifierCalls: 0,
+        unguardedFalsePositiveAccepts: false,
+        guardedPartialRejected: false,
+        guardedFastCompleteRejected: false,
+        guardedSafeCommit: false,
+        missingFields: [],
+        unsafeMarginNumerator: 0,
+        safeMarginNumerator: 0,
+        ledgerAudit: false,
+        replayRollbackRate: 0,
+        invalidCommitCount: 0
+      });
+    }
+
+    document.querySelector("#run").addEventListener("click", run);
+    document.querySelector("#reset").addEventListener("click", reset);
+    reset();
+  </script>
+</body>
+</html>

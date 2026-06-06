@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Circular Token Log</title>
+  <style>
+    :root {
+      --bg: #f7f8f4;
+      --ink: #17211c;
+      --muted: #657068;
+      --line: #d7ddd4;
+      --panel: #ffffff;
+      --accent: #0b7760;
+      --warn: #a14f21;
+      --blue: #265f91;
+      --dark: #25322d;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.5; }
+    main { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 42px; }
+    nav a { color: var(--accent); text-decoration: none; font-weight: 740; }
+    h1 { margin: 26px 0 8px; font-size: clamp(2rem, 4vw, 4rem); line-height: 1; letter-spacing: 0; }
+    p { color: var(--muted); max-width: 920px; }
+    button { border: 1px solid #0a6b56; border-radius: 6px; background: var(--accent); color: #fff; padding: 10px 12px; font-weight: 760; cursor: pointer; }
+    button.secondary { background: #fff; color: var(--accent); }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+    .metrics { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin: 16px 0; }
+    .metric { min-height: 74px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 10px; box-shadow: 0 10px 24px rgba(20, 35, 31, 0.06); }
+    .metric strong, .token strong { display: block; color: var(--muted); font-size: 0.78rem; }
+    .metric span, .token span { display: block; color: var(--dark); font: 760 0.96rem/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+    .layout { display: grid; grid-template-columns: 0.95fr 1.05fr; gap: 16px; align-items: start; }
+    .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 16px; box-shadow: 0 12px 30px rgba(20, 35, 31, 0.07); min-width: 0; }
+    .tokens { display: grid; gap: 12px; }
+    .token { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 12px; display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; min-height: 82px; }
+    .token[data-kind="compact"] { box-shadow: inset 4px 0 0 var(--accent); }
+    .token[data-kind="suffix"] { box-shadow: inset 4px 0 0 var(--warn); }
+    .tag { border-radius: 999px; border: 1px solid var(--line); padding: 6px 10px; font: 760 0.78rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--dark); background: #fbfcfa; white-space: nowrap; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+    th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 0.78rem; }
+    th:first-child, td:first-child { width: 12rem; }
+    td { font: 650 0.86rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; word-break: break-word; }
+    tr:last-child td { border-bottom: 0; }
+    pre { overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 12px 0 0; padding: 12px; border-radius: 8px; background: #101916; color: #dce8df; font-size: 0.82rem; }
+    .proof { margin-top: 12px; border-left: 4px solid var(--blue); padding: 10px 12px; color: var(--muted); background: #f9fbfd; border-radius: 0 6px 6px 0; }
+    @media (max-width: 960px) {
+      .metrics, .layout { grid-template-columns: 1fr; }
+      .token { grid-template-columns: 1fr; }
+      .tag { justify-self: start; }
+      th:first-child, td:first-child { width: 9rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="./index.html">Back to demos</a></nav>
+    <h1>Circular Token Log</h1>
+    <p>A bounded token log compacts old reversible deltas into a canonical prefix block while retaining a recent suffix. Full replay, compacted replay, and inverse replay are checked before the certificate is accepted.</p>
+    <div class="toolbar">
+      <button id="run">Run compaction audit</button>
+      <button class="secondary" id="reset">Reset</button>
+    </div>
+    <section class="metrics">
+      <div class="metric"><strong>Total tokens</strong><span id="total">0</span></div>
+      <div class="metric"><strong>Capacity</strong><span id="capacity">0</span></div>
+      <div class="metric"><strong>Prefix compacted</strong><span id="prefix">0</span></div>
+      <div class="metric"><strong>Retained replay</strong><span id="retained">0</span></div>
+      <div class="metric"><strong>Tokens saved</strong><span id="saved">0</span></div>
+      <div class="metric"><strong>Tamper detected</strong><span id="tamper">false</span></div>
+    </section>
+    <section class="layout">
+      <div class="panel">
+        <div class="tokens" id="tokenList"></div>
+        <div class="proof" id="proof">Circular token log has not run.</div>
+      </div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>Check</th><th>Value</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <pre id="log"></pre>
+      </div>
+    </section>
+  </main>
+  <script type="module">
+    import { runCircularTokenLogBenchmark } from "../dist/index.js";
+
+    const els = {
+      run: document.querySelector("#run"),
+      reset: document.querySelector("#reset"),
+      total: document.querySelector("#total"),
+      capacity: document.querySelector("#capacity"),
+      prefix: document.querySelector("#prefix"),
+      retained: document.querySelector("#retained"),
+      saved: document.querySelector("#saved"),
+      tamper: document.querySelector("#tamper"),
+      tokenList: document.querySelector("#tokenList"),
+      proof: document.querySelector("#proof"),
+      rows: document.querySelector("#rows"),
+      log: document.querySelector("#log")
+    };
+
+    function setRows(rows) {
+      els.rows.replaceChildren(...rows.map(([key, value]) => {
+        const tr = document.createElement("tr");
+        const keyCell = document.createElement("td");
+        const valueCell = document.createElement("td");
+        keyCell.textContent = key;
+        valueCell.textContent = value;
+        tr.append(keyCell, valueCell);
+        return tr;
+      }));
+    }
+
+    function tokenCard(title, value, kind) {
+      const node = document.createElement("div");
+      node.className = "token";
+      node.dataset.kind = kind;
+      const copy = document.createElement("div");
+      const heading = document.createElement("strong");
+      const body = document.createElement("span");
+      heading.textContent = title;
+      body.textContent = value;
+      copy.append(heading, body);
+      const tag = document.createElement("div");
+      tag.className = "tag";
+      tag.textContent = kind;
+      node.append(copy, tag);
+      return node;
+    }
+
+    function render(report) {
+      els.total.textContent = String(report.totalTokenCount);
+      els.capacity.textContent = String(report.capacity);
+      els.prefix.textContent = String(report.compactedPrefixCount);
+      els.retained.textContent = String(report.retainedReplayTokenCount);
+      els.saved.textContent = String(report.replayTokensSaved);
+      els.tamper.textContent = String(report.tamperDetected);
+      const compacted = report.compactedTokenSummary.length ? report.compactedTokenSummary.join(", ") : "none";
+      const suffix = report.suffixTokenSummary.length ? report.suffixTokenSummary.join(", ") : "none";
+      els.tokenList.replaceChildren(
+        tokenCard("compacted prefix block", compacted, "compact"),
+        tokenCard("retained suffix ring", suffix, "suffix")
+      );
+      els.proof.textContent = report.fullEqualsCompacted
+        ? `Full and compacted replay both reach ${JSON.stringify(report.compactedState)}.`
+        : "Full and compacted replay diverged.";
+      setRows([
+        ["schema", report.schemaVersion],
+        ["suffix count", String(report.suffixCount)],
+        ["compacted deltas", String(report.compactedDeltaCount)],
+        ["full equals compacted", String(report.fullEqualsCompacted)],
+        ["inverse roundtrip", String(report.inverseRoundtrip)],
+        ["certificate valid", String(report.certificateValid)],
+        ["audit valid", String(report.auditValid)],
+        ["randomized trials", String(report.randomizedTrialCount)],
+        ["random mismatches", String(report.randomizedMismatchCount)],
+        ["invalid commits", String(report.invalidCommitCount)],
+        ["final state", JSON.stringify(report.compactedState)]
+      ]);
+      els.log.textContent = JSON.stringify(report, null, 2);
+    }
+
+    async function run() {
+      els.run.disabled = true;
+      els.run.textContent = "Running...";
+      try {
+        render(await runCircularTokenLogBenchmark());
+      } catch (error) {
+        els.log.textContent = String(error.stack || error);
+      } finally {
+        els.run.disabled = false;
+        els.run.textContent = "Run compaction audit";
+      }
+    }
+
+    function reset() {
+      render({
+        schemaVersion: "-",
+        capacity: 0,
+        totalTokenCount: 0,
+        compactedPrefixCount: 0,
+        suffixCount: 0,
+        compactedDeltaCount: 0,
+        retainedReplayTokenCount: 0,
+        replayTokensSaved: 0,
+        compactedTokenSummary: [],
+        suffixTokenSummary: [],
+        fullState: {},
+        compactedState: {},
+        fullEqualsCompacted: false,
+        inverseRoundtrip: false,
+        certificateValid: false,
+        auditValid: false,
+        tamperDetected: false,
+        randomizedTrialCount: 0,
+        randomizedMismatchCount: 0,
+        invalidCommitCount: 0
+      });
+    }
+
+    els.run.addEventListener("click", run);
+    els.reset.addEventListener("click", reset);
+    reset();
+  </script>
+</body>
+</html>

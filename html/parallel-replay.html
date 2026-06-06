@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Parallel Replay Certificate</title>
+  <style>
+    :root {
+      --bg: #f7f8f4;
+      --ink: #17211c;
+      --muted: #657068;
+      --line: #d7ddd4;
+      --panel: #ffffff;
+      --accent: #0b7760;
+      --warn: #a14f21;
+      --blue: #265f91;
+      --dark: #25322d;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.5; }
+    main { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 42px; }
+    nav a { color: var(--accent); text-decoration: none; font-weight: 740; }
+    h1 { margin: 26px 0 8px; font-size: clamp(2rem, 4vw, 4rem); line-height: 1; letter-spacing: 0; }
+    p { color: var(--muted); max-width: 920px; }
+    button { border: 1px solid #0a6b56; border-radius: 6px; background: var(--accent); color: #fff; padding: 10px 12px; font-weight: 760; cursor: pointer; }
+    button.secondary { background: #fff; color: var(--accent); }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+    .metrics { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin: 16px 0; }
+    .metric { min-height: 74px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 10px; box-shadow: 0 10px 24px rgba(20, 35, 31, 0.06); }
+    .metric strong, .batch strong { display: block; color: var(--muted); font-size: 0.78rem; }
+    .metric span, .batch span { display: block; color: var(--dark); font: 760 0.96rem/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+    .layout { display: grid; grid-template-columns: 0.95fr 1.05fr; gap: 16px; align-items: start; }
+    .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 16px; box-shadow: 0 12px 30px rgba(20, 35, 31, 0.07); min-width: 0; }
+    .batches { display: grid; gap: 12px; }
+    .batch { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 12px; display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; min-height: 82px; }
+    .batch[data-kind="parallel"] { box-shadow: inset 4px 0 0 var(--accent); }
+    .batch[data-kind="barrier"] { box-shadow: inset 4px 0 0 var(--warn); }
+    .tag { border-radius: 999px; border: 1px solid var(--line); padding: 6px 10px; font: 760 0.78rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--dark); background: #fbfcfa; white-space: nowrap; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+    th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 0.78rem; }
+    th:first-child, td:first-child { width: 12rem; }
+    td { font: 650 0.86rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; word-break: break-word; }
+    tr:last-child td { border-bottom: 0; }
+    pre { overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 12px 0 0; padding: 12px; border-radius: 8px; background: #101916; color: #dce8df; font-size: 0.82rem; }
+    .proof { margin-top: 12px; border-left: 4px solid var(--blue); padding: 10px 12px; color: var(--muted); background: #f9fbfd; border-radius: 0 6px 6px 0; }
+    @media (max-width: 960px) {
+      .metrics, .layout { grid-template-columns: 1fr; }
+      .batch { grid-template-columns: 1fr; }
+      .tag { justify-self: start; }
+      th:first-child, td:first-child { width: 9rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="./index.html">Back to demos</a></nav>
+    <h1>Parallel Replay Certificate</h1>
+    <p>Read/write tokens are scheduled into conflict-free batches. The certificate proves that replaying those batches reaches the same canonical state hash as sequential replay, while conflicting batches and hash tampering fail closed.</p>
+    <div class="toolbar">
+      <button id="run">Run replay audit</button>
+      <button class="secondary" id="reset">Reset</button>
+    </div>
+    <section class="metrics">
+      <div class="metric"><strong>Tokens</strong><span id="tokens">0</span></div>
+      <div class="metric"><strong>Batches</strong><span id="batches">0</span></div>
+      <div class="metric"><strong>Max width</strong><span id="width">0</span></div>
+      <div class="metric"><strong>Conflicts</strong><span id="conflicts">0</span></div>
+      <div class="metric"><strong>Random mismatches</strong><span id="mismatches">0</span></div>
+      <div class="metric"><strong>Tamper detected</strong><span id="tamper">false</span></div>
+    </section>
+    <section class="layout">
+      <div class="panel">
+        <div class="batches" id="batchList"></div>
+        <div class="proof" id="proof">Parallel replay has not run.</div>
+      </div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>Check</th><th>Value</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <pre id="log"></pre>
+      </div>
+    </section>
+  </main>
+  <script type="module">
+    import { runParallelReplayBenchmark } from "../dist/index.js";
+
+    const els = {
+      run: document.querySelector("#run"),
+      reset: document.querySelector("#reset"),
+      tokens: document.querySelector("#tokens"),
+      batches: document.querySelector("#batches"),
+      width: document.querySelector("#width"),
+      conflicts: document.querySelector("#conflicts"),
+      mismatches: document.querySelector("#mismatches"),
+      tamper: document.querySelector("#tamper"),
+      batchList: document.querySelector("#batchList"),
+      proof: document.querySelector("#proof"),
+      rows: document.querySelector("#rows"),
+      log: document.querySelector("#log")
+    };
+
+    function setRows(rows) {
+      els.rows.replaceChildren(...rows.map(([key, value]) => {
+        const tr = document.createElement("tr");
+        const keyCell = document.createElement("td");
+        const valueCell = document.createElement("td");
+        keyCell.textContent = key;
+        valueCell.textContent = value;
+        tr.append(keyCell, valueCell);
+        return tr;
+      }));
+    }
+
+    function batchCard(idx, batch, kind) {
+      const node = document.createElement("div");
+      node.className = "batch";
+      node.dataset.kind = kind;
+      const copy = document.createElement("div");
+      const heading = document.createElement("strong");
+      const value = document.createElement("span");
+      heading.textContent = `batch ${idx}`;
+      value.textContent = batch.join(", ");
+      copy.append(heading, value);
+      const tag = document.createElement("div");
+      tag.className = "tag";
+      tag.textContent = kind;
+      node.append(copy, tag);
+      return node;
+    }
+
+    function render(report) {
+      els.tokens.textContent = String(report.tokenCount);
+      els.batches.textContent = String(report.batchCount);
+      els.width.textContent = String(report.maxBatchWidth);
+      els.conflicts.textContent = String(report.conflictCount);
+      els.mismatches.textContent = String(report.randomizedMismatchCount);
+      els.tamper.textContent = String(report.tamperDetected);
+      els.batchList.replaceChildren(...report.batches.map((batch, idx) => batchCard(idx, batch, idx === 0 ? "parallel" : "barrier")));
+      els.proof.textContent = report.parallelEqualsSequential
+        ? `Sequential and parallel replay both reach ${JSON.stringify(report.parallelState)}.`
+        : "Sequential and parallel replay diverged.";
+      setRows([
+        ["schema", report.schemaVersion],
+        ["parallel equals sequential", String(report.parallelEqualsSequential)],
+        ["inverse roundtrip", String(report.inverseRoundtrip)],
+        ["certificate valid", String(report.certificateValid)],
+        ["audit valid", String(report.auditValid)],
+        ["randomized trials", String(report.randomizedTrialCount)],
+        ["invalid commits", String(report.invalidCommitCount)],
+        ["sequential state", JSON.stringify(report.sequentialState)],
+        ["parallel state", JSON.stringify(report.parallelState)]
+      ]);
+      els.log.textContent = JSON.stringify(report, null, 2);
+    }
+
+    async function run() {
+      els.run.disabled = true;
+      els.run.textContent = "Running...";
+      try {
+        render(await runParallelReplayBenchmark());
+      } catch (error) {
+        els.log.textContent = String(error.stack || error);
+      } finally {
+        els.run.disabled = false;
+        els.run.textContent = "Run replay audit";
+      }
+    }
+
+    function reset() {
+      render({
+        schemaVersion: "-",
+        tokenCount: 0,
+        batchCount: 0,
+        maxBatchWidth: 0,
+        conflictCount: 0,
+        batches: [],
+        sequentialState: {},
+        parallelState: {},
+        parallelEqualsSequential: false,
+        inverseRoundtrip: false,
+        certificateValid: false,
+        auditValid: false,
+        tamperDetected: false,
+        randomizedTrialCount: 0,
+        randomizedMismatchCount: 0,
+        invalidCommitCount: 0
+      });
+    }
+
+    els.run.addEventListener("click", run);
+    els.reset.addEventListener("click", reset);
+    reset();
+  </script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hard-Authority Ledger</title>
+  <style>
+    :root {
+      --bg: #f7f8f5;
+      --ink: #18201c;
+      --muted: #667067;
+      --line: #d8ddd5;
+      --panel: #ffffff;
+      --accent: #0e7c66;
+      --reject: #9b4d1f;
+      --dark: #101916;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.5; }
+    main { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 40px; }
+    nav a { color: var(--accent); text-decoration: none; font-weight: 650; }
+    h1 { margin: 28px 0 8px; font-size: clamp(2rem, 4vw, 4rem); line-height: 1; letter-spacing: 0; }
+    p { color: var(--muted); max-width: 760px; }
+    .layout { display: grid; grid-template-columns: 320px 1fr; gap: 18px; margin-top: 20px; }
+    .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 16px; box-shadow: 0 12px 30px rgba(20, 35, 31, 0.07); }
+    .controls { display: grid; gap: 10px; }
+    button { border: 1px solid #0d6d5a; border-radius: 6px; background: var(--accent); color: #fff; padding: 10px 12px; font-weight: 750; cursor: pointer; }
+    button.reject { border-color: #88431b; background: var(--reject); }
+    button.secondary { background: #fff; color: var(--accent); }
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+    .metric { border: 1px solid var(--line); border-radius: 6px; background: #fbfcfa; padding: 10px; }
+    .metric strong { display: block; color: var(--muted); font-size: 0.78rem; }
+    .metric span { font: 750 1rem/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    table { width: 100%; border-collapse: collapse; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+    th, td { padding: 9px 10px; border-bottom: 1px solid var(--line); text-align: left; font-size: 0.88rem; vertical-align: top; }
+    th { color: var(--muted); font-size: 0.78rem; background: #fbfcfa; }
+    td code { font-size: 0.78rem; word-break: break-all; }
+    .yes { color: var(--accent); font-weight: 800; }
+    .no { color: var(--reject); font-weight: 800; }
+    pre { overflow: auto; margin: 14px 0 0; padding: 12px; border-radius: 8px; background: var(--dark); color: #dce8df; font-size: 0.82rem; }
+    @media (max-width: 900px) {
+      .layout, .metrics { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="./index.html">Back to demos</a></nav>
+    <h1>Hard-Authority Ledger</h1>
+    <p>A soft score can rank but cannot commit. This demo commits only when the configured hard verifier accepts and replay, rollback, manifest, and ledger checks pass.</p>
+    <section class="layout">
+      <aside class="panel controls">
+        <button id="commitSmall">Commit delta +3</button>
+        <button class="reject" id="rejectLarge">Try delta +9</button>
+        <button class="secondary" id="fakeAccept">Fake verifier accept</button>
+        <button class="secondary" id="tamper">Tamper first receipt</button>
+        <button class="secondary" id="reset">Reset</button>
+      </aside>
+      <section>
+        <div class="metrics">
+          <div class="metric"><strong>State</strong><span id="state">0</span></div>
+          <div class="metric"><strong>Ledger rows</strong><span id="rows">0</span></div>
+          <div class="metric"><strong>Audit</strong><span id="audit">true</span></div>
+          <div class="metric"><strong>Verifier calls</strong><span id="calls">0</span></div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Decision</th>
+              <th>Hard result</th>
+              <th>Committed</th>
+              <th>Receipt hash</th>
+            </tr>
+          </thead>
+          <tbody id="ledger"></tbody>
+        </table>
+        <pre id="log"></pre>
+      </section>
+    </section>
+  </main>
+  <script type="module">
+    import { Ledger, TransactionEngine, hardAccept, hardReject, makeCandidate, makeTrace } from "../dist/index.js";
+
+    class CounterAdapter {
+      verifierId = "counter_limit";
+      verifierVersion = "1.0";
+      verify(candidate) {
+        return candidate.payload.delta <= 5
+          ? hardAccept(this.verifierId, this.verifierVersion, { cost: Math.abs(candidate.payload.delta) })
+          : hardReject(this.verifierId, this.verifierVersion, { delta: candidate.payload.delta });
+      }
+      applyCommit(state, candidate) { return state + candidate.payload.delta; }
+      replay(state, receipt) { return state + receipt.replayBundle.candidatePayload.delta; }
+      rollback(_state, receipt) { return receipt.rollbackBundle.preState; }
+    }
+
+    let state = 0;
+    let engine = new TransactionEngine(new CounterAdapter(), new Ledger());
+    const stateEl = document.querySelector("#state");
+    const rowsEl = document.querySelector("#rows");
+    const auditEl = document.querySelector("#audit");
+    const callsEl = document.querySelector("#calls");
+    const ledgerEl = document.querySelector("#ledger");
+    const logEl = document.querySelector("#log");
+
+    async function transact(delta, result) {
+      const outcome = await engine.transact(
+        state,
+        makeTrace({ branchId: crypto.randomUUID(), actions: [{ delta }] }),
+        makeCandidate({ delta }, "counter.delta", "counter.delta.v1"),
+        { softScores: { proxy: 1 }, result }
+      );
+      state = outcome.state;
+      logEl.textContent = JSON.stringify({ reason: outcome.reason, committed: outcome.committed, state }, null, 2);
+      await render();
+    }
+    async function render() {
+      stateEl.textContent = String(state);
+      rowsEl.textContent = String(engine.ledger.rows.length);
+      auditEl.textContent = String(await engine.ledger.audit());
+      callsEl.textContent = String(engine.hardVerifierCalls);
+      ledgerEl.innerHTML = engine.ledger.rows.map((row, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${row.commitDecision}</td>
+          <td>${row.hardResult.result}</td>
+          <td class="${row.committed ? "yes" : "no"}">${row.committed}</td>
+          <td><code>${row.receiptHash.slice(0, 18)}...</code></td>
+        </tr>
+      `).join("");
+    }
+    document.querySelector("#commitSmall").addEventListener("click", () => transact(3));
+    document.querySelector("#rejectLarge").addEventListener("click", () => transact(9));
+    document.querySelector("#fakeAccept").addEventListener("click", () => transact(2, hardAccept("soft_proxy", "1.0")));
+    document.querySelector("#tamper").addEventListener("click", async () => {
+      if (engine.ledger.rows.length > 0) {
+        engine.ledger.rows[0] = { ...engine.ledger.rows[0], commitDecision: "hard_reject" };
+      }
+      logEl.textContent = "Tampered first receipt commitDecision. Hash-chain audit should fail.";
+      await render();
+    });
+    document.querySelector("#reset").addEventListener("click", async () => {
+      state = 0;
+      engine = new TransactionEngine(new CounterAdapter(), new Ledger());
+      logEl.textContent = "";
+      await render();
+    });
+    render();
+  </script>
+</body>
+</html>
+

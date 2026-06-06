@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Learning Evaluation Certificate</title>
+  <style>
+    :root {
+      --bg: #f7f8f5;
+      --ink: #18201c;
+      --muted: #667067;
+      --line: #d8ddd5;
+      --panel: #ffffff;
+      --accent: #0e7c66;
+      --warn: #9b4d1f;
+      --blue: #265f91;
+      --code: #101916;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    main { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 42px; }
+    nav a { color: var(--accent); text-decoration: none; font-weight: 740; }
+    header { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.65fr); gap: 20px; align-items: end; margin-top: 26px; }
+    h1 { margin: 0; font-size: clamp(2rem, 4vw, 4rem); line-height: 1; letter-spacing: 0; }
+    p { color: var(--muted); max-width: 860px; margin: 10px 0 0; }
+    button {
+      border: 1px solid #0a6b56;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 12px;
+      font-weight: 760;
+      cursor: pointer;
+    }
+    button.secondary { background: #fff; color: var(--accent); }
+    button:focus-visible, a:focus-visible { outline: 3px solid rgba(14, 124, 102, 0.25); outline-offset: 2px; }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+    .equation {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--code);
+      padding: 14px;
+      font: 730 0.9rem/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-wrap: anywhere;
+    }
+    .metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin: 16px 0; }
+    .metric {
+      min-height: 74px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      padding: 10px;
+      box-shadow: 0 10px 24px rgba(20, 35, 31, 0.06);
+    }
+    .metric strong, .lane strong { display: block; color: var(--muted); font-size: 0.78rem; }
+    .metric span, .lane span {
+      display: block;
+      color: var(--code);
+      font: 760 0.95rem/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-wrap: anywhere;
+    }
+    .layout { display: grid; grid-template-columns: 0.82fr 1.18fr; gap: 16px; align-items: start; }
+    .panel {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 16px;
+      box-shadow: 0 12px 30px rgba(20, 35, 31, 0.07);
+    }
+    .lanes { display: grid; gap: 12px; }
+    .lane {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+      min-height: 104px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px;
+    }
+    .lane[data-state="train"] { box-shadow: inset 4px 0 0 var(--blue); }
+    .lane[data-state="baseline"] { box-shadow: inset 4px 0 0 var(--warn); }
+    .lane[data-state="learned"] { box-shadow: inset 4px 0 0 var(--accent); }
+    .tag {
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      padding: 6px 10px;
+      font: 760 0.78rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: var(--code);
+      background: #fbfcfa;
+      white-space: nowrap;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 0.78rem; }
+    th:first-child, td:first-child { width: 13rem; }
+    td { font: 650 0.86rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; word-break: break-word; }
+    tr:last-child td { border-bottom: 0; }
+    pre {
+      overflow: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      margin: 12px 0 0;
+      padding: 12px;
+      border-radius: 8px;
+      background: #101916;
+      color: #dce8df;
+      font-size: 0.82rem;
+    }
+    @media (max-width: 960px) {
+      header, .metrics, .layout { grid-template-columns: 1fr; }
+      .lane { grid-template-columns: 1fr; }
+      .tag { justify-self: start; }
+      th:first-child, td:first-child { width: 9rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="./index.html">Back to demos</a></nav>
+    <header>
+      <div>
+        <h1>Learning Evaluation Certificate</h1>
+        <p>Train receipts, held-out evaluation receipts, and a same-budget baseline are bound into one hash-checked certificate before a learning claim can be promoted.</p>
+      </div>
+      <div class="equation">
+        train receipts and eval receipts are disjoint<br>
+        cheap-first baseline: 0 / 2<br>
+        learned policy: 1 / 1
+      </div>
+    </header>
+    <div class="toolbar">
+      <button id="run">Run evaluation certificate</button>
+      <button class="secondary" id="reset">Reset</button>
+    </div>
+    <section class="metrics">
+      <div class="metric"><strong>Certificate</strong><span id="valid">false</span></div>
+      <div class="metric"><strong>Supports claim</strong><span id="supports">false</span></div>
+      <div class="metric"><strong>Train receipts</strong><span id="train">0</span></div>
+      <div class="metric"><strong>Eval receipts</strong><span id="eval">0</span></div>
+      <div class="metric"><strong>Disjoint</strong><span id="disjoint">false</span></div>
+      <div class="metric"><strong>Call gain</strong><span id="gain">0 / 0</span></div>
+    </section>
+    <section class="layout">
+      <div class="panel">
+        <div class="lanes" id="lanes"></div>
+      </div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>Check</th><th>Value</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <pre id="log"></pre>
+      </div>
+    </section>
+  </main>
+  <script type="module">
+    import { runLearningEvaluationBenchmark } from "../dist/index.js";
+
+    const els = {
+      run: document.querySelector("#run"),
+      reset: document.querySelector("#reset"),
+      valid: document.querySelector("#valid"),
+      supports: document.querySelector("#supports"),
+      train: document.querySelector("#train"),
+      eval: document.querySelector("#eval"),
+      disjoint: document.querySelector("#disjoint"),
+      gain: document.querySelector("#gain"),
+      lanes: document.querySelector("#lanes"),
+      rows: document.querySelector("#rows"),
+      log: document.querySelector("#log")
+    };
+
+    function setRows(rows) {
+      els.rows.replaceChildren(...rows.map(([key, value]) => {
+        const tr = document.createElement("tr");
+        const keyCell = document.createElement("td");
+        const valueCell = document.createElement("td");
+        keyCell.textContent = key;
+        valueCell.textContent = value;
+        tr.append(keyCell, valueCell);
+        return tr;
+      }));
+    }
+
+    function lane(title, body, tag, state) {
+      const node = document.createElement("div");
+      node.className = "lane";
+      node.dataset.state = state;
+      const copy = document.createElement("div");
+      const heading = document.createElement("strong");
+      const value = document.createElement("span");
+      heading.textContent = title;
+      value.textContent = body;
+      copy.append(heading, value);
+      const statusTag = document.createElement("div");
+      statusTag.className = "tag";
+      statusTag.textContent = tag;
+      node.append(copy, statusTag);
+      return node;
+    }
+
+    function render(report) {
+      els.valid.textContent = String(report.certificateValid);
+      els.supports.textContent = String(report.certificateSupportsClaim);
+      els.train.textContent = String(report.trainingReceiptCount);
+      els.eval.textContent = String(report.evaluationReceiptCount);
+      els.disjoint.textContent = String(report.trainEvalDisjoint);
+      els.gain.textContent = `${report.verifierCallGainNumerator} / ${report.verifierCallGainDenominator}`;
+      els.lanes.replaceChildren(
+        lane("training partition", `${report.trainingReceiptCount} receipts train ${report.learnedName}`, report.learnerSnapshotHash.slice(0, 12), "train"),
+        lane("same-case baseline", `${report.baselineName}: ${report.baselineSuccessCount} success in ${report.baselineVerifierCalls} calls`, "baseline", "baseline"),
+        lane("held-out learned eval", `${report.learnedName}: ${report.learnedSuccessCount} success in ${report.learnedVerifierCalls} call`, "learned", "learned")
+      );
+      setRows([
+        ["schema", report.schemaVersion],
+        ["claim", report.claimId],
+        ["same-case baseline", String(report.sameCaseBaseline)],
+        ["hard commit only", String(report.hardCommitOnly)],
+        ["invalid commits", String(report.invalidCommitCount)],
+        ["ledger audit", String(report.ledgerAudit)],
+        ["replay rollback", report.replayRollbackRate.toFixed(1)],
+        ["tamper detected", String(report.tamperDetected)],
+        ["overlap detected", String(report.overlapDetected)],
+        ["certificate hash", report.certificateHash.slice(0, 20)]
+      ]);
+      els.log.textContent = JSON.stringify(report, null, 2);
+    }
+
+    async function run() {
+      els.run.disabled = true;
+      els.run.textContent = "Running...";
+      try {
+        render(await runLearningEvaluationBenchmark());
+      } catch (error) {
+        els.log.textContent = String(error.stack || error);
+      } finally {
+        els.run.disabled = false;
+        els.run.textContent = "Run evaluation certificate";
+      }
+    }
+
+    function reset() {
+      render({
+        schemaVersion: "-",
+        certificateValid: false,
+        certificateSupportsClaim: false,
+        claimId: "-",
+        trainingReceiptCount: 0,
+        evaluationReceiptCount: 0,
+        trainEvalDisjoint: false,
+        sameCaseBaseline: false,
+        baselineName: "-",
+        learnedName: "-",
+        baselineSuccessCount: 0,
+        learnedSuccessCount: 0,
+        baselineVerifierCalls: 0,
+        learnedVerifierCalls: 0,
+        verifierBudget: 0,
+        candidateCount: 0,
+        verifierCallGainNumerator: 0,
+        verifierCallGainDenominator: 0,
+        hardCommitOnly: false,
+        invalidCommitCount: 0,
+        ledgerAudit: false,
+        replayRollbackRate: 0,
+        learnerSnapshotHash: "-",
+        certificateHash: "-",
+        tamperDetected: false,
+        overlapDetected: false
+      });
+    }
+
+    els.run.addEventListener("click", run);
+    els.reset.addEventListener("click", reset);
+    reset();
+  </script>
+</body>
+</html>

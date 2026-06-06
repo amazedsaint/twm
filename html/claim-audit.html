@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claim Evidence Audit</title>
+  <style>
+    :root {
+      --bg: #f7f8f4;
+      --ink: #17211c;
+      --muted: #657068;
+      --line: #d7ddd4;
+      --panel: #ffffff;
+      --accent: #0b7760;
+      --warn: #a14f21;
+      --blue: #265f91;
+      --dark: #25322d;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.5; }
+    main { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 42px; }
+    nav a { color: var(--accent); text-decoration: none; font-weight: 740; }
+    h1 { margin: 26px 0 8px; font-size: clamp(2rem, 4vw, 4rem); line-height: 1; letter-spacing: 0; }
+    p { color: var(--muted); max-width: 920px; }
+    button { border: 1px solid #0a6b56; border-radius: 6px; background: var(--accent); color: #fff; padding: 10px 12px; font-weight: 760; cursor: pointer; }
+    button.secondary { background: #fff; color: var(--accent); }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+    .metrics { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin: 16px 0; }
+    .metric { min-height: 74px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 10px; box-shadow: 0 10px 24px rgba(20, 35, 31, 0.06); }
+    .metric strong, .claim strong { display: block; color: var(--muted); font-size: 0.78rem; }
+    .metric span, .claim span { display: block; color: var(--dark); font: 760 0.96rem/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+    .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+    .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 16px; box-shadow: 0 12px 30px rgba(20, 35, 31, 0.07); min-width: 0; }
+    .claims { display: grid; gap: 12px; }
+    .claim { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 12px; display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; min-height: 94px; }
+    .claim[data-status="supported"] { box-shadow: inset 4px 0 0 var(--accent); }
+    .claim[data-status="rejected"] { box-shadow: inset 4px 0 0 var(--warn); }
+    .claim[data-status="audit"] { box-shadow: inset 4px 0 0 var(--blue); }
+    .tag { border-radius: 999px; border: 1px solid var(--line); padding: 6px 10px; font: 760 0.78rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--dark); background: #fbfcfa; white-space: nowrap; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+    th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 0.78rem; }
+    th:first-child, td:first-child { width: 13rem; }
+    td { font: 650 0.86rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; word-break: break-word; }
+    tr:last-child td { border-bottom: 0; }
+    pre { overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 12px 0 0; padding: 12px; border-radius: 8px; background: #101916; color: #dce8df; font-size: 0.82rem; }
+    @media (max-width: 960px) {
+      .metrics, .layout { grid-template-columns: 1fr; }
+      .claim { grid-template-columns: 1fr; }
+      .tag { justify-self: start; }
+      th:first-child, td:first-child { width: 9rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="./index.html">Back to demos</a></nav>
+    <h1>Claim Evidence Audit</h1>
+    <p>Executable claim certificates bind benchmark evidence to bounded G1 claims. The audit supports a narrow transaction-safety boundary and rejects an RRLM mechanism-lift overclaim when the matched non-reversible ablation ties.</p>
+    <div class="toolbar">
+      <button id="run">Run claim audit</button>
+      <button class="secondary" id="reset">Reset</button>
+    </div>
+    <section class="metrics">
+      <div class="metric"><strong>Supported status</strong><span id="supportedStatus">-</span></div>
+      <div class="metric"><strong>Rejected status</strong><span id="rejectedStatus">-</span></div>
+      <div class="metric"><strong>Overclaim</strong><span id="overclaim">false</span></div>
+      <div class="metric"><strong>Null result</strong><span id="nullResult">false</span></div>
+      <div class="metric"><strong>Invalid commits</strong><span id="invalid">0</span></div>
+      <div class="metric"><strong>Tamper detected</strong><span id="tamper">false</span></div>
+    </section>
+    <section class="layout">
+      <div class="panel">
+        <div class="claims" id="claims"></div>
+      </div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <pre id="log"></pre>
+      </div>
+    </section>
+  </main>
+  <script type="module">
+    import { runClaimAuditBenchmark } from "../dist/index.js";
+
+    const els = {
+      run: document.querySelector("#run"),
+      reset: document.querySelector("#reset"),
+      supportedStatus: document.querySelector("#supportedStatus"),
+      rejectedStatus: document.querySelector("#rejectedStatus"),
+      overclaim: document.querySelector("#overclaim"),
+      nullResult: document.querySelector("#nullResult"),
+      invalid: document.querySelector("#invalid"),
+      tamper: document.querySelector("#tamper"),
+      claims: document.querySelector("#claims"),
+      rows: document.querySelector("#rows"),
+      log: document.querySelector("#log")
+    };
+
+    function setRows(rows) {
+      els.rows.replaceChildren(...rows.map(([key, value]) => {
+        const tr = document.createElement("tr");
+        const keyCell = document.createElement("td");
+        const valueCell = document.createElement("td");
+        keyCell.textContent = key;
+        valueCell.textContent = value;
+        tr.append(keyCell, valueCell);
+        return tr;
+      }));
+    }
+
+    function claim(title, body, status) {
+      const node = document.createElement("div");
+      node.className = "claim";
+      node.dataset.status = status;
+      const copy = document.createElement("div");
+      const heading = document.createElement("strong");
+      const value = document.createElement("span");
+      heading.textContent = title;
+      value.textContent = body;
+      copy.append(heading, value);
+      const tag = document.createElement("div");
+      tag.className = "tag";
+      tag.textContent = status;
+      node.append(copy, tag);
+      return node;
+    }
+
+    function render(report) {
+      els.supportedStatus.textContent = report.supportedStatus;
+      els.rejectedStatus.textContent = report.rejectedStatus;
+      els.overclaim.textContent = String(report.overclaimDetected);
+      els.nullResult.textContent = String(report.nullResultRecorded);
+      els.invalid.textContent = String(report.invalidCommitCount);
+      els.tamper.textContent = String(report.tamperDetected);
+      els.claims.replaceChildren(
+        claim("supported claim", report.supportedClaimId, report.supportedStatus),
+        claim("rejected overclaim", `${report.rejectedClaimId}: ${report.rejectedFailedKeys.join(", ")}`, report.rejectedStatus),
+        claim("certificate audit", `valid ${report.supportedCertificateValid} / ${report.rejectedCertificateValid}`, "audit")
+      );
+      setRows([
+        ["supported requirements", String(report.supportedRequirementCount)],
+        ["supported failed keys", report.supportedFailedKeys.join(", ") || "none"],
+        ["rejected failed keys", report.rejectedFailedKeys.join(", ") || "none"],
+        ["held-out trace eval", String(report.heldoutTraceEvaluation)],
+        ["same-case budget", String(report.sameCaseEqualBudget)],
+        ["call accounting", String(report.verifierCallAccounting)],
+        ["transfer guard snapshot", String(report.transferGuardSnapshotValid)],
+        ["transfer guard blocks", String(report.transferGuardBlocksNegativeTransfer)],
+        ["RRLM certificate", String(report.rrlmProposalCertificateValid)],
+        ["RRLM transport", String(report.rrlmTransportCertificateValid)],
+        ["learner update", String(report.worldLearnerUpdateCertificateValid)],
+        ["learner delta", String(report.worldLearnerDeltaCertificateValid)],
+        ["learner lineage", String(report.worldLearnerLineageCertificateValid)],
+        ["learner merge", String(report.worldLearnerMergeCertificateValid)],
+        ["partial merge", String(report.worldLearnerPartialOverlapMergeValid)],
+        ["world RRLM", String(report.worldRrlmProposalCertificateValid)],
+        ["world program", String(report.worldProgramCertificateValid)],
+        ["world admission", String(report.worldProgramAdmissionCertificateValid)],
+        ["world bundle cert", String(report.worldProgramBundleVerificationCertificateValid)],
+        ["world replay cert", String(report.worldProgramReplayVerificationCertificateValid)],
+        ["mechanism ablation", String(report.mechanismAblationRecorded)],
+        ["ledger audit", String(report.ledgerAudit)],
+        ["replay rollback", report.replayRollbackRate.toFixed(1)],
+        ["supported hash", report.supportedCertificateHash],
+        ["rejected hash", report.rejectedCertificateHash]
+      ]);
+      els.log.textContent = JSON.stringify(report, null, 2);
+    }
+
+    async function run() {
+      els.run.disabled = true;
+      els.run.textContent = "Running...";
+      try {
+        render(await runClaimAuditBenchmark());
+      } catch (error) {
+        els.log.textContent = String(error.stack || error);
+      } finally {
+        els.run.disabled = false;
+        els.run.textContent = "Run claim audit";
+      }
+    }
+
+    function reset() {
+      render({
+        supportedClaimId: "-",
+        supportedStatus: "-",
+        supportedRequirementCount: 0,
+        supportedFailedKeys: [],
+        rejectedClaimId: "-",
+        rejectedStatus: "-",
+        rejectedFailedKeys: [],
+        overclaimDetected: false,
+        nullResultRecorded: false,
+        mechanismAblationRecorded: false,
+        heldoutTraceEvaluation: false,
+        sameCaseEqualBudget: false,
+        verifierCallAccounting: false,
+        transferGuardSnapshotValid: false,
+        transferGuardBlocksNegativeTransfer: false,
+        rrlmProposalCertificateValid: false,
+        rrlmTransportCertificateValid: false,
+        worldLearnerUpdateCertificateValid: false,
+        worldLearnerDeltaCertificateValid: false,
+        worldLearnerLineageCertificateValid: false,
+        worldLearnerMergeCertificateValid: false,
+        worldLearnerPartialOverlapMergeValid: false,
+        worldRrlmProposalCertificateValid: false,
+        worldProgramCertificateValid: false,
+        worldProgramAdmissionCertificateValid: false,
+        worldProgramBundleVerificationCertificateValid: false,
+        worldProgramReplayVerificationCertificateValid: false,
+        supportedCertificateValid: false,
+        rejectedCertificateValid: false,
+        tamperDetected: false,
+        invalidCommitCount: 0,
+        ledgerAudit: false,
+        replayRollbackRate: 0,
+        supportedCertificateHash: "-",
+        rejectedCertificateHash: "-"
+      });
+    }
+
+    els.run.addEventListener("click", run);
+    els.reset.addEventListener("click", reset);
+    reset();
+  </script>
+</body>
+</html>

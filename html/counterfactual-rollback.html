@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Counterfactual Rollback Learning</title>
+  <style>
+    :root {
+      --bg: #f7f8f5;
+      --ink: #18201c;
+      --muted: #667067;
+      --line: #d8ddd5;
+      --panel: #ffffff;
+      --accent: #0e7c66;
+      --warn: #9b4d1f;
+      --dark: #23302b;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.5; }
+    main { width: min(1160px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 40px; }
+    nav a { color: var(--accent); text-decoration: none; font-weight: 650; }
+    h1 { margin: 28px 0 8px; font-size: clamp(2rem, 4vw, 4rem); line-height: 1; letter-spacing: 0; }
+    p { color: var(--muted); max-width: 900px; }
+    .layout { display: grid; grid-template-columns: 350px 1fr; gap: 18px; margin-top: 20px; }
+    .layout > *, .panel, section { min-width: 0; }
+    .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 16px; box-shadow: 0 12px 30px rgba(20, 35, 31, 0.07); }
+    button { width: 100%; border: 1px solid #0d6d5a; border-radius: 6px; background: var(--accent); color: #fff; padding: 10px 12px; font-weight: 750; cursor: pointer; }
+    button.secondary { margin-top: 10px; background: #fff; color: var(--accent); }
+    .choice-stack { display: grid; gap: 12px; margin-top: 16px; }
+    .choice { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: #fbfcfa; }
+    .choice strong { display: block; font: 800 0.95rem/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .choice span { display: block; margin-top: 4px; color: var(--muted); font-size: 0.86rem; }
+    .choice.commit { border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent); }
+    .choice.loser { border-color: #cba383; box-shadow: inset 4px 0 0 var(--warn); }
+    .choice.reject { border-color: #cba383; background: #fff8f2; }
+    .metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 14px; }
+    .metric { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 10px; min-height: 72px; }
+    .metric strong { display: block; color: var(--muted); font-size: 0.78rem; }
+    .metric span { display: block; font: 750 1rem/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+    .rank-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
+    .rank-card { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: #fff; min-height: 112px; }
+    .rank-card strong { display: block; color: var(--muted); font-size: 0.78rem; }
+    .rank-card span { display: block; margin-top: 10px; color: var(--dark); font: 800 1.1rem/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+    .rank-card.win span { color: var(--accent); }
+    table { width: 100%; margin-top: 12px; border-collapse: collapse; table-layout: fixed; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+    th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 0.78rem; }
+    th:first-child, td:first-child { width: 11rem; }
+    td { font: 650 0.86rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; word-break: break-word; }
+    tr:last-child td { border-bottom: 0; }
+    pre { overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 14px 0 0; padding: 12px; border-radius: 8px; background: #101916; color: #dce8df; font-size: 0.82rem; }
+    @media (max-width: 940px) {
+      .layout, .metrics, .rank-grid { grid-template-columns: 1fr; }
+      th:first-child, td:first-child { width: 8rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="./index.html">Back to demos</a></nav>
+    <h1>Counterfactual Rollback Learning</h1>
+    <p>Accepted branch losers are not failed verifications, but they are still counterfactual evidence. This demo ranks a committed winner above a safe rolled-back loser without letting the learner bypass the hard verifier.</p>
+    <section class="layout">
+      <aside class="panel">
+        <button id="run">Run rollback benchmark</button>
+        <button class="secondary" id="reset">Reset</button>
+        <div class="choice-stack">
+          <div class="choice loser"><strong>a_slow</strong><span>hard accepted, rolled back as branch loser</span></div>
+          <div class="choice commit"><strong>b_fast</strong><span>hard accepted, lowest-cost committed winner</span></div>
+          <div class="choice reject"><strong>c_unsafe</strong><span>hard rejected by risk residual</span></div>
+        </div>
+      </aside>
+      <section>
+        <div class="metrics">
+          <div class="metric"><strong>Episodes</strong><span id="episodes">0</span></div>
+          <div class="metric"><strong>Rolled-back losers</strong><span id="losers">0</span></div>
+          <div class="metric"><strong>Hard rejects</strong><span id="rejects">0</span></div>
+          <div class="metric"><strong>Replay/rollback</strong><span id="rollback">0</span></div>
+          <div class="metric"><strong>Invalid commits</strong><span id="invalid">0</span></div>
+        </div>
+        <div class="panel">
+          <div class="rank-grid">
+            <div class="rank-card"><strong>Static order top</strong><span id="staticTop">-</span></div>
+            <div class="rank-card"><strong>ReceiptRanker top</strong><span id="receiptTop">-</span></div>
+            <div class="rank-card win"><strong>Counterfactual top</strong><span id="counterfactualTop">-</span></div>
+          </div>
+          <table>
+            <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+          <pre id="log"></pre>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script type="module">
+    import { runCounterfactualRollbackBenchmark } from "../dist/index.js";
+
+    const els = {
+      run: document.querySelector("#run"),
+      episodes: document.querySelector("#episodes"),
+      losers: document.querySelector("#losers"),
+      rejects: document.querySelector("#rejects"),
+      rollback: document.querySelector("#rollback"),
+      invalid: document.querySelector("#invalid"),
+      staticTop: document.querySelector("#staticTop"),
+      receiptTop: document.querySelector("#receiptTop"),
+      counterfactualTop: document.querySelector("#counterfactualTop"),
+      rows: document.querySelector("#rows"),
+      log: document.querySelector("#log")
+    };
+
+    function setRows(rows) {
+      els.rows.replaceChildren(...rows.map(([key, value]) => {
+        const tr = document.createElement("tr");
+        const keyCell = document.createElement("td");
+        const valueCell = document.createElement("td");
+        keyCell.textContent = key;
+        valueCell.textContent = value;
+        tr.append(keyCell, valueCell);
+        return tr;
+      }));
+    }
+
+    function render(report) {
+      els.episodes.textContent = String(report.episodes);
+      els.losers.textContent = String(report.rolledBackLoserCount);
+      els.rejects.textContent = String(report.hardRejectCount);
+      els.rollback.textContent = report.replayRollbackRate.toFixed(1);
+      els.invalid.textContent = String(report.invalidCommitCount);
+      els.staticTop.textContent = report.staticTopAction;
+      els.receiptTop.textContent = report.receiptRankerTopAction;
+      els.counterfactualTop.textContent = report.counterfactualTopAction;
+      setRows([
+        ["committedAction", report.committedAction],
+        ["receiptWinnerRank", String(report.receiptRankerWinnerRank)],
+        ["cfWinnerRank", String(report.counterfactualWinnerRank)],
+        ["candidateCount", String(report.candidateCount)],
+        ["ledgerAudit", String(report.ledgerAudit)]
+      ]);
+      els.log.textContent = JSON.stringify(report, null, 2);
+    }
+
+    async function run() {
+      els.run.disabled = true;
+      els.run.textContent = "Running...";
+      try {
+        render(await runCounterfactualRollbackBenchmark(32));
+      } catch (error) {
+        els.log.textContent = String(error.stack || error);
+      } finally {
+        els.run.disabled = false;
+        els.run.textContent = "Run rollback benchmark";
+      }
+    }
+
+    function reset() {
+      render({
+        episodes: 0,
+        candidateCount: 3,
+        committedAction: "b_fast",
+        staticTopAction: "a_slow",
+        receiptRankerTopAction: "a_slow",
+        counterfactualTopAction: "b_fast",
+        receiptRankerWinnerRank: 2,
+        counterfactualWinnerRank: 1,
+        rolledBackLoserCount: 0,
+        hardRejectCount: 0,
+        ledgerAudit: false,
+        replayRollbackRate: 0,
+        invalidCommitCount: 0
+      });
+    }
+
+    document.querySelector("#run").addEventListener("click", run);
+    document.querySelector("#reset").addEventListener("click", reset);
+    reset();
+  </script>
+</body>
+</html>

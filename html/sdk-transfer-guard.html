@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SDK Transfer Guard Route</title>
+  <style>
+    :root {
+      --bg: #f7f8f5;
+      --ink: #18201c;
+      --muted: #667067;
+      --line: #d8ddd5;
+      --panel: #ffffff;
+      --accent: #0e7c66;
+      --warn: #9b4d1f;
+      --blue: #265f91;
+      --code: #101916;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    main { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 42px; }
+    nav a { color: var(--accent); text-decoration: none; font-weight: 740; }
+    header { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.65fr); gap: 20px; align-items: end; margin-top: 26px; }
+    h1 { margin: 0; font-size: clamp(2rem, 4vw, 4rem); line-height: 1; letter-spacing: 0; }
+    p { color: var(--muted); max-width: 860px; margin: 10px 0 0; }
+    button {
+      border: 1px solid #0a6b56;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 12px;
+      font-weight: 760;
+      cursor: pointer;
+    }
+    button.secondary { background: #fff; color: var(--accent); }
+    button:focus-visible, a:focus-visible { outline: 3px solid rgba(14, 124, 102, 0.25); outline-offset: 2px; }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+    .equation {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--code);
+      padding: 14px;
+      font: 730 0.9rem/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-wrap: anywhere;
+    }
+    .metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin: 16px 0; }
+    .metric {
+      min-height: 74px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      padding: 10px;
+      box-shadow: 0 10px 24px rgba(20, 35, 31, 0.06);
+    }
+    .metric strong, .lane strong { display: block; color: var(--muted); font-size: 0.78rem; }
+    .metric span, .lane span {
+      display: block;
+      color: var(--code);
+      font: 760 0.95rem/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-wrap: anywhere;
+    }
+    .layout { display: grid; grid-template-columns: 0.82fr 1.18fr; gap: 16px; align-items: start; }
+    .panel {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 16px;
+      box-shadow: 0 12px 30px rgba(20, 35, 31, 0.07);
+    }
+    .lanes { display: grid; gap: 12px; }
+    .lane {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+      min-height: 104px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px;
+    }
+    .lane[data-state="base"] { box-shadow: inset 4px 0 0 var(--blue); }
+    .lane[data-state="blocked"] { box-shadow: inset 4px 0 0 var(--warn); }
+    .lane[data-state="guarded"] { box-shadow: inset 4px 0 0 var(--accent); }
+    .tag {
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      padding: 6px 10px;
+      font: 760 0.78rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: var(--code);
+      background: #fbfcfa;
+      white-space: nowrap;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 0.78rem; }
+    th:first-child, td:first-child { width: 13rem; }
+    td { font: 650 0.86rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; word-break: break-word; }
+    tr:last-child td { border-bottom: 0; }
+    pre {
+      overflow: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      margin: 12px 0 0;
+      padding: 12px;
+      border-radius: 8px;
+      background: #101916;
+      color: #dce8df;
+      font-size: 0.82rem;
+    }
+    @media (max-width: 960px) {
+      header, .metrics, .layout { grid-template-columns: 1fr; }
+      .lane { grid-template-columns: 1fr; }
+      .tag { justify-self: start; }
+      th:first-child, td:first-child { width: 9rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="./index.html">Back to demos</a></nav>
+    <header>
+      <div>
+        <h1>SDK Transfer Guard Route</h1>
+        <p>The SDK router learns that the source policy has prior success, then a negative-transfer certificate moves it behind the target-local policy before target execution.</p>
+      </div>
+      <div class="equation">
+        base route: source_policy first<br>
+        guard route: target_policy first<br>
+        execution: target hard verifier still decides
+      </div>
+    </header>
+    <div class="toolbar">
+      <button id="run">Run SDK route guard</button>
+      <button class="secondary" id="reset">Reset</button>
+    </div>
+    <section class="metrics">
+      <div class="metric"><strong>Route</strong><span id="route">false</span></div>
+      <div class="metric"><strong>Snapshot</strong><span id="snapshot">false</span></div>
+      <div class="metric"><strong>Reordered</strong><span id="reordered">false</span></div>
+      <div class="metric"><strong>Unguarded commit</strong><span id="unguarded">false</span></div>
+      <div class="metric"><strong>Guarded commit</strong><span id="guarded">false</span></div>
+      <div class="metric"><strong>Avoided transfer</strong><span id="avoided">false</span></div>
+    </section>
+    <section class="layout">
+      <div class="panel">
+        <div class="lanes" id="lanes"></div>
+      </div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>Check</th><th>Value</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <pre id="log"></pre>
+      </div>
+    </section>
+  </main>
+  <script type="module">
+    import { runSdkTransferGuardBenchmark } from "../dist/index.js";
+
+    const els = {
+      run: document.querySelector("#run"),
+      reset: document.querySelector("#reset"),
+      route: document.querySelector("#route"),
+      snapshot: document.querySelector("#snapshot"),
+      reordered: document.querySelector("#reordered"),
+      unguarded: document.querySelector("#unguarded"),
+      guarded: document.querySelector("#guarded"),
+      avoided: document.querySelector("#avoided"),
+      lanes: document.querySelector("#lanes"),
+      rows: document.querySelector("#rows"),
+      log: document.querySelector("#log")
+    };
+
+    function setRows(rows) {
+      els.rows.replaceChildren(...rows.map(([key, value]) => {
+        const tr = document.createElement("tr");
+        const keyCell = document.createElement("td");
+        const valueCell = document.createElement("td");
+        keyCell.textContent = key;
+        valueCell.textContent = value;
+        tr.append(keyCell, valueCell);
+        return tr;
+      }));
+    }
+
+    function lane(title, body, tag, state) {
+      const node = document.createElement("div");
+      node.className = "lane";
+      node.dataset.state = state;
+      const copy = document.createElement("div");
+      const heading = document.createElement("strong");
+      const value = document.createElement("span");
+      heading.textContent = title;
+      value.textContent = body;
+      copy.append(heading, value);
+      const statusTag = document.createElement("div");
+      statusTag.className = "tag";
+      statusTag.textContent = tag;
+      node.append(copy, statusTag);
+      return node;
+    }
+
+    function render(report) {
+      els.route.textContent = String(report.routeValid);
+      els.snapshot.textContent = String(report.snapshotValid);
+      els.reordered.textContent = String(report.guardReorderedToTarget);
+      els.unguarded.textContent = String(report.unguardedCommitted);
+      els.guarded.textContent = String(report.guardedCommitted);
+      els.avoided.textContent = String(report.avoidedNegativeTransfer);
+      els.lanes.replaceChildren(
+        lane("base receipt route", `${report.baseRankedDomainIds.join(" -> ")}`, report.baseRouterTopDomain, "base"),
+        lane("guarded route", `${report.guardedRankedDomainIds.join(" -> ")}`, report.decisionReason, "blocked"),
+        lane("target execution", `${report.guardedSelected} -> commit`, "hard verified", "guarded")
+      );
+      setRows([
+        ["schema", report.schemaVersion],
+        ["blocked domains", report.blockedDomainIds.join(", ") || "none"],
+        ["source blocked", String(report.sourceBlocked)],
+        ["decision admitted", String(report.decisionAdmitted)],
+        ["decision reason", report.decisionReason],
+        ["unguarded selected", report.unguardedSelected],
+        ["unguarded residual", report.unguardedResidualKind],
+        ["guarded selected", report.guardedSelected],
+        ["certificate conclusion", report.certificateConclusion],
+        ["route valid", String(report.routeValid)],
+        ["snapshot valid", String(report.snapshotValid)],
+        ["invalid commits", String(report.invalidCommitCount)],
+        ["ledger audit", String(report.ledgerAudit)],
+        ["replay rollback", report.replayRollbackRate.toFixed(1)],
+        ["tamper detected", String(report.tamperDetected)],
+        ["route hash", report.routeHash.slice(0, 20)],
+        ["decision hash", report.decisionHash.slice(0, 20)],
+        ["snapshot hash", report.snapshotHash.slice(0, 20)]
+      ]);
+      els.log.textContent = JSON.stringify(report, null, 2);
+    }
+
+    async function run() {
+      els.run.disabled = true;
+      els.run.textContent = "Running...";
+      try {
+        render(await runSdkTransferGuardBenchmark());
+      } catch (error) {
+        els.log.textContent = String(error.stack || error);
+      } finally {
+        els.run.disabled = false;
+        els.run.textContent = "Run SDK route guard";
+      }
+    }
+
+    function reset() {
+      els.route.textContent = "false";
+      els.snapshot.textContent = "false";
+      els.reordered.textContent = "false";
+      els.unguarded.textContent = "false";
+      els.guarded.textContent = "false";
+      els.avoided.textContent = "false";
+      els.lanes.replaceChildren();
+      els.rows.replaceChildren();
+      els.log.textContent = "";
+    }
+
+    els.run.addEventListener("click", run);
+    els.reset.addEventListener("click", reset);
+    reset();
+  </script>
+</body>
+</html>

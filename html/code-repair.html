@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Code Patch Repair</title>
+  <style>
+    :root {
+      --bg: #f7f8f5;
+      --ink: #18201c;
+      --muted: #667067;
+      --line: #d8ddd5;
+      --panel: #ffffff;
+      --accent: #0e7c66;
+      --warn: #9b4d1f;
+      --dark: #23302b;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.5; }
+    main { width: min(1160px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 40px; }
+    nav a { color: var(--accent); text-decoration: none; font-weight: 650; }
+    h1 { margin: 28px 0 8px; font-size: clamp(2rem, 4vw, 4rem); line-height: 1; letter-spacing: 0; }
+    p { color: var(--muted); max-width: 900px; }
+    .layout { display: grid; grid-template-columns: 330px 1fr; gap: 18px; margin-top: 20px; }
+    .layout > *, .panel, section { min-width: 0; }
+    .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 16px; box-shadow: 0 12px 30px rgba(20, 35, 31, 0.07); }
+    button { width: 100%; border: 1px solid #0d6d5a; border-radius: 6px; background: var(--accent); color: #fff; padding: 10px 12px; font-weight: 750; cursor: pointer; }
+    button.secondary { margin-top: 10px; background: #fff; color: var(--accent); }
+    .source-title { margin: 16px 0 6px; color: var(--muted); font-size: 0.78rem; font-weight: 760; text-transform: uppercase; }
+    .hash { border: 1px solid var(--line); border-radius: 6px; background: #eef2ec; padding: 10px; color: var(--dark); font: 750 0.76rem/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+    .metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 14px; }
+    .metric { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 10px; min-height: 72px; }
+    .metric strong { display: block; color: var(--muted); font-size: 0.78rem; }
+    .metric span { display: block; font: 750 1rem/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+    .bars { display: grid; gap: 12px; margin: 14px 0; }
+    .bar-row strong { display: block; margin-bottom: 5px; color: var(--muted); font-size: 0.8rem; }
+    .track { height: 24px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: #eef2ec; }
+    .fill { height: 100%; width: 0; background: var(--accent); transition: width 220ms ease; }
+    .fill.static { background: var(--warn); }
+    table { width: 100%; margin-top: 12px; border-collapse: collapse; table-layout: fixed; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+    th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 0.78rem; }
+    th:first-child, td:first-child { width: 9.5rem; }
+    td { font: 650 0.86rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; word-break: break-word; }
+    td:first-child { overflow-wrap: normal; word-break: normal; }
+    tr:last-child td { border-bottom: 0; }
+    pre { overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 14px 0 0; padding: 12px; border-radius: 8px; background: #101916; color: #dce8df; font-size: 0.82rem; }
+    @media (max-width: 940px) {
+      .layout, .metrics { grid-template-columns: 1fr; }
+      th:first-child, td:first-child { width: 7.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="./index.html">Back to demos</a></nav>
+    <h1>Code Patch Repair</h1>
+    <p>Candidates patch one mutable operator in a bounded integer expression grammar. The hard verifier evaluates the full supplied test suite, then ledger replay and rollback gate the accepted patch.</p>
+    <section class="layout">
+      <aside class="panel">
+        <button id="run">Run code benchmark</button>
+        <button class="secondary" id="reset">Reset</button>
+        <div class="source-title">Base source hash</div>
+        <div class="hash" id="hash"></div>
+        <div class="source-title">Base source</div>
+        <pre id="base"></pre>
+        <div class="source-title">Accepted patch</div>
+        <pre id="patched"></pre>
+      </aside>
+      <section>
+        <div class="metrics">
+          <div class="metric"><strong>Static calls/success</strong><span id="static">0</span></div>
+          <div class="metric"><strong>Repair calls/success</strong><span id="repair">0</span></div>
+          <div class="metric"><strong>Repair gain</strong><span id="gain">0.00x</span></div>
+          <div class="metric"><strong>Replay/rollback</strong><span id="rollback">0</span></div>
+          <div class="metric"><strong>Invalid commits</strong><span id="invalid">0</span></div>
+        </div>
+        <div class="panel">
+          <div class="bars">
+            <div class="bar-row">
+              <strong>Static operator search verifier calls per success</strong>
+              <div class="track"><div class="fill static" id="staticBar"></div></div>
+            </div>
+            <div class="bar-row">
+              <strong>Residual code repair verifier calls per success</strong>
+              <div class="track"><div class="fill" id="repairBar"></div></div>
+            </div>
+          </div>
+          <table>
+            <thead><tr><th>Code canary</th><th>Value</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+          <pre id="log"></pre>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script type="module">
+    import {
+      CodePatchAdapter,
+      makeCodePatchCandidate,
+      makeCodeRepairProblem,
+      runCodeRepairBenchmark
+    } from "../dist/index.js";
+
+    const problem = await makeCodeRepairProblem("+");
+    const els = {
+      run: document.querySelector("#run"),
+      rows: document.querySelector("#rows"),
+      log: document.querySelector("#log"),
+      static: document.querySelector("#static"),
+      repair: document.querySelector("#repair"),
+      gain: document.querySelector("#gain"),
+      rollback: document.querySelector("#rollback"),
+      invalid: document.querySelector("#invalid"),
+      staticBar: document.querySelector("#staticBar"),
+      repairBar: document.querySelector("#repairBar"),
+      hash: document.querySelector("#hash"),
+      base: document.querySelector("#base"),
+      patched: document.querySelector("#patched")
+    };
+
+    function fmt(value) {
+      return Number.isFinite(value) ? value.toFixed(2) : "inf";
+    }
+
+    function setRows(rows) {
+      els.rows.replaceChildren(...rows.map(([key, value]) => {
+        const tr = document.createElement("tr");
+        const keyCell = document.createElement("td");
+        const valueCell = document.createElement("td");
+        keyCell.textContent = key;
+        valueCell.textContent = value;
+        tr.append(keyCell, valueCell);
+        return tr;
+      }));
+    }
+
+    async function renderResidualExample() {
+      const candidate = await makeCodePatchCandidate(problem, "left", "code-demo", 1);
+      const result = await new CodePatchAdapter().verify(candidate);
+      const repaired = await makeCodePatchCandidate(problem, result.residual.repair.operator, "code-demo", 2);
+      const repairedResult = await new CodePatchAdapter().verify(repaired);
+      els.hash.textContent = problem.sourceHash;
+      els.base.textContent = problem.baseSource;
+      els.patched.textContent = result.residual.repair.sourceAfter;
+      setRows([
+        ["file", problem.filePath],
+        ["initialOperator", candidate.payload.patch.operator],
+        ["hardResult", result.result],
+        ["residual", `${result.residual.kind} test=${result.residual.testIndex}`],
+        ["repair", JSON.stringify(result.residual.repair)],
+        ["recheck", repairedResult.result],
+        ["testSuite", JSON.stringify(problem.tests)]
+      ]);
+    }
+
+    function renderReport(report) {
+      els.static.textContent = fmt(report.staticCallsPerSuccess);
+      els.repair.textContent = fmt(report.repairCallsPerSuccess);
+      els.gain.textContent = `${fmt(report.repairGain)}x`;
+      els.rollback.textContent = report.replayRollbackRate.toFixed(1);
+      els.invalid.textContent = String(report.invalidCommitCount);
+      const max = Math.max(report.staticCallsPerSuccess, report.repairCallsPerSuccess, 1);
+      els.staticBar.style.width = `${Math.max(4, (report.staticCallsPerSuccess / max) * 100)}%`;
+      els.repairBar.style.width = `${Math.max(4, (report.repairCallsPerSuccess / max) * 100)}%`;
+      els.log.textContent = JSON.stringify(report, null, 2);
+    }
+
+    async function run() {
+      els.run.disabled = true;
+      els.run.textContent = "Running...";
+      try {
+        renderReport(await runCodeRepairBenchmark(59, 42));
+      } catch (error) {
+        els.log.textContent = String(error.stack || error);
+      } finally {
+        els.run.disabled = false;
+        els.run.textContent = "Run code benchmark";
+      }
+    }
+
+    async function reset() {
+      els.static.textContent = "0";
+      els.repair.textContent = "0";
+      els.gain.textContent = "0.00x";
+      els.rollback.textContent = "0";
+      els.invalid.textContent = "0";
+      els.staticBar.style.width = "0";
+      els.repairBar.style.width = "0";
+      els.log.textContent = "";
+      await renderResidualExample();
+    }
+
+    document.querySelector("#run").addEventListener("click", run);
+    document.querySelector("#reset").addEventListener("click", reset);
+    reset();
+  </script>
+</body>
+</html>

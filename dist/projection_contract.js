@@ -1,0 +1,327 @@
+import {
+                          
+                     
+               
+                             
+                      
+  Ledger,
+  TransactionEngine,
+  hardAccept,
+  hardReject,
+  makeCandidate,
+  makeTrace,
+} from "./core.js";
+import { BranchRuntime } from "./branch.js";
+import {
+                          
+  buildProjectionManifest,
+  makeProjectionContract,
+  normalizeProjectionManifest,
+  validateProjectionContract,
+} from "./projection.js";
+
+export const PROJECTION_PROJECTOR_ID = "stopping_distance.projector";
+export const PROJECTION_PROJECTOR_VERSION = "1.0";
+export const STOPPING_PROJECTION_CONTRACT                     = makeProjectionContract(
+  ["distanceToObstacle", "brakeAccel", "safetyClearance"],
+  { contractId: "stopping_distance.safety_fields" },
+);
+
+                                       
+                             
+                     
+                          
+                           
+ 
+
+                                         
+               
+                
+               
+                                              
+                              
+                      
+                           
+ 
+
+                                           
+                         
+                        
+                                         
+                                  
+                                       
+                             
+                          
+                                
+                              
+                       
+                             
+                             
+ 
+
+export class ProjectionGuardAdapter                                                                                {
+  verifierId = "projection_contract_guard";
+  verifierVersion = "1.0";
+  observedState                      ;
+  enforceContract         ;
+
+  constructor(observedState                                                , options                                = {}) {
+    this.observedState = normalizeProjectionGuardState(observedState);
+    this.enforceContract = options.enforceContract ?? true;
+  }
+
+  async verify(candidate                                        )                              {
+    const payload = normalizeProjectionGuardPayload(candidate.payload);
+    const source = sourceFields(this.observedState);
+    const manifest = normalizeProjectionManifest(payload.projectionManifest);
+    let metadata                          = {
+      mode: payload.mode,
+      speed: payload.speed,
+      cost: payload.cost,
+      coveredFields: manifest.coveredFields,
+    };
+    if (this.enforceContract) {
+      const audit = await validateProjectionContract(STOPPING_PROJECTION_CONTRACT, manifest, source);
+      if (!audit.accepted) {
+        return hardReject(this.verifierId, this.verifierVersion, audit.residual, metadata);
+      }
+    }
+    const distance = requiredIntegerPayload(payload, "distanceToObstacle");
+    const brake = requiredIntegerPayload(payload, "brakeAccel");
+    const clearance = Number(payload.safetyClearance ?? 0);
+    if (!Number.isInteger(clearance) || clearance < 0) {
+      throw new RangeError("safetyClearance must be a non-negative integer");
+    }
+    const margin = stoppingMarginNumerator({ distance, speed: payload.speed, brake, clearance });
+    metadata = {
+      ...metadata,
+      marginNumerator: margin,
+      denominator: 2 * brake,
+      requiredDistanceNumerator: payload.speed * payload.speed + (2 * brake * clearance),
+      availableDistanceNumerator: 2 * brake * distance,
+    };
+    if (margin < 0) {
+      return hardReject(
+        this.verifierId,
+        this.verifierVersion,
+        { kind: "stopping_distance_violation", marginNumerator: margin, denominator: 2 * brake },
+        metadata,
+      );
+    }
+    return hardAccept(this.verifierId, this.verifierVersion, metadata);
+  }
+
+  applyCommit(state                      , candidate                                        )                       {
+    const current = normalizeProjectionGuardState(state);
+    const payload = normalizeProjectionGuardPayload(candidate.payload);
+    return { ...current, committedModes: [...current.committedModes, payload.mode] };
+  }
+
+  replay(state                      , receipt         )                       {
+    const current = normalizeProjectionGuardState(state);
+    const payload = normalizeProjectionGuardPayload((receipt.replayBundle                                                ).candidatePayload);
+    return { ...current, committedModes: [...current.committedModes, payload.mode] };
+  }
+
+  rollback(_state                      , receipt         )                       {
+    return normalizeProjectionGuardState((receipt.rollbackBundle                                      ).preState);
+  }
+}
+
+export class ProjectionContractProjector {
+  async project(state                      , trace               )                                                  {
+    const action = trace.actions.at(-1)                           ;
+    const covered = action.coveredFields ?? action.covered_fields;
+    if (!Array.isArray(covered)) {
+      throw new RangeError("coveredFields must be an array");
+    }
+    return makeProjectionGuardCandidate(state, {
+      mode: String(action.mode),
+      speed: Number(action.speed),
+      cost: Number(action.cost ?? 1),
+      coveredFields: covered.map((field) => String(field)),
+    });
+  }
+}
+
+export function normalizeProjectionGuardState(state                                                )                       {
+  const raw = state                           ;
+  const committedModes = raw.committedModes ?? raw.committed_modes ?? [];
+  if (!Array.isArray(committedModes)) {
+    throw new RangeError("committedModes must be an array");
+  }
+  const normalized = {
+    distanceToObstacle: Number(raw.distanceToObstacle ?? raw.distance_to_obstacle ?? 5),
+    brakeAccel: Number(raw.brakeAccel ?? raw.brake_accel ?? 2),
+    safetyClearance: Number(raw.safetyClearance ?? raw.safety_clearance ?? 2),
+    committedModes: committedModes.map((mode) => String(mode)),
+  };
+  for (const [key, value] of Object.entries(normalized)) {
+    if (key !== "committedModes" && (!Number.isInteger(value) || Number(value) < 0)) {
+      throw new RangeError(`${key} must be a non-negative integer`);
+    }
+  }
+  if (normalized.brakeAccel <= 0) {
+    throw new RangeError("brakeAccel must be positive");
+  }
+  return normalized;
+}
+
+export async function makeProjectionGuardCandidate(
+  state                                                ,
+  options                                                                         ,
+)                                                  {
+  const current = normalizeProjectionGuardState(state);
+  const source = sourceFields(current);
+  const manifest = await buildProjectionManifest(source, options.coveredFields, {
+    projectorId: PROJECTION_PROJECTOR_ID,
+    projectorVersion: PROJECTION_PROJECTOR_VERSION,
+  });
+  const payload                         = {
+    mode: options.mode,
+    speed: options.speed,
+    cost: options.cost ?? 1,
+    projectionManifest: manifest,
+  };
+  for (const field of manifest.coveredFields) {
+    (payload                           )[field] = source[field];
+  }
+  return makeCandidate(payload, "projection_guard.stop_command", "projection_guard.stop_command.v1", {
+    projectionManifest: manifest.projectionHash,
+  });
+}
+
+export function makeProjectionContractTraces()                  {
+  const actions = [
+    {
+      mode: "fast_partial",
+      speed: 4,
+      cost: 1,
+      coveredFields: ["distanceToObstacle", "brakeAccel"],
+    },
+    {
+      mode: "fast_complete",
+      speed: 4,
+      cost: 1,
+      coveredFields: ["distanceToObstacle", "brakeAccel", "safetyClearance"],
+    },
+    {
+      mode: "crawl_complete",
+      speed: 2,
+      cost: 2,
+      coveredFields: ["distanceToObstacle", "brakeAccel", "safetyClearance"],
+    },
+  ];
+  return actions.map((action) => makeTrace({
+    branchId: `projection-contract-${action.mode}`,
+    actions: [action],
+    seeds: ["projection_contract", action.mode],
+    modelVersion: "projection.contract.v1",
+  }));
+}
+
+export async function runProjectionContractBenchmark()                                    {
+  const seed                       = { distanceToObstacle: 5, brakeAccel: 2, safetyClearance: 2, committedModes: [] };
+  const traces = makeProjectionContractTraces();
+  const projector = new ProjectionContractProjector();
+  const partialCandidate = await projector.project(seed, traces[0]);
+  const unguarded = await new ProjectionGuardAdapter(seed, { enforceContract: false }).verify(partialCandidate);
+
+  const engine = new TransactionEngine(new ProjectionGuardAdapter(seed), new Ledger());
+  const runtime = new BranchRuntime(engine, projector);
+  const outcome = await runtime.step(seed, traces);
+  const ledgerAudit = await engine.ledger.audit();
+  let replayRollbackRate = 0;
+  if (ledgerAudit) {
+    try {
+      const replayState = normalizeProjectionGuardState(await engine.replayAudit(seed));
+      const rollbackState = normalizeProjectionGuardState(await engine.rollbackAudit(seed));
+      replayRollbackRate = JSON.stringify(replayState) === JSON.stringify(outcome.state)
+        && JSON.stringify(rollbackState) === JSON.stringify(seed)
+        ? 1
+        : 0;
+    } catch (_error) {
+      replayRollbackRate = 0;
+    }
+  }
+  const partialReceipt = outcome.receipts[0]           ;
+  const fastReceipt = outcome.receipts[1]           ;
+  const safeReceipt = outcome.receipts[2]           ;
+  return {
+    candidateCount: traces.length,
+    verifierCalls: outcome.verifierCalls,
+    unguardedFalsePositiveAccepts: unguarded.result === "accept",
+    guardedPartialRejected: partialReceipt.hardResult.result === "reject",
+    guardedFastCompleteRejected: fastReceipt.hardResult.result === "reject",
+    guardedSafeCommit: safeReceipt.committed && normalizeProjectionGuardState(outcome.state).committedModes.join(",") === "crawl_complete",
+    missingFields: (partialReceipt.hardResult.residual                               ).missingFields,
+    unsafeMarginNumerator: Number(fastReceipt.hardResult.metadata.marginNumerator),
+    safeMarginNumerator: Number(safeReceipt.hardResult.metadata.marginNumerator),
+    ledgerAudit,
+    replayRollbackRate,
+    invalidCommitCount: engine.ledger.rows.filter((row) => row.committed && row.hardResult.result !== "accept").length,
+  };
+}
+
+export function stoppingMarginNumerator(params                                                                       )         {
+  const { distance, speed, brake, clearance } = params;
+  if (!Number.isInteger(distance) || distance < 0) {
+    throw new RangeError("distance must be a non-negative integer");
+  }
+  if (!Number.isInteger(speed) || speed < 0) {
+    throw new RangeError("speed must be a non-negative integer");
+  }
+  if (!Number.isInteger(brake) || brake <= 0) {
+    throw new RangeError("brake must be a positive integer");
+  }
+  if (!Number.isInteger(clearance) || clearance < 0) {
+    throw new RangeError("clearance must be a non-negative integer");
+  }
+  const denominator = 2 * brake;
+  return denominator * distance - (speed * speed + denominator * clearance);
+}
+
+function sourceFields(state                      )                         {
+  return {
+    distanceToObstacle: state.distanceToObstacle,
+    brakeAccel: state.brakeAccel,
+    safetyClearance: state.safetyClearance,
+  };
+}
+
+function normalizeProjectionGuardPayload(payload                                                  )                         {
+  const raw = payload                           ;
+  const mode = String(raw.mode);
+  const speed = Number(raw.speed);
+  const cost = Number(raw.cost ?? 1);
+  if (!mode) {
+    throw new RangeError("mode must be non-empty");
+  }
+  if (!Number.isInteger(speed) || speed < 0) {
+    throw new RangeError("speed must be a non-negative integer");
+  }
+  if (!Number.isInteger(cost) || cost < 0) {
+    throw new RangeError("cost must be a non-negative integer");
+  }
+  if (!raw.projectionManifest && !raw.projection_manifest) {
+    throw new RangeError("projectionManifest is required");
+  }
+  return {
+    ...(raw                          ),
+    mode,
+    speed,
+    cost,
+    projectionManifest: (raw.projectionManifest ?? raw.projection_manifest)                           ,
+  };
+}
+
+function requiredIntegerPayload(payload                        , key                                     )         {
+  const value = payload[key];
+  if (!Number.isInteger(value) || Number(value) < 0) {
+    throw new RangeError(`${key} is required as a non-negative integer`);
+  }
+  if (key === "brakeAccel" && Number(value) <= 0) {
+    throw new RangeError("brakeAccel must be positive");
+  }
+  return Number(value);
+}

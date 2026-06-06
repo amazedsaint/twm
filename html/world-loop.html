@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Transactional World Loop</title>
+  <style>
+    :root {
+      --bg: #f7f8f5;
+      --ink: #18201c;
+      --muted: #667067;
+      --line: #d8ddd5;
+      --panel: #ffffff;
+      --accent: #0e7c66;
+      --warn: #9b4d1f;
+      --blue: #265f91;
+      --code: #101916;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    main { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 42px; }
+    nav a { color: var(--accent); text-decoration: none; font-weight: 740; }
+    header { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.65fr); gap: 20px; align-items: end; margin-top: 26px; }
+    h1 { margin: 0; font-size: clamp(2rem, 4vw, 4rem); line-height: 1; letter-spacing: 0; }
+    p { color: var(--muted); max-width: 860px; margin: 10px 0 0; }
+    button {
+      border: 1px solid #0a6b56;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 12px;
+      font-weight: 760;
+      cursor: pointer;
+    }
+    button.secondary { background: #fff; color: var(--accent); }
+    button:focus-visible, a:focus-visible { outline: 3px solid rgba(14, 124, 102, 0.25); outline-offset: 2px; }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+    .equation {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--code);
+      padding: 14px;
+      font: 730 0.9rem/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-wrap: anywhere;
+    }
+    .metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin: 16px 0; }
+    .metric {
+      min-height: 74px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      padding: 10px;
+      box-shadow: 0 10px 24px rgba(20, 35, 31, 0.06);
+    }
+    .metric strong, .step strong { display: block; color: var(--muted); font-size: 0.78rem; }
+    .metric span, .step span {
+      display: block;
+      color: var(--code);
+      font: 760 0.95rem/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-wrap: anywhere;
+    }
+    .layout { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 16px; align-items: start; }
+    .panel {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 16px;
+      box-shadow: 0 12px 30px rgba(20, 35, 31, 0.07);
+    }
+    .steps { display: grid; gap: 12px; }
+    .step {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+      min-height: 104px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px;
+    }
+    .step[data-state="reject"] { box-shadow: inset 4px 0 0 var(--warn); }
+    .step[data-state="commit"] { box-shadow: inset 4px 0 0 var(--accent); }
+    .tag {
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      padding: 6px 10px;
+      font: 760 0.78rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: var(--code);
+      background: #fbfcfa;
+      white-space: nowrap;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 0.78rem; }
+    th:first-child, td:first-child { width: 13rem; }
+    td { font: 650 0.86rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; word-break: break-word; }
+    tr:last-child td { border-bottom: 0; }
+    pre {
+      overflow: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      margin: 12px 0 0;
+      padding: 12px;
+      border-radius: 8px;
+      background: #101916;
+      color: #dce8df;
+      font-size: 0.82rem;
+    }
+    @media (max-width: 960px) {
+      header, .metrics, .layout { grid-template-columns: 1fr; }
+      .step { grid-template-columns: 1fr; }
+      .tag { justify-self: start; }
+      th:first-child, td:first-child { width: 9rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="./index.html">Back to demos</a></nav>
+    <header>
+      <div>
+        <h1>Transactional World Loop</h1>
+        <p>A proposer emits a scalar program, a projector makes a typed candidate, the hard verifier rejects the first trace with a residual, the learner repairs the next trace, and only the accepted replayable transition commits.</p>
+      </div>
+      <div class="equation">
+        set(0) -> reject(delta=5)<br>
+        receipt residual -> learn add(5)<br>
+        set(0), add(5) -> commit
+      </div>
+    </header>
+    <div class="toolbar">
+      <button id="run">Run world loop</button>
+      <button class="secondary" id="reset">Reset</button>
+    </div>
+    <section class="metrics">
+      <div class="metric"><strong>Steps</strong><span id="steps">0</span></div>
+      <div class="metric"><strong>First committed</strong><span id="firstCommitted">false</span></div>
+      <div class="metric"><strong>Second committed</strong><span id="secondCommitted">false</span></div>
+      <div class="metric"><strong>Learner updates</strong><span id="learnerUpdates">0</span></div>
+      <div class="metric"><strong>Cert valid</strong><span id="certValid">0</span></div>
+      <div class="metric"><strong>Audit valid</strong><span id="auditValid">0</span></div>
+      <div class="metric"><strong>Snapshot valid</strong><span id="snapshotValid">0</span></div>
+      <div class="metric"><strong>Learner bound</strong><span id="learnerBound">false</span></div>
+      <div class="metric"><strong>Update cert</strong><span id="updateCert">0</span></div>
+      <div class="metric"><strong>Update audit</strong><span id="updateAudit">0</span></div>
+      <div class="metric"><strong>Update bound</strong><span id="updateBound">false</span></div>
+      <div class="metric"><strong>Update tamper</strong><span id="updateTamper">false</span></div>
+      <div class="metric"><strong>Delta cert</strong><span id="deltaCert">0</span></div>
+      <div class="metric"><strong>Delta audit</strong><span id="deltaAudit">0</span></div>
+      <div class="metric"><strong>Delta tamper</strong><span id="deltaTamper">false</span></div>
+      <div class="metric"><strong>Lineage cert</strong><span id="lineageCert">false</span></div>
+      <div class="metric"><strong>Lineage audit</strong><span id="lineageAudit">false</span></div>
+      <div class="metric"><strong>Lineage tamper</strong><span id="lineageTamper">false</span></div>
+      <div class="metric"><strong>Snapshot tamper</strong><span id="snapshotTamper">false</span></div>
+      <div class="metric"><strong>Merge cert</strong><span id="mergeCert">false</span></div>
+      <div class="metric"><strong>Merge conflict</strong><span id="mergeConflict">false</span></div>
+      <div class="metric"><strong>Partial merge</strong><span id="partialMerge">false</span></div>
+      <div class="metric"><strong>Partial audit</strong><span id="partialAudit">false</span></div>
+      <div class="metric"><strong>Merge tamper</strong><span id="mergeTamper">false</span></div>
+      <div class="metric"><strong>RRLM cert</strong><span id="rrlmCert">false</span></div>
+      <div class="metric"><strong>RRLM repair</strong><span id="rrlmRepair">false</span></div>
+      <div class="metric"><strong>RRLM bound</strong><span id="rrlmBound">false</span></div>
+      <div class="metric"><strong>RRLM tamper</strong><span id="rrlmTamper">false</span></div>
+      <div class="metric"><strong>Program cert</strong><span id="programCert">false</span></div>
+      <div class="metric"><strong>Program audit</strong><span id="programAudit">false</span></div>
+      <div class="metric"><strong>Program binds</strong><span id="programBinds">false</span></div>
+      <div class="metric"><strong>Program tamper</strong><span id="programTamper">false</span></div>
+      <div class="metric"><strong>Policy valid</strong><span id="policyValid">false</span></div>
+      <div class="metric"><strong>Admission cert</strong><span id="admissionCert">false</span></div>
+      <div class="metric"><strong>Admitted</strong><span id="admitted">false</span></div>
+      <div class="metric"><strong>Policy reject</strong><span id="policyReject">false</span></div>
+      <div class="metric"><strong>Admission tamper</strong><span id="admissionTamper">false</span></div>
+      <div class="metric"><strong>Bundle valid</strong><span id="bundleValid">false</span></div>
+      <div class="metric"><strong>Bundle cert</strong><span id="bundleCert">false</span></div>
+      <div class="metric"><strong>Bundle tamper</strong><span id="bundleTamper">false</span></div>
+      <div class="metric"><strong>Replay package</strong><span id="replayPackage">false</span></div>
+      <div class="metric"><strong>Replay cert</strong><span id="replayCert">false</span></div>
+      <div class="metric"><strong>Replay tamper</strong><span id="replayTamper">false</span></div>
+    </section>
+    <section class="layout">
+      <div class="panel">
+        <div class="steps" id="stepRows"></div>
+      </div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>Check</th><th>Value</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <pre id="log"></pre>
+      </div>
+    </section>
+  </main>
+  <script type="module">
+    import { runWorldLoopBenchmark } from "../dist/index.js";
+
+    const els = {
+      run: document.querySelector("#run"),
+      reset: document.querySelector("#reset"),
+      steps: document.querySelector("#steps"),
+      firstCommitted: document.querySelector("#firstCommitted"),
+      secondCommitted: document.querySelector("#secondCommitted"),
+      learnerUpdates: document.querySelector("#learnerUpdates"),
+      certValid: document.querySelector("#certValid"),
+      auditValid: document.querySelector("#auditValid"),
+      snapshotValid: document.querySelector("#snapshotValid"),
+      learnerBound: document.querySelector("#learnerBound"),
+      updateCert: document.querySelector("#updateCert"),
+      updateAudit: document.querySelector("#updateAudit"),
+      updateBound: document.querySelector("#updateBound"),
+      updateTamper: document.querySelector("#updateTamper"),
+      deltaCert: document.querySelector("#deltaCert"),
+      deltaAudit: document.querySelector("#deltaAudit"),
+      deltaTamper: document.querySelector("#deltaTamper"),
+      lineageCert: document.querySelector("#lineageCert"),
+      lineageAudit: document.querySelector("#lineageAudit"),
+      lineageTamper: document.querySelector("#lineageTamper"),
+      snapshotTamper: document.querySelector("#snapshotTamper"),
+      mergeCert: document.querySelector("#mergeCert"),
+      mergeConflict: document.querySelector("#mergeConflict"),
+      partialMerge: document.querySelector("#partialMerge"),
+      partialAudit: document.querySelector("#partialAudit"),
+      mergeTamper: document.querySelector("#mergeTamper"),
+      rrlmCert: document.querySelector("#rrlmCert"),
+      rrlmRepair: document.querySelector("#rrlmRepair"),
+      rrlmBound: document.querySelector("#rrlmBound"),
+      rrlmTamper: document.querySelector("#rrlmTamper"),
+      programCert: document.querySelector("#programCert"),
+      programAudit: document.querySelector("#programAudit"),
+      programBinds: document.querySelector("#programBinds"),
+      programTamper: document.querySelector("#programTamper"),
+      policyValid: document.querySelector("#policyValid"),
+      admissionCert: document.querySelector("#admissionCert"),
+      admitted: document.querySelector("#admitted"),
+      policyReject: document.querySelector("#policyReject"),
+      admissionTamper: document.querySelector("#admissionTamper"),
+      bundleValid: document.querySelector("#bundleValid"),
+      bundleCert: document.querySelector("#bundleCert"),
+      bundleTamper: document.querySelector("#bundleTamper"),
+      replayPackage: document.querySelector("#replayPackage"),
+      replayCert: document.querySelector("#replayCert"),
+      replayTamper: document.querySelector("#replayTamper"),
+      stepRows: document.querySelector("#stepRows"),
+      rows: document.querySelector("#rows"),
+      log: document.querySelector("#log")
+    };
+
+    function setRows(rows) {
+      els.rows.replaceChildren(...rows.map(([key, value]) => {
+        const tr = document.createElement("tr");
+        const keyCell = document.createElement("td");
+        const valueCell = document.createElement("td");
+        keyCell.textContent = key;
+        valueCell.textContent = value;
+        tr.append(keyCell, valueCell);
+        return tr;
+      }));
+    }
+
+    function stepRow(title, body, tag, state) {
+      const node = document.createElement("div");
+      node.className = "step";
+      node.dataset.state = state;
+      const copy = document.createElement("div");
+      const heading = document.createElement("strong");
+      const value = document.createElement("span");
+      heading.textContent = title;
+      value.textContent = body;
+      copy.append(heading, value);
+      const statusTag = document.createElement("div");
+      statusTag.className = "tag";
+      statusTag.textContent = tag;
+      node.append(copy, statusTag);
+      return node;
+    }
+
+    function render(report) {
+      els.steps.textContent = String(report.stepCount);
+      els.firstCommitted.textContent = String(report.firstCommitted);
+      els.secondCommitted.textContent = String(report.secondCommitted);
+      els.learnerUpdates.textContent = String(report.learnerUpdateCount);
+      els.certValid.textContent = String(report.certificateValidCount);
+      els.auditValid.textContent = String(report.auditValidCount);
+      els.snapshotValid.textContent = String(report.learnerSnapshotValidCount);
+      els.learnerBound.textContent = String(report.stepCertificateBindsLearnerState);
+      els.updateCert.textContent = String(report.learnerUpdateCertificateValidCount);
+      els.updateAudit.textContent = String(report.learnerUpdateAuditValidCount);
+      els.updateBound.textContent = String(report.stepCertificateBindsLearnerUpdate);
+      els.updateTamper.textContent = String(report.learnerUpdateTamperDetected);
+      els.deltaCert.textContent = String(report.learnerDeltaCertificateValidCount);
+      els.deltaAudit.textContent = String(report.learnerDeltaAuditValidCount);
+      els.deltaTamper.textContent = String(report.learnerDeltaTamperDetected);
+      els.lineageCert.textContent = String(report.learnerLineageCertificateValid);
+      els.lineageAudit.textContent = String(report.learnerLineageAuditValid);
+      els.lineageTamper.textContent = String(report.learnerLineageTamperDetected);
+      els.snapshotTamper.textContent = String(report.learnerSnapshotTamperDetected);
+      els.mergeCert.textContent = String(report.learnerMergeCertificateValid);
+      els.mergeConflict.textContent = String(report.learnerMergeConflictDetected);
+      els.partialMerge.textContent = String(report.learnerMergePartialOverlapValid);
+      els.partialAudit.textContent = String(report.learnerMergePartialOverlapAuditValid);
+      els.mergeTamper.textContent = String(report.learnerMergeTamperDetected);
+      els.rrlmCert.textContent = String(report.rrlmWorldProposalCertificateValid);
+      els.rrlmRepair.textContent = String(report.rrlmWorldSelectedRepairMacro);
+      els.rrlmBound.textContent = String(report.rrlmWorldArtifactsBoundToReceipts);
+      els.rrlmTamper.textContent = String(report.rrlmWorldTamperDetected);
+      els.programCert.textContent = String(report.worldProgramCertificateValid);
+      els.programAudit.textContent = String(report.worldProgramAuditValid);
+      els.programBinds.textContent = String(report.worldProgramBindsRrlmArtifacts);
+      els.programTamper.textContent = String(report.worldProgramTamperDetected);
+      els.policyValid.textContent = String(report.worldProgramAdmissionPolicyValid);
+      els.admissionCert.textContent = String(report.worldProgramAdmissionCertificateValid);
+      els.admitted.textContent = String(report.worldProgramAdmitted);
+      els.policyReject.textContent = String(report.worldProgramAdmissionRejectsUnmetRequirements);
+      els.admissionTamper.textContent = String(report.worldProgramAdmissionTamperDetected);
+      els.bundleValid.textContent = String(report.worldProgramEvidenceBundleValid);
+      els.bundleCert.textContent = String(report.worldProgramBundleVerificationCertificateValid);
+      els.bundleTamper.textContent = String(report.worldProgramBundleTamperDetected);
+      els.replayPackage.textContent = String(report.worldProgramReplayPackageValid);
+      els.replayCert.textContent = String(report.worldProgramReplayVerificationCertificateValid);
+      els.replayTamper.textContent = String(report.worldProgramReplayTamperDetected);
+      els.stepRows.replaceChildren(
+        stepRow("step 1", "set(0) against target 5; verifier residual suggests add(5)", report.firstDecision, "reject"),
+        stepRow("step 2", "set(0), add(5) reaches target 5 and passes replay/rollback", report.secondDecision, "commit")
+      );
+      setRows([
+        ["schema", report.schemaVersion],
+        ["accepted / rejected", `${report.acceptedCount} / ${report.rejectedCount}`],
+        ["residual improved proposer", String(report.proposerImprovedFromResidual)],
+        ["hard verifier owned commit", String(report.hardVerifierOwnedCommit)],
+        ["learner snapshots", String(report.learnerSnapshotValidCount)],
+        ["learner state bound", String(report.stepCertificateBindsLearnerState)],
+        ["learner update certs", String(report.learnerUpdateCertificateValidCount)],
+        ["learner update audits", String(report.learnerUpdateAuditValidCount)],
+        ["learner update bound", String(report.stepCertificateBindsLearnerUpdate)],
+        ["learner update tamper", String(report.learnerUpdateTamperDetected)],
+        ["learner delta certs", String(report.learnerDeltaCertificateValidCount)],
+        ["learner delta audits", String(report.learnerDeltaAuditValidCount)],
+        ["learner delta update hashes", String(report.learnerDeltaBindsUpdates)],
+        ["learner delta tamper", String(report.learnerDeltaTamperDetected)],
+        ["learner lineage cert", String(report.learnerLineageCertificateValid)],
+        ["learner lineage audit", String(report.learnerLineageAuditValid)],
+        ["learner lineage update hashes", String(report.learnerLineageBindsUpdates)],
+        ["learner lineage tamper", String(report.learnerLineageTamperDetected)],
+        ["learner merge cert", String(report.learnerMergeCertificateValid)],
+        ["learner merge audit", String(report.learnerMergeAuditValid)],
+        ["merge disjoint receipts", String(report.learnerMergeDisjointReceipts)],
+        ["partial merge cert", String(report.learnerMergePartialOverlapValid)],
+        ["partial merge audit", String(report.learnerMergePartialOverlapAuditValid)],
+        ["partial merge counts", String(report.learnerMergePartialOverlapCountsSharedOnce)],
+        ["partial merge requires deltas", String(report.learnerMergePartialOverlapRequiresDeltas)],
+        ["merge conflict", String(report.learnerMergeConflictDetected)],
+        ["merge tamper", String(report.learnerMergeTamperDetected)],
+        ["RRLM first committed", String(report.rrlmWorldFirstCommitted)],
+        ["RRLM second committed", String(report.rrlmWorldSecondCommitted)],
+        ["RRLM repair macro", String(report.rrlmWorldSelectedRepairMacro)],
+        ["RRLM proposal cert", String(report.rrlmWorldProposalCertificateValid)],
+        ["RRLM transport cert", String(report.rrlmWorldTransportCertificateValid)],
+        ["RRLM artifacts bound", String(report.rrlmWorldArtifactsBoundToReceipts)],
+        ["RRLM reject penalty", String(report.rrlmWorldRejectedMacroPenalized)],
+        ["RRLM tamper", String(report.rrlmWorldTamperDetected)],
+        ["world program manifest", String(report.worldProgramManifestValid)],
+        ["world program cert", String(report.worldProgramCertificateValid)],
+        ["world program audit", String(report.worldProgramAuditValid)],
+        ["world program RRLM artifacts", String(report.worldProgramBindsRrlmArtifacts)],
+        ["world program tamper", String(report.worldProgramTamperDetected)],
+        ["admission policy", String(report.worldProgramAdmissionPolicyValid)],
+        ["admission cert", String(report.worldProgramAdmissionCertificateValid)],
+        ["admission audit", String(report.worldProgramAdmissionAuditValid)],
+        ["admitted", String(report.worldProgramAdmitted)],
+        ["policy rejection probe", String(report.worldProgramAdmissionRejectsUnmetRequirements)],
+        ["admission tamper", String(report.worldProgramAdmissionTamperDetected)],
+        ["evidence bundle", String(report.worldProgramEvidenceBundleValid)],
+        ["evidence bundle audit", String(report.worldProgramEvidenceBundleAuditValid)],
+        ["bundle verification cert", String(report.worldProgramBundleVerificationCertificateValid)],
+        ["bundle verified", String(report.worldProgramBundleVerified)],
+        ["bundle tamper", String(report.worldProgramBundleTamperDetected)],
+        ["replay package", String(report.worldProgramReplayPackageValid)],
+        ["replay package audit", String(report.worldProgramReplayPackageAuditValid)],
+        ["replay verification cert", String(report.worldProgramReplayVerificationCertificateValid)],
+        ["replay verified", String(report.worldProgramReplayVerified)],
+        ["replay tamper", String(report.worldProgramReplayTamperDetected)],
+        ["tamper detected", String(report.tamperDetected)],
+        ["snapshot tamper", String(report.learnerSnapshotTamperDetected)],
+        ["invalid commits", String(report.invalidCommitCount)],
+        ["ledger audit", String(report.ledgerAudit)],
+        ["replay rollback", report.replayRollbackRate.toFixed(1)]
+      ]);
+      els.log.textContent = JSON.stringify(report, null, 2);
+    }
+
+    async function run() {
+      els.run.disabled = true;
+      els.run.textContent = "Running...";
+      try {
+        render(await runWorldLoopBenchmark());
+      } catch (error) {
+        els.log.textContent = String(error.stack || error);
+      } finally {
+        els.run.disabled = false;
+        els.run.textContent = "Run world loop";
+      }
+    }
+
+    function reset() {
+      render({
+        schemaVersion: "-",
+        stepCount: 0,
+        firstCommitted: false,
+        secondCommitted: false,
+        firstDecision: "-",
+        secondDecision: "-",
+        learnerUpdateCount: 0,
+        acceptedCount: 0,
+        rejectedCount: 0,
+        certificateValidCount: 0,
+        auditValidCount: 0,
+        proposerImprovedFromResidual: false,
+        hardVerifierOwnedCommit: false,
+        learnerSnapshotValidCount: 0,
+        stepCertificateBindsLearnerState: false,
+        learnerUpdateCertificateValidCount: 0,
+        learnerUpdateAuditValidCount: 0,
+        stepCertificateBindsLearnerUpdate: false,
+        learnerUpdateTamperDetected: false,
+        learnerDeltaCertificateValidCount: 0,
+        learnerDeltaAuditValidCount: 0,
+        learnerDeltaBindsUpdates: false,
+        learnerDeltaTamperDetected: false,
+        learnerLineageCertificateValid: false,
+        learnerLineageAuditValid: false,
+        learnerLineageBindsUpdates: false,
+        learnerLineageTamperDetected: false,
+        learnerMergeCertificateValid: false,
+        learnerMergeAuditValid: false,
+        learnerMergeDisjointReceipts: false,
+        learnerMergePartialOverlapValid: false,
+        learnerMergePartialOverlapAuditValid: false,
+        learnerMergePartialOverlapCountsSharedOnce: false,
+        learnerMergePartialOverlapRequiresDeltas: false,
+        learnerMergeTamperDetected: false,
+        learnerMergeConflictDetected: false,
+        rrlmWorldFirstCommitted: false,
+        rrlmWorldSecondCommitted: false,
+        rrlmWorldSelectedRepairMacro: false,
+        rrlmWorldProposalCertificateValid: false,
+        rrlmWorldTransportCertificateValid: false,
+        rrlmWorldArtifactsBoundToReceipts: false,
+        rrlmWorldRejectedMacroPenalized: false,
+        rrlmWorldTamperDetected: false,
+        worldProgramManifestValid: false,
+        worldProgramCertificateValid: false,
+        worldProgramAuditValid: false,
+        worldProgramBindsRrlmArtifacts: false,
+        worldProgramTamperDetected: false,
+        worldProgramAdmissionPolicyValid: false,
+        worldProgramAdmissionCertificateValid: false,
+        worldProgramAdmissionAuditValid: false,
+        worldProgramAdmitted: false,
+        worldProgramAdmissionRejectsUnmetRequirements: false,
+        worldProgramAdmissionTamperDetected: false,
+        worldProgramEvidenceBundleValid: false,
+        worldProgramEvidenceBundleAuditValid: false,
+        worldProgramBundleVerificationCertificateValid: false,
+        worldProgramBundleVerified: false,
+        worldProgramBundleTamperDetected: false,
+        worldProgramReplayPackageValid: false,
+        worldProgramReplayPackageAuditValid: false,
+        worldProgramReplayVerificationCertificateValid: false,
+        worldProgramReplayVerified: false,
+        worldProgramReplayTamperDetected: false,
+        tamperDetected: false,
+        learnerSnapshotTamperDetected: false,
+        invalidCommitCount: 0,
+        ledgerAudit: false,
+        replayRollbackRate: 0
+      });
+    }
+
+    els.run.addEventListener("click", run);
+    els.reset.addEventListener("click", reset);
+    reset();
+  </script>
+</body>
+</html>

@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Receipt Budget Policy</title>
+  <style>
+    :root {
+      --bg: #f7f8f4;
+      --ink: #17211c;
+      --muted: #657068;
+      --line: #d7ddd4;
+      --panel: #ffffff;
+      --accent: #0b7760;
+      --warn: #a14f21;
+      --blue: #265f91;
+      --dark: #25322d;
+      --soft: #edf2ee;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.5; }
+    main { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 42px; }
+    nav a { color: var(--accent); text-decoration: none; font-weight: 740; }
+    h1 { margin: 26px 0 8px; font-size: clamp(2rem, 4vw, 4rem); line-height: 1; letter-spacing: 0; }
+    p { color: var(--muted); max-width: 920px; }
+    button { border: 1px solid #0a6b56; border-radius: 6px; background: var(--accent); color: #fff; padding: 10px 12px; font-weight: 760; cursor: pointer; }
+    button.secondary { background: #fff; color: var(--accent); }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+    .metrics { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin: 16px 0; }
+    .metric { min-height: 74px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 10px; box-shadow: 0 10px 24px rgba(20, 35, 31, 0.06); }
+    .metric strong, .lane strong, .candidate strong { display: block; color: var(--muted); font-size: 0.78rem; }
+    .metric span, .lane span, .candidate span { display: block; color: var(--dark); font: 760 0.96rem/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+    .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+    .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 16px; box-shadow: 0 12px 30px rgba(20, 35, 31, 0.07); min-width: 0; }
+    .lanes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .lane { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 12px; min-height: 118px; }
+    .lane[data-kind="miss"] { box-shadow: inset 4px 0 0 var(--warn); }
+    .lane[data-kind="hit"] { box-shadow: inset 4px 0 0 var(--accent); }
+    .candidate-list { display: grid; gap: 10px; }
+    .candidate { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 12px; display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; min-height: 78px; }
+    .candidate[data-status="reject"] { box-shadow: inset 4px 0 0 var(--warn); }
+    .candidate[data-status="commit"] { box-shadow: inset 4px 0 0 var(--accent); }
+    .candidate[data-status="skip"] { box-shadow: inset 4px 0 0 var(--blue); }
+    .tag { border-radius: 999px; border: 1px solid var(--line); padding: 6px 10px; font: 760 0.78rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--dark); background: #fbfcfa; white-space: nowrap; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+    th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 0.78rem; }
+    th:first-child, td:first-child { width: 14rem; }
+    td { font: 650 0.86rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; word-break: break-word; }
+    tr:last-child td { border-bottom: 0; }
+    pre { overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 12px 0 0; padding: 12px; border-radius: 8px; background: #101916; color: #dce8df; font-size: 0.82rem; }
+    @media (max-width: 960px) {
+      .metrics, .layout, .lanes { grid-template-columns: 1fr; }
+      .candidate { grid-template-columns: 1fr; }
+      .tag { justify-self: start; }
+      th:first-child, td:first-child { width: 9rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="./index.html">Back to demos</a></nav>
+    <h1>Receipt Budget Policy</h1>
+    <p>Three audited receipts train a verifier-budget planner. Under budget 3, cheap-first spends both affordable calls on known bad candidates, while receipt planning spends the full budget on the known-good repair and commits after hard verification.</p>
+    <div class="toolbar">
+      <button id="run">Run budget benchmark</button>
+      <button class="secondary" id="reset">Reset</button>
+    </div>
+    <section class="metrics">
+      <div class="metric"><strong>Budget</strong><span id="budget">0</span></div>
+      <div class="metric"><strong>Training receipts</strong><span id="training">0</span></div>
+      <div class="metric"><strong>Learned lower bound</strong><span id="lower">0</span></div>
+      <div class="metric"><strong>Cheap calls</strong><span id="cheapCalls">0</span></div>
+      <div class="metric"><strong>Learned calls</strong><span id="learnedCalls">0</span></div>
+      <div class="metric"><strong>Invalid commits</strong><span id="invalid">0</span></div>
+    </section>
+    <section class="layout">
+      <div class="panel">
+        <div class="lanes">
+          <div class="lane" data-kind="miss">
+            <strong>Cheap-first schedule</strong>
+            <span id="cheapLane">-</span>
+          </div>
+          <div class="lane" data-kind="hit">
+            <strong>Receipt-planned schedule</strong>
+            <span id="learnedLane">-</span>
+          </div>
+        </div>
+        <div class="candidate-list" id="candidates"></div>
+      </div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <pre id="log"></pre>
+      </div>
+    </section>
+  </main>
+  <script type="module">
+    import { runBudgetPolicyBenchmark } from "../dist/index.js";
+
+    const els = {
+      run: document.querySelector("#run"),
+      reset: document.querySelector("#reset"),
+      budget: document.querySelector("#budget"),
+      training: document.querySelector("#training"),
+      lower: document.querySelector("#lower"),
+      cheapCalls: document.querySelector("#cheapCalls"),
+      learnedCalls: document.querySelector("#learnedCalls"),
+      invalid: document.querySelector("#invalid"),
+      cheapLane: document.querySelector("#cheapLane"),
+      learnedLane: document.querySelector("#learnedLane"),
+      candidates: document.querySelector("#candidates"),
+      rows: document.querySelector("#rows"),
+      log: document.querySelector("#log")
+    };
+
+    function setRows(rows) {
+      els.rows.replaceChildren(...rows.map(([key, value]) => {
+        const tr = document.createElement("tr");
+        const keyCell = document.createElement("td");
+        const valueCell = document.createElement("td");
+        keyCell.textContent = key;
+        valueCell.textContent = value;
+        tr.append(keyCell, valueCell);
+        return tr;
+      }));
+    }
+
+    function candidate(label, note, status) {
+      const node = document.createElement("div");
+      node.className = "candidate";
+      node.dataset.status = status;
+      const copy = document.createElement("div");
+      const title = document.createElement("strong");
+      const body = document.createElement("span");
+      title.textContent = label;
+      body.textContent = note;
+      copy.append(title, body);
+      const tag = document.createElement("div");
+      tag.className = "tag";
+      tag.textContent = status;
+      node.append(copy, tag);
+      return node;
+    }
+
+    function render(report) {
+      els.budget.textContent = String(report.budget);
+      els.training.textContent = String(report.trainingReceiptCount);
+      els.lower.textContent = report.learnedSuccessLowerBound.toFixed(12);
+      els.cheapCalls.textContent = String(report.cheapFirstVerifierCalls);
+      els.learnedCalls.textContent = String(report.learnedVerifierCalls);
+      els.invalid.textContent = String(report.invalidCommitCount);
+      els.cheapLane.textContent = `${report.cheapFirstSelected.join(" -> ")} | cost ${report.cheapFirstCostSpent} | commit ${report.cheapFirstCommitted}`;
+      els.learnedLane.textContent = `${report.learnedSelected.join(" -> ")} | cost ${report.learnedCostSpent} | commit ${report.learnedCommitted}`;
+      els.candidates.replaceChildren(
+        candidate("quantity-8", "cost 1, trained failure, cheap-first submits", "reject"),
+        candidate("quantity-7", "cost 1, trained failure, cheap-first submits", "reject"),
+        candidate("quantity-5", "cost 3, trained success, receipt planner submits", "commit"),
+        candidate("quantity-4", "cost 2, unknown receipt evidence, zero lower-bound utility", "skip")
+      );
+      setRows([
+        ["candidate count", String(report.candidateCount)],
+        ["learned success token", report.learnedSuccessToken],
+        ["learned expected utility", report.learnedExpectedUtility.toFixed(12)],
+        ["committed label", report.learnedCommittedLabel],
+        ["verifier call gain", report.verifierCallGain.toFixed(1)],
+        ["verifier cost ratio", report.verifierCostRatio.toFixed(12)],
+        ["snapshot valid", String(report.snapshotValid)],
+        ["tamper detected", String(report.tamperDetected)],
+        ["ledger audit", String(report.ledgerAudit)],
+        ["replay rollback", report.replayRollbackRate.toFixed(1)]
+      ]);
+      els.log.textContent = JSON.stringify(report, null, 2);
+    }
+
+    async function run() {
+      els.run.disabled = true;
+      els.run.textContent = "Running...";
+      try {
+        render(await runBudgetPolicyBenchmark());
+      } catch (error) {
+        els.log.textContent = String(error.stack || error);
+      } finally {
+        els.run.disabled = false;
+        els.run.textContent = "Run budget benchmark";
+      }
+    }
+
+    function reset() {
+      render({
+        trainingReceiptCount: 0,
+        budget: 0,
+        candidateCount: 0,
+        learnedSuccessToken: "-",
+        learnedSuccessLowerBound: 0,
+        cheapFirstSelected: [],
+        cheapFirstCommitted: false,
+        cheapFirstVerifierCalls: 0,
+        cheapFirstCostSpent: 0,
+        learnedSelected: [],
+        learnedCommitted: false,
+        learnedCommittedLabel: "-",
+        learnedVerifierCalls: 0,
+        learnedCostSpent: 0,
+        learnedExpectedUtility: 0,
+        verifierCallGain: 0,
+        verifierCostRatio: 0,
+        snapshotValid: false,
+        tamperDetected: false,
+        ledgerAudit: false,
+        replayRollbackRate: 0,
+        invalidCommitCount: 0
+      });
+    }
+
+    els.run.addEventListener("click", run);
+    els.reset.addEventListener("click", reset);
+    reset();
+  </script>
+</body>
+</html>
