@@ -28,6 +28,10 @@ from examples.branch_contingency_transfer import (
     run_branch_contingency_transfer_certified_experiment,
     validate_branch_contingency_transfer_certificate,
 )
+from examples.branch_consensus_transfer import (
+    run_branch_consensus_transfer_certified_experiment,
+    validate_branch_consensus_transfer_certificate,
+)
 from examples.branch_diagnostic_probe_transfer import (
     run_branch_diagnostic_probe_transfer_certified_experiment,
     validate_branch_diagnostic_probe_transfer_certificate,
@@ -111,14 +115,15 @@ BRANCH_HISTORY_FRONTIER_SOURCES = (
     "https://pmc.ncbi.nlm.nih.gov/articles/PMC2836213/",
     "https://doi.org/10.1214/aoms/1177728069",
     "https://proceedings.mlr.press/v37/sui15.html",
+    "https://doi.org/10.1145/130385.130417",
 )
 BRANCH_HISTORY_FRONTIER_CLAIM_BOUNDARY = (
     "G1 aggregate over local deterministic branch-history examples only. It shows a staged evidence "
     "path for proposal ordering, counterfactual accepted-loser reuse, option-family abstraction, "
     "prerequisite ordering, regime-conditioned contingency reuse, hindsight goal relabeling, receipt-bound "
-    "field intervention, diagnostic probing, residual-template repair, boundary bracketing, context selection, "
-    "retrieval refinement, query-policy reuse, conflict resolution, drift quarantine, branch pruning, branch diversity, "
-    "budget allocation, branch composition, and retained-memory influence. "
+    "field intervention, diagnostic probing, residual-template repair, boundary bracketing, source consensus, "
+    "context selection, retrieval refinement, query-policy reuse, conflict resolution, drift quarantine, branch pruning, "
+    "branch diversity, budget allocation, branch composition, and retained-memory influence. "
     "It is not a statistical exploration algorithm, regret guarantee, MCTS result, contextual-bandit "
     "result, Hindsight Experience Replay result, causal inference result, do-calculus result, Bayesian "
     "experimental-design result, active-learning result, case-based reasoning system, automatic similarity "
@@ -173,6 +178,8 @@ class BranchHistoryFrontierReport:
     template_success_count: int
     branch_boundary_bracket_certificate_count: int
     bracket_success_count: int
+    branch_consensus_certificate_count: int
+    consensus_success_count: int
     branch_conflict_certificate_count: int
     counterfactual_certificate_count: int
     rolled_back_counterfactual_count: int
@@ -211,6 +218,7 @@ def run_branch_history_frontier_experiment() -> BranchHistoryFrontierResult:
             run_branch_diagnostic_probe_transfer_certified_experiment(),
             run_branch_residual_template_transfer_certified_experiment(),
             run_branch_boundary_bracket_transfer_certified_experiment(),
+            run_branch_consensus_transfer_certified_experiment(),
             run_analogical_branch_transfer_certified_experiment(),
             run_context_selection_transfer_certified_experiment(),
             run_context_refinement_transfer_certified_experiment(),
@@ -265,6 +273,8 @@ def build_branch_history_frontier_result(
         template_success_count=_metric_for(children, "branch_residual_template_transfer", "template_success_count"),
         branch_boundary_bracket_certificate_count=_metric(children, "branch_boundary_bracket_certificate_count"),
         bracket_success_count=_metric_for(children, "branch_boundary_bracket_transfer", "bracket_success_count"),
+        branch_consensus_certificate_count=_metric(children, "branch_consensus_certificate_count"),
+        consensus_success_count=_metric_for(children, "branch_consensus_transfer", "consensus_success_count"),
         branch_conflict_certificate_count=_metric(children, "branch_conflict_certificate_count"),
         counterfactual_certificate_count=_metric(children, "counterfactual_certificate_count"),
         rolled_back_counterfactual_count=_metric(children, "rolled_back_counterfactual_count"),
@@ -286,11 +296,12 @@ def build_branch_history_frontier_result(
             "accepted-loser counterfactual reuse second, option-family abstraction third, explicit "
             "prerequisite ordering fourth, regime-conditioned contingency reuse fifth, hindsight goal "
             "relabeling sixth, receipt-bound field intervention seventh, diagnostic probe transfer eighth, "
-            "residual-template repair ninth, boundary bracketing tenth, explicit ancestor reuse eleventh, "
-            "certified context selection twelfth, counterexample-driven refinement thirteenth, reusable query-policy "
-            "and conflict-resolution certificates fourteenth, drift quarantine fifteenth, receipt-bound branch pruning "
-            "sixteenth, diversity-certified family coverage seventeenth, budget-allocation transfer eighteenth, "
-            "branch composition nineteenth, and retained-memory influence with matched ablation twentieth."
+            "residual-template repair ninth, boundary bracketing tenth, source consensus eleventh, explicit ancestor "
+            "reuse twelfth, certified context selection thirteenth, counterexample-driven refinement fourteenth, "
+            "reusable query-policy and conflict-resolution certificates fifteenth, drift quarantine sixteenth, "
+            "receipt-bound branch pruning seventeenth, diversity-certified family coverage eighteenth, "
+            "budget-allocation transfer nineteenth, branch composition twentieth, and retained-memory influence "
+            "with matched ablation twenty-first."
         ),
     )
     claim = certify_claim(
@@ -301,12 +312,13 @@ def build_branch_history_frontier_result(
             "query-policy, conflict-resolution, drift-quarantine, pruning, diversity, budget-allocation, "
             "counterfactual accepted-loser reuse, option-family abstraction, prerequisite ordering, "
             "regime-conditioned contingency reuse, hindsight goal relabeling, field intervention, diagnostic "
-            "probing, residual-template repair, boundary bracketing, composition, retention, and influence certificates."
+            "probing, residual-template repair, boundary bracketing, source consensus, composition, retention, "
+            "and influence certificates."
         ),
         evidence_grade="G1",
         scope="branch_history_frontier",
         requirements=(
-            requirement("exactly_twenty_branch_history_stages", report.stage_count == 20),
+            requirement("exactly_twenty_one_branch_history_stages", report.stage_count == 21),
             requirement(
                 "expected_child_experiments",
                 set(report.child_experiment_ids)
@@ -321,6 +333,7 @@ def build_branch_history_frontier_result(
                     "branch_diagnostic_probe_transfer",
                     "branch_residual_template_transfer",
                     "branch_boundary_bracket_transfer",
+                    "branch_consensus_transfer",
                     "analogical_branch_transfer",
                     "context_selection_transfer",
                     "context_refinement_transfer",
@@ -370,6 +383,10 @@ def build_branch_history_frontier_result(
                 "branch_boundary_bracket_certificates_present",
                 report.branch_boundary_bracket_certificate_count == 3 and report.bracket_success_count == 3,
             ),
+            requirement(
+                "branch_consensus_certificates_present",
+                report.branch_consensus_certificate_count == 3 and report.consensus_success_count == 3,
+            ),
             requirement("query_policy_conflict_certificates_present", report.branch_conflict_certificate_count == 6),
             requirement(
                 "drift_quarantine_certificates_present",
@@ -402,6 +419,8 @@ def build_branch_history_frontier_result(
             "template_success_count": report.template_success_count,
             "branch_boundary_bracket_certificate_count": report.branch_boundary_bracket_certificate_count,
             "bracket_success_count": report.bracket_success_count,
+            "branch_consensus_certificate_count": report.branch_consensus_certificate_count,
+            "consensus_success_count": report.consensus_success_count,
             "counterfactual_certificate_count": report.counterfactual_certificate_count,
             "rolled_back_counterfactual_count": report.rolled_back_counterfactual_count,
             "branch_conflict_certificate_count": report.branch_conflict_certificate_count,
@@ -480,6 +499,8 @@ def _primary_certificate(child: CertifiedExampleResult) -> Any:
         return child.branch_residual_template_transfer_certificate
     if experiment_id == "branch_boundary_bracket_transfer":
         return child.branch_boundary_bracket_transfer_certificate
+    if experiment_id == "branch_consensus_transfer":
+        return child.branch_consensus_transfer_certificate
     if experiment_id == "analogical_branch_transfer":
         return child.analogical_certificate
     if experiment_id == "context_selection_transfer":
@@ -525,6 +546,8 @@ def _primary_certificate_valid(child: CertifiedExampleResult) -> bool:
         return validate_branch_residual_template_transfer_certificate(child.branch_residual_template_transfer_certificate, child.report)
     if experiment_id == "branch_boundary_bracket_transfer":
         return validate_branch_boundary_bracket_transfer_certificate(child.branch_boundary_bracket_transfer_certificate, child.report)
+    if experiment_id == "branch_consensus_transfer":
+        return validate_branch_consensus_transfer_certificate(child.branch_consensus_transfer_certificate, child.report)
     if experiment_id == "analogical_branch_transfer":
         return validate_analogical_branch_transfer_certificate(child.analogical_certificate, child.report)
     if experiment_id == "context_selection_transfer":
@@ -640,6 +663,15 @@ def _stage_fields(child: CertifiedExampleResult) -> tuple[str, str, str, str, bo
             f"boundary bracket certificates {report.branch_boundary_bracket_certificate_count}",
             True,
             "boundary-bracket certificates before prioritizing target threshold candidates",
+        )
+    if experiment_id == "branch_consensus_transfer":
+        return (
+            "receipt_bound_source_consensus",
+            f"static singleton-family target commits {report.static_success_count}/{report.domain_count}",
+            f"majority-family target commits {report.consensus_success_count}/{report.domain_count}",
+            f"source consensus certificates {report.branch_consensus_certificate_count}",
+            True,
+            "multi-source consensus certificates before prioritizing target proposal families",
         )
     if experiment_id == "analogical_branch_transfer":
         return (

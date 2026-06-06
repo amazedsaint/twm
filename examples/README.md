@@ -22,6 +22,7 @@ python3 -m examples.branch_intervention_transfer
 python3 -m examples.branch_diagnostic_probe_transfer
 python3 -m examples.branch_residual_template_transfer
 python3 -m examples.branch_boundary_bracket_transfer
+python3 -m examples.branch_consensus_transfer
 python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
@@ -74,6 +75,10 @@ The branch-boundary-bracket command adds
 `trwm.branch_boundary_bracket_certificate.v1` artifacts showing that source
 reject/commit endpoints can prioritize a target boundary candidate, while the
 target candidate still commits only after fresh hard verification.
+The branch-consensus command adds `trwm.branch_consensus_certificate.v1`
+artifacts showing that two source branches can outvote a singleton source
+family before target proposal ranking, while the target candidate still commits
+only after fresh hard verification.
 The analogical branch
 command adds an `analogical_certificate` that binds explicit ancestor-context
 reuse and misleading-ancestor rejection. The context-selection command adds
@@ -110,7 +115,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the twenty branch-memory stages into one bounded G1 report. The physical
+the twenty-one branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -306,6 +311,22 @@ the source reject/safe receipts, static target reject, bracketed target commit,
 bracket fields, branch-selection certificates, and matched one-call budget
 before claiming boundary-guided exploration lift.
 
+### Branch Consensus Transfer
+
+`examples.branch_consensus_transfer` tests multi-source agreement over past
+branch families. Each domain records two source branches supporting a safe
+proposal family and one singleton source branch supporting a tempting family.
+The target static pass spends one verifier call on the singleton-family target
+proposal and fails. The consensus-guided pass spends the same one verifier call
+on the majority-family target proposal and commits only after fresh hard
+verification.
+
+Learning: source agreement can make branch reuse less brittle, but it is still
+proposal-order evidence. `trwm.branch_consensus_certificate.v1` binds the
+majority source receipts, singleton source receipt, static target reject,
+consensus target commit, branch-selection certificates, support counts, and
+matched one-call budget before claiming consensus-guided exploration lift.
+
 ### Analogical Branch Transfer
 
 `examples.analogical_branch_transfer` runs the same three toy domains with two
@@ -466,15 +487,16 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the twenty branch-history experiments and
+`examples.branch_history_frontier` runs the twenty-one branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
 ordering through accepted-loser counterfactual reuse, option-family
 abstraction, prerequisite ordering, regime-conditioned contingency reuse,
 hindsight goal relabeling, receipt-bound field intervention, receipt-bound
-diagnostic probing, residual-template repair, boundary bracketing, analogical
-ancestor reuse, certified context selection, counterexample refinement,
+diagnostic probing, residual-template repair, boundary bracketing, source
+consensus, analogical ancestor reuse, certified context selection,
+counterexample refinement,
 conflict-aware query-policy transfer,
 drift quarantine, receipt-bound branch pruning, diversity-certified family
 coverage, branch budget allocation, branch composition, and retained-memory
@@ -492,13 +514,14 @@ certificate and fresh target verification, diagnostic probing is admitted only
 through probe/final receipts under a matched budget, residual templates are
 admitted only through source reject/repair receipts and fresh target
 verification, boundary brackets are admitted only through source reject/safe
-receipts and fresh target verification, context selection is certified, failed
-branches refine retrieval, conflicts are certificate-bound, drift is
-quarantined, rejected branches prune known-dead target candidates, same-family
-failures force coverage only through a certificate, verifier budget is
-allocated only through a cost-bound certificate, branch fragments compose only
-through a certificate, and retained memory is compared against a same-budget
-baseline.
+receipts and fresh target verification, source consensus is admitted only
+through majority receipts plus fresh target verification, context selection is
+certified, failed branches refine retrieval, conflicts are certificate-bound,
+drift is quarantined, rejected branches prune known-dead target candidates,
+same-family failures force coverage only through a certificate, verifier budget
+is allocated only through a cost-bound certificate, branch fragments compose
+only through a certificate, and retained memory is compared against a
+same-budget baseline.
 
 ### Programmable World Model Frontier
 
@@ -547,6 +570,10 @@ certificates before claim promotion.
   candidates while respecting safety constraints; this repo does not claim
   safe Bayesian optimization:
   https://proceedings.mlr.press/v37/sui15.html
+- Query by committee is the active-learning analogy for using disagreement
+  between models or sources as evidence; this repo does not claim statistical
+  active-learning performance:
+  https://doi.org/10.1145/130385.130417
 - Contextual bandits with side information are the analogy for conditioning a
   branch choice on observable target context:
   https://papers.nips.cc/paper/3178-the-epoch-greedy-algorithm-for-multi-armed-bandits-with-side-information

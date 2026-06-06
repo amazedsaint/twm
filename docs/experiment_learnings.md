@@ -219,6 +219,18 @@ comparison. The substrate implication is that past branches can narrow where to
 look near a verifier boundary, but cannot certify the boundary candidate
 without a target receipt.
 
+The branch-consensus transfer example adds multi-source agreement evidence.
+Each domain records two source branches that support a safe proposal family and
+one singleton source branch that supports a tempting family. The static target
+spends one verifier call on the singleton-family proposal and fails; the
+consensus-guided target spends the same one verifier call on the majority-family
+proposal and commits only after fresh target hard verification. The new
+`trwm.branch_consensus_certificate.v1` artifact binds majority source receipts,
+the singleton source receipt, static target reject, consensus target commit,
+support counts, branch-selection certificates, and same-budget comparison. The
+substrate implication is that source agreement can rank target proposals, but
+majority support is still not commit authority.
+
 The analogical branch transfer example adds one more design constraint:
 cross-context reuse must name its ancestor contexts explicitly. For each toy
 domain, two positive ancestor contexts reorder the target budget-one search
@@ -364,14 +376,14 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the twenty local branch-memory
+The branch-history frontier report now aggregates the twenty-one local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
 receipt-bound ordering, accepted-loser counterfactual reuse, option-family
 abstraction, stateful prerequisite ordering, regime-conditioned contingency
 reuse, hindsight goal relabeling, receipt-bound field intervention,
 receipt-bound diagnostic probing, residual-template repair, boundary
-bracketing, analogical ancestor reuse, certified context selection,
+bracketing, source consensus, analogical ancestor reuse, certified context selection,
 counterexample refinement,
 conflict-aware query-policy transfer,
 drift quarantine, receipt-bound branch pruning, diversity-certified family
@@ -389,9 +401,10 @@ abstraction plus contextual bandits with side information and hindsight
 experience replay plus intervention notation as a variable-edit analogy and
 experimental-design information as a probe-selection analogy plus case-based
 reuse/revise as a residual-template analogy plus safe exploration as a
-boundary-bracketing analogy; it is not a
+boundary-bracketing analogy plus query-by-committee as a source-consensus
+analogy; it is not a
 statistical exploration algorithm, regret guarantee, MCTS implementation,
 automatic similarity metric, CEGAR system, CDCL solver, novelty-search result,
 MAP-Elites implementation, Hyperband implementation, options-framework result,
-contextual-bandit result, Hindsight Experience Replay result, causal-inference result, do-calculus result, Bayesian experimental-design result, active-learning result, safe Bayesian optimization result, case-based reasoning system, genetic algorithm, program synthesizer, or
+contextual-bandit result, Hindsight Experience Replay result, causal-inference result, do-calculus result, Bayesian experimental-design result, active-learning result, query-by-committee result, safe Bayesian optimization result, case-based reasoning system, genetic algorithm, program synthesizer, or
 cross-domain scientific discovery result.
