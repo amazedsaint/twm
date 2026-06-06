@@ -20,6 +20,7 @@ from examples.branch_conformal_transfer import run_branch_conformal_transfer_cer
 from examples.branch_active_subspace_transfer import run_branch_active_subspace_transfer_certified_experiment
 from examples.branch_sensitivity_transfer import run_branch_sensitivity_transfer_certified_experiment
 from examples.branch_shield_fallback_transfer import run_branch_shield_fallback_transfer_certified_experiment
+from examples.branch_potential_heuristic_transfer import run_branch_potential_heuristic_transfer_certified_experiment
 from examples.branch_continuation_transfer import run_branch_continuation_transfer_certified_experiment
 from examples.branch_commutativity_transfer import run_branch_commutativity_transfer_certified_experiment
 from examples.branch_switch_transfer import run_branch_switch_transfer_certified_experiment
@@ -62,7 +63,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         claim = result.claim_certificate
 
         self.assertEqual(report.schema_version, "trwm.example.branch_history_frontier.v1")
-        self.assertEqual(report.stage_count, 45)
+        self.assertEqual(report.stage_count, 46)
         self.assertEqual(
             report.child_experiment_ids,
             (
@@ -101,6 +102,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
                 "branch_active_subspace_transfer",
                 "branch_sensitivity_transfer",
                 "branch_shield_fallback_transfer",
+                "branch_potential_heuristic_transfer",
                 "branch_continuation_transfer",
                 "branch_commutativity_transfer",
                 "branch_switch_transfer",
@@ -151,6 +153,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
                 "receipt_bound_active_subspace_projection",
                 "receipt_bound_sensitivity_axis",
                 "receipt_bound_shield_fallback",
+                "receipt_bound_potential_heuristic",
                 "receipt_bound_continuation_path",
                 "receipt_bound_partial_order_commutativity",
                 "receipt_bound_branch_switchpoint",
@@ -166,11 +169,11 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         self.assertTrue(report.all_evidence_valid)
         self.assertTrue(report.all_claims_supported)
         self.assertTrue(report.all_primary_certificates_valid)
-        self.assertEqual(report.total_receipt_count, 852)
-        self.assertEqual(report.total_committed_count, 420)
-        self.assertEqual(report.total_rejected_count, 327)
+        self.assertEqual(report.total_receipt_count, 864)
+        self.assertEqual(report.total_committed_count, 426)
+        self.assertEqual(report.total_rejected_count, 333)
         self.assertEqual(report.total_invalid_commit_count, 0)
-        self.assertEqual(report.same_budget_stage_count, 45)
+        self.assertEqual(report.same_budget_stage_count, 46)
         self.assertEqual(report.branch_abstraction_certificate_count, 3)
         self.assertEqual(report.branch_prerequisite_certificate_count, 3)
         self.assertEqual(report.branch_curriculum_certificate_count, 3)
@@ -232,6 +235,8 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         self.assertEqual(report.sensitivity_success_count, 3)
         self.assertEqual(report.branch_shield_fallback_certificate_count, 3)
         self.assertEqual(report.shield_success_count, 3)
+        self.assertEqual(report.branch_potential_heuristic_certificate_count, 3)
+        self.assertEqual(report.heuristic_success_count, 3)
         self.assertEqual(report.branch_continuation_certificate_count, 3)
         self.assertEqual(report.continuation_success_count, 3)
         self.assertEqual(report.branch_commutativity_certificate_count, 3)
@@ -293,6 +298,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
             run_branch_active_subspace_transfer_certified_experiment(),
             run_branch_sensitivity_transfer_certified_experiment(),
             run_branch_shield_fallback_transfer_certified_experiment(),
+            run_branch_potential_heuristic_transfer_certified_experiment(),
             run_branch_continuation_transfer_certified_experiment(),
             run_branch_commutativity_transfer_certified_experiment(),
             run_branch_switch_transfer_certified_experiment(),

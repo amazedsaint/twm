@@ -193,6 +193,11 @@ This repository currently targets `G1` evidence:
   static unsafe target rejects, shield-guided target commits, and same-budget
   verifier-call evidence before guard/fallback evidence can filter target
   proposals,
+- branch-potential-heuristic certificates that bind potential ids, potential
+  thresholds, high-potential source rejects, low-potential source commits,
+  static high-potential target rejects, low-potential target commits, and
+  same-budget verifier-call evidence before estimated cost-to-feasible-state
+  evidence can rank target proposals,
 - branch-continuation certificates that bind lambda schedules, max path steps,
   source continuation receipts, source direct-jump rejects, static direct-jump
   target rejects, continuation target commits, and same-budget verifier-call
@@ -660,6 +665,10 @@ search.
   https://doi.org/10.1109/TSE.2011.104
 - Bloem et al., Shield Synthesis:
   https://pmc.ncbi.nlm.nih.gov/articles/PMC6959420/
+- Hart, Nilsson, and Raphael, A Formal Basis for the Heuristic Determination
+  of Minimum Cost Paths: https://doi.org/10.1109/TSSC.1968.300136
+- Ng, Harada, and Russell, Policy Invariance Under Reward Transformations:
+  https://ai.stanford.edu/~ang/papers/shaping-icml99.pdf
 - LaValle, Planning Algorithms, configuration-space obstacles:
   https://lavalle.pl/planning/node156.html
 - Alshiekh et al., Safe Reinforcement Learning via Shielding:

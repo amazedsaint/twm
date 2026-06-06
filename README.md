@@ -77,6 +77,7 @@ python3 -m examples.branch_conformal_transfer
 python3 -m examples.branch_active_subspace_transfer
 python3 -m examples.branch_sensitivity_transfer
 python3 -m examples.branch_shield_fallback_transfer
+python3 -m examples.branch_potential_heuristic_transfer
 python3 -m examples.branch_continuation_transfer
 python3 -m examples.branch_commutativity_transfer
 python3 -m examples.branch_switch_transfer
@@ -153,6 +154,8 @@ budget;
 the branch-shield-fallback example uses receipt-bound unsafe-family and
 fallback-family evidence to avoid unsafe target proposals under the same
 one-call budget;
+the branch-potential-heuristic example uses receipt-bound potential values to
+avoid high-potential target proposals under the same one-call budget;
 the branch-continuation example uses receipt-bound continuation paths to avoid
 direct target jumps under the same three-call verifier budget;
 the branch-commutativity example uses receipt-bound independent-order evidence
@@ -186,7 +189,7 @@ future proposal evidence for a sibling target and
 certifies the memory query that ranks the sibling proposals against a
 same-budget static sibling baseline; the frontier example aggregates the three
 physical certified domains, while the branch-history frontier aggregates the
-forty-five branch-memory stages. See `examples/README.md` and
+forty-six branch-memory stages. See `examples/README.md` and
 `docs/experiment_learnings.md`.
 
 ## Package Layout

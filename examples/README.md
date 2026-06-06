@@ -47,6 +47,7 @@ python3 -m examples.branch_conformal_transfer
 python3 -m examples.branch_active_subspace_transfer
 python3 -m examples.branch_sensitivity_transfer
 python3 -m examples.branch_shield_fallback_transfer
+python3 -m examples.branch_potential_heuristic_transfer
 python3 -m examples.branch_continuation_transfer
 python3 -m examples.branch_commutativity_transfer
 python3 -m examples.branch_switch_transfer
@@ -193,6 +194,10 @@ branch-shield-fallback command adds
 `trwm.branch_shield_fallback_certificate.v1` artifacts that bind unsafe-family
 source rejects, fallback-family source commits, failed unsafe target replay,
 and same-budget shield-fallback target commit. The
+branch-potential-heuristic command adds
+`trwm.branch_potential_heuristic_certificate.v1` artifacts that bind
+high-potential source rejects, low-potential source commits, failed
+high-potential target replay, and same-budget low-potential target commit. The
 branch-continuation command adds
 `trwm.branch_continuation_certificate.v1` artifacts that bind lambda schedules,
 max path step, source continuation commits, source direct-jump reject, failed
@@ -234,7 +239,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the forty-five branch-memory stages into one bounded G1 report. The physical
+the forty-six branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -872,6 +877,28 @@ assurance, safe reinforcement learning, temporal-logic enforcement, controller
 switching, or a safety case: https://doi.org/10.1609/aaai.v32i1.11797 and
 https://pmc.ncbi.nlm.nih.gov/articles/PMC6959420/
 
+### Branch Potential-Heuristic Transfer
+
+`examples.branch_potential_heuristic_transfer` tests receipt-bound potential
+values for source branch reuse. Each domain records a high-potential proposal
+that rejects and a low-potential proposal that commits. The static target
+spends one verifier call on the high-potential branch and fails. The
+potential-guided target spends the same one verifier call on the low-potential
+branch and commits only after fresh hard verification.
+
+Learning: branches of the past can improve exploration only when heuristic
+priority is certificate-bound and remains separate from commit authority.
+`trwm.branch_potential_heuristic_certificate.v1` binds the potential id,
+threshold, high-potential source reject, low-potential source commit, failed
+high-potential target receipt, low-potential target commit, branch-selection
+certificates, and same-budget comparison before claiming heuristic-guided
+exploration lift. A* and potential-based reward shaping are only search-priority
+analogies here; this is not A* search, an admissible heuristic proof,
+shortest-path optimality, potential-based reward shaping, policy invariance,
+reinforcement learning, or pattern-database search:
+https://doi.org/10.1109/TSSC.1968.300136 and
+https://ai.stanford.edu/~ang/papers/shaping-icml99.pdf
+
 ### Branch Continuation Transfer
 
 `examples.branch_continuation_transfer` tests receipt-bound continuation paths
@@ -1058,7 +1085,7 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the forty-five branch-history experiments and
+`examples.branch_history_frontier` runs the forty-six branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
@@ -1069,7 +1096,7 @@ diagnostic probing, residual-template repair, boundary bracketing, source
 consensus, contrastive invariant transfer, trust-region radius transfer, analogical ancestor reuse, certified context selection,
 counterexample refinement,
 conflict-aware query-policy transfer,
-drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, confidence calibration, conformal transfer, active-subspace transfer, sensitivity transfer, shield-fallback transfer, continuation transfer, commutativity transfer, branch-switch transfer, transposition transfer, receipt-bound branch pruning, diversity-certified family
+drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, confidence calibration, conformal transfer, active-subspace transfer, sensitivity transfer, shield-fallback transfer, potential-heuristic transfer, continuation transfer, commutativity transfer, branch-switch transfer, transposition transfer, receipt-bound branch pruning, diversity-certified family
 coverage, branch budget allocation, no-good stop-rule abstention, branch composition, and retained-memory
 influence.
 
@@ -1089,7 +1116,7 @@ receipts and fresh target verification, source consensus is admitted only
 through majority receipts plus fresh target verification, contrastive invariants
 are admitted only through positive/negative source receipts plus fresh target
 verification, context selection is certified, failed branches refine retrieval,
-conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, Pareto dominance is certificate-bound, outlier filtering is certificate-bound, source provenance is certificate-bound, source-fragment credit is certificate-bound, source-context matching is certificate-bound, uncertainty-set coverage is certificate-bound, confidence-bin calibration is certificate-bound, nonconformity quantiles are certificate-bound, active-subspace directions are certificate-bound, sensitivity axes are certificate-bound, shield fallbacks are certificate-bound, continuation paths are certificate-bound, commutative orders are certificate-bound, switchpoints are certificate-bound, canonical transpositions are certificate-bound, rejected branches prune
+conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, Pareto dominance is certificate-bound, outlier filtering is certificate-bound, source provenance is certificate-bound, source-fragment credit is certificate-bound, source-context matching is certificate-bound, uncertainty-set coverage is certificate-bound, confidence-bin calibration is certificate-bound, nonconformity quantiles are certificate-bound, active-subspace directions are certificate-bound, sensitivity axes are certificate-bound, shield fallbacks are certificate-bound, heuristic potentials are certificate-bound, continuation paths are certificate-bound, commutative orders are certificate-bound, switchpoints are certificate-bound, canonical transpositions are certificate-bound, rejected branches prune
 known-dead target candidates, same-family failures force coverage only through
 a certificate, verifier budget is allocated only through a cost-bound
 certificate, branch fragments compose
@@ -1152,6 +1179,11 @@ certificates before claim promotion.
   safety-case guarantees:
   https://doi.org/10.1609/aaai.v32i1.11797 and
   https://pmc.ncbi.nlm.nih.gov/articles/PMC6959420/
+- A* and potential-based reward shaping are the search-priority analogies for
+  branch-potential-heuristic transfer, not admissible-heuristic or policy
+  invariance guarantees:
+  https://doi.org/10.1109/TSSC.1968.300136 and
+  https://ai.stanford.edu/~ang/papers/shaping-icml99.pdf
 - Numerical continuation is the path-following analogy for branch-continuation
   transfer, not a continuation-method guarantee:
   https://doi.org/10.1137/1.9780898719154

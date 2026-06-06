@@ -540,6 +540,19 @@ branch-selection certificates, and same-budget comparison. The substrate
 implication is that branch memory needs receipt-bound shield/fallback
 certificates before runtime guard evidence can filter target proposals.
 
+The branch-potential-heuristic transfer example adds search-priority evidence
+for source branch reuse. Each domain records a high-potential source proposal
+that rejects and a low-potential source proposal that commits. The static
+target spends one verifier call on a high-potential target proposal and fails;
+the heuristic-guided target spends the same one verifier call on a
+low-potential proposal and commits. The new
+`trwm.branch_potential_heuristic_certificate.v1` artifact binds potential id,
+threshold, high-potential source reject, low-potential source commit, static
+high-potential target reject, low-potential target commit, branch-selection
+certificates, and same-budget comparison. The substrate implication is that
+branch memory needs receipt-bound heuristic-potential certificates before
+estimated cost-to-feasible-state evidence can rank target proposals.
+
 The branch-continuation transfer example adds path-following admission evidence
 for source branch reuse. Each domain records three source continuation commits
 along a lambda schedule and one source direct-jump reject. The static target
@@ -688,7 +701,7 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the forty-five local branch-memory
+The branch-history frontier report now aggregates the forty-six local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
 receipt-bound ordering, accepted-loser counterfactual reuse, option-family
@@ -698,7 +711,7 @@ receipt-bound diagnostic probing, residual-template repair, boundary
 bracketing, source consensus, contrastive invariant transfer, trust-region radius transfer, analogical
 ancestor reuse, certified context selection, counterexample refinement,
 conflict-aware query-policy transfer,
-drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, confidence calibration, conformal transfer, active-subspace transfer, sensitivity transfer, shield-fallback transfer, continuation transfer, commutativity transfer, branch-switch transfer, transposition transfer, receipt-bound branch pruning, diversity-certified family
+drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, confidence calibration, conformal transfer, active-subspace transfer, sensitivity transfer, shield-fallback transfer, potential-heuristic transfer, continuation transfer, commutativity transfer, branch-switch transfer, transposition transfer, receipt-bound branch pruning, diversity-certified family
 coverage, receipt-bound budget allocation, no-good stop-rule abstention, branch composition, and retained
 memory influence.
 This changes the design posture from isolated demos to a staged substrate map:
@@ -732,6 +745,7 @@ plus conformal prediction as a nonconformity-envelope analogy
 plus active subspaces as a low-rank direction analogy
 plus Morris elementary effects and SPSA as one-factor perturbation analogies
 plus shielded reinforcement learning and shield synthesis as guard/fallback analogies
+plus A* and potential-based reward shaping as search-priority analogies
 plus numerical continuation as a path-following analogy
 plus partial-order reduction as an independent-transition analogy
 plus branch switching and bifurcation points as a switchpoint analogy
@@ -741,4 +755,4 @@ it is not a
 statistical exploration algorithm, regret guarantee, MCTS implementation,
 automatic similarity metric, CEGAR system, CDCL solver, novelty-search result,
 MAP-Elites implementation, Hyperband implementation, options-framework result,
-contextual-bandit result, curriculum-learning result, homotopy-optimization result, Hindsight Experience Replay result, causal-inference result, do-calculus result, Bayesian experimental-design result, active-learning result, query-by-committee result, version-space learning result, safe Bayesian optimization result, group-equivariant neural network, automatic symmetry-search system, CSP solver, arc-consistency algorithm, statistical validation, production calibration, multiobjective optimizer, Pareto-front approximation guarantee, case-based reasoning system, genetic algorithm, program synthesizer, Shapley-value computation, propensity-score estimator, covariate-balance proof, treatment-effect estimate, reinforcement-learning credit-assignment result, robust optimization, worst-case guarantee, distributional robustness, neural-network calibration, statistical calibration, probability estimation, model reliability assurance, conformal prediction, distribution-free coverage, conditional coverage, uncertainty quantification, active-subspace discovery, dimensionality-reduction performance, sensitivity-analysis algorithm, elementary-effects screening result, SPSA gradient estimate, derivative estimate, gradient-estimation guarantee, shield synthesis, runtime assurance, safe reinforcement learning, temporal-logic enforcement, controller switching, optimization result, numerical continuation, homotopy continuation, nonlinear root finding, path-following performance, partial-order reduction algorithm, model-checking correctness proof, dynamic partial-order reduction result, concurrency verification result, state-space reduction guarantee, bifurcation analysis, branch-switching algorithm performance, transposition-table performance, Zobrist-hashing implementation, duplicate-detection algorithm, graph-search scalability, RANSAC implementation, robust estimator, outlier-detection guarantee, Byzantine fault-tolerant protocol, consensus algorithm, security proof, or cross-domain scientific discovery result.
+contextual-bandit result, curriculum-learning result, homotopy-optimization result, Hindsight Experience Replay result, causal-inference result, do-calculus result, Bayesian experimental-design result, active-learning result, query-by-committee result, version-space learning result, safe Bayesian optimization result, group-equivariant neural network, automatic symmetry-search system, CSP solver, arc-consistency algorithm, statistical validation, production calibration, multiobjective optimizer, Pareto-front approximation guarantee, case-based reasoning system, genetic algorithm, program synthesizer, Shapley-value computation, propensity-score estimator, covariate-balance proof, treatment-effect estimate, reinforcement-learning credit-assignment result, robust optimization, worst-case guarantee, distributional robustness, neural-network calibration, statistical calibration, probability estimation, model reliability assurance, conformal prediction, distribution-free coverage, conditional coverage, uncertainty quantification, active-subspace discovery, dimensionality-reduction performance, sensitivity-analysis algorithm, elementary-effects screening result, SPSA gradient estimate, derivative estimate, gradient-estimation guarantee, shield synthesis, runtime assurance, safe reinforcement learning, temporal-logic enforcement, controller switching, A* search, admissible heuristic proof, shortest-path optimality, potential-based reward shaping, policy-invariance proof, reinforcement learning, pattern-database search, optimization result, numerical continuation, homotopy continuation, nonlinear root finding, path-following performance, partial-order reduction algorithm, model-checking correctness proof, dynamic partial-order reduction result, concurrency verification result, state-space reduction guarantee, bifurcation analysis, branch-switching algorithm performance, transposition-table performance, Zobrist-hashing implementation, duplicate-detection algorithm, graph-search scalability, RANSAC implementation, robust estimator, outlier-detection guarantee, Byzantine fault-tolerant protocol, consensus algorithm, security proof, or cross-domain scientific discovery result.
