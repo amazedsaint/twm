@@ -48,6 +48,7 @@ python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
 python3 -m examples.context_query_policy_transfer
 python3 -m examples.context_retention_transfer
+python3 -m examples.branch_history_frontier
 python3 -m examples.programmable_world_model_frontier
 ```
 
@@ -65,7 +66,8 @@ evidence it overrides; the context-retention example retains the successful
 target branch as certified future proposal evidence for a sibling target and
 certifies the memory query that ranks the sibling proposals against a
 same-budget static sibling baseline; the frontier example aggregates the three
-physical certified domains. See `examples/README.md` and
+physical certified domains, while the branch-history frontier aggregates the
+six branch-memory stages. See `examples/README.md` and
 `docs/experiment_learnings.md`.
 
 ## Package Layout

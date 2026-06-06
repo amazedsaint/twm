@@ -181,6 +181,16 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
+The branch-history frontier report now aggregates the six local branch-memory
+stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
+certificates, primary experiment certificates, and claim certificates for raw
+receipt-bound ordering, analogical ancestor reuse, certified context selection,
+counterexample refinement, conflict-aware query-policy transfer, and retained
+memory influence. This changes the design posture from isolated demos to a
+staged substrate map: each branch-history capability must expose its own
+certificate, and later stages are only meaningful if earlier evidence still
+validates.
+
 The boundary remains narrow. This is a deterministic G1 canary inspired by
 experience replay, counterfactual regret evidence, and selective tree-search
 sampling; it is not a statistical exploration algorithm, regret guarantee,

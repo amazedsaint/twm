@@ -1,0 +1,83 @@
+from __future__ import annotations
+
+import unittest
+
+from examples.analogical_branch_transfer import run_analogical_branch_transfer_certified_experiment
+from examples.ancestral_branch_exploration import run_ancestral_branch_exploration_certified_experiment
+from examples.branch_history_frontier import (
+    build_branch_history_frontier_result,
+    run_branch_history_frontier_experiment,
+    tamper_first_child_primary_certificate,
+)
+from examples.context_query_policy_transfer import run_context_query_policy_transfer_certified_experiment
+from examples.context_refinement_transfer import run_context_refinement_transfer_certified_experiment
+from examples.context_retention_transfer import run_context_retention_transfer_certified_experiment
+from examples.context_selection_transfer import run_context_selection_transfer_certified_experiment
+from trwm.claims import validate_claim_certificate
+
+
+class TestBranchHistoryFrontierExample(unittest.TestCase):
+    def test_branch_history_frontier_aggregates_certified_stages(self) -> None:
+        result = run_branch_history_frontier_experiment()
+        report = result.report
+        claim = result.claim_certificate
+
+        self.assertEqual(report.schema_version, "trwm.example.branch_history_frontier.v1")
+        self.assertEqual(report.stage_count, 6)
+        self.assertEqual(
+            report.child_experiment_ids,
+            (
+                "ancestral_branch_exploration",
+                "analogical_branch_transfer",
+                "context_selection_transfer",
+                "context_refinement_transfer",
+                "context_query_policy_transfer",
+                "context_retention_transfer",
+            ),
+        )
+        self.assertEqual(
+            tuple(row.stage for row in report.rows),
+            (
+                "receipt_bound_ordering",
+                "explicit_ancestor_reuse",
+                "certified_context_selection",
+                "counterexample_refinement",
+                "heldout_query_policy_conflict",
+                "retained_memory_influence",
+            ),
+        )
+        self.assertTrue(report.all_evidence_valid)
+        self.assertTrue(report.all_claims_supported)
+        self.assertTrue(report.all_primary_certificates_valid)
+        self.assertEqual(report.total_receipt_count, 219)
+        self.assertEqual(report.total_committed_count, 78)
+        self.assertEqual(report.total_rejected_count, 63)
+        self.assertEqual(report.total_invalid_commit_count, 0)
+        self.assertEqual(report.same_budget_stage_count, 6)
+        self.assertEqual(report.branch_conflict_certificate_count, 6)
+        self.assertEqual(report.query_policy_certificate_count, 6)
+        self.assertEqual(report.retention_certificate_count, 3)
+        self.assertEqual(report.influence_certificate_count, 3)
+        self.assertTrue(all(row.same_budget_comparison for row in report.rows))
+        self.assertTrue(validate_claim_certificate(claim))
+        self.assertEqual(claim.status, "supported")
+
+    def test_frontier_claim_rejects_tampered_primary_certificate(self) -> None:
+        children = (
+            run_ancestral_branch_exploration_certified_experiment(),
+            run_analogical_branch_transfer_certified_experiment(),
+            run_context_selection_transfer_certified_experiment(),
+            run_context_refinement_transfer_certified_experiment(),
+            run_context_query_policy_transfer_certified_experiment(),
+            run_context_retention_transfer_certified_experiment(),
+        )
+        result = build_branch_history_frontier_result(tamper_first_child_primary_certificate(children))
+
+        self.assertFalse(result.report.all_primary_certificates_valid)
+        self.assertTrue(validate_claim_certificate(result.claim_certificate))
+        self.assertEqual(result.claim_certificate.status, "rejected")
+        self.assertIn("all_primary_certificates_valid", result.claim_certificate.failed_keys)
+
+
+if __name__ == "__main__":
+    unittest.main()

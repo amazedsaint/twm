@@ -18,6 +18,7 @@ python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
 python3 -m examples.context_query_policy_transfer
 python3 -m examples.context_retention_transfer
+python3 -m examples.branch_history_frontier
 python3 -m examples.programmable_world_model_frontier
 ```
 
@@ -44,9 +45,10 @@ sibling proposal order to the exact memory snapshot and retained context. The
 context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
-same one-call verifier budget. The frontier command aggregates the three
-physical certified examples into a cross-domain report and bounded G1 claim
-certificate.
+same one-call verifier budget. The branch-history frontier command aggregates
+the six branch-memory stages into one bounded G1 report. The physical frontier
+command aggregates the three physical certified examples into a cross-domain
+report and bounded G1 claim certificate.
 
 ## Experiments
 
@@ -177,6 +179,21 @@ certify influence for the next exploration, with a matched static baseline.
 Retention and influence are still evidence, not authority: the sibling branch
 must pass verification, branch-selection audit, ledger audit, replay audit, and
 rollback audit before commit.
+
+### Branch History Frontier
+
+`examples.branch_history_frontier` runs the six branch-history experiments and
+validates their evidence certificates, primary experiment certificates, and
+claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
+bounded aggregate report for the staged path from receipt-bound proposal
+ordering through conflict-aware query-policy transfer and retained-memory
+influence.
+
+Learning: the current branch-history direction is only coherent when every
+stage validates: raw past branches reorder proposals, explicit ancestor reuse is
+bounded, context selection is certified, failed branches refine retrieval,
+conflicts are certificate-bound, and retained memory is compared against a
+same-budget baseline.
 
 ### Programmable World Model Frontier
 
