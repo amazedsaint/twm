@@ -18,6 +18,7 @@ python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
 python3 -m examples.context_query_policy_transfer
 python3 -m examples.context_drift_quarantine
+python3 -m examples.branch_composition_transfer
 python3 -m examples.context_retention_transfer
 python3 -m examples.branch_history_frontier
 python3 -m examples.programmable_world_model_frontier
@@ -40,7 +41,11 @@ stale-query baseline under the same one-call verifier budget, plus
 but misleading source evidence the refined policy overrides. The context-drift
 command adds `trwm.context_drift_quarantine_certificate.v1` artifacts that bind
 old-epoch branch evidence quarantine before target reuse. The
-context-retention command adds `trwm.ancestral_branch_retention_certificate.v1`
+branch-composition command adds `trwm.branch_composition_certificate.v1`
+artifacts showing that two receipt-bound source fragments can be combined into
+a target proposal only after static and single-fragment branches fail under the
+same budget. The context-retention command adds
+`trwm.ancestral_branch_retention_certificate.v1`
 artifacts that bind committed target branches into a hash-checked future-memory
 update, plus
 `trwm.ancestral_branch_influence_certificate.v1` artifacts that bind the later
@@ -49,7 +54,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the seven branch-memory stages into one bounded G1 report. The physical frontier
+the eight branch-memory stages into one bounded G1 report. The physical frontier
 command aggregates the three physical certified examples into a cross-domain
 report and bounded G1 claim certificate.
 
@@ -176,6 +181,22 @@ evidence only when its context tags still match the target; otherwise the
 transactional world model needs a quarantine certificate before memory can
 influence exploration.
 
+### Branch Composition Transfer
+
+`examples.branch_composition_transfer` tests whether branches of the past can
+improve proposal construction, not only proposal ordering. Each domain records
+two source branches whose committed receipts represent distinct hard-gate
+fragments. Static target proposals fail under one verifier call, and each
+single-fragment target proposal also fails under one verifier call. The composed
+target proposal combines both source fragments and commits under the same
+one-call budget after hard verification.
+
+Learning: composition needs its own certificate boundary. Source branch receipts
+can justify constructing a composed candidate, but they cannot promote it. The
+new `trwm.branch_composition_certificate.v1` binds source contexts, fragment
+keys, source receipts, target receipts, branch-selection certificates, and the
+same-budget comparison before claiming branch-composition lift.
+
 ### Context Retention Transfer
 
 `examples.context_retention_transfer` extends the refinement loop. After each
@@ -199,18 +220,19 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the seven branch-history experiments and
+`examples.branch_history_frontier` runs the eight branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
-ordering through conflict-aware query-policy transfer, drift quarantine, and
-retained-memory influence.
+ordering through conflict-aware query-policy transfer, drift quarantine,
+receipt-bound branch composition, and retained-memory influence.
 
 Learning: the current branch-history direction is only coherent when every
 stage validates: raw past branches reorder proposals, explicit ancestor reuse is
 bounded, context selection is certified, failed branches refine retrieval,
-conflicts are certificate-bound, drift is quarantined, and retained memory is
-compared against a same-budget baseline.
+conflicts are certificate-bound, drift is quarantined, branch fragments compose
+only through a certificate, and retained memory is compared against a
+same-budget baseline.
 
 ### Programmable World Model Frontier
 
@@ -245,6 +267,9 @@ certificates before claim promotion.
 - Case-based reasoning is the retrieval/reuse/revision analogy for solving a
   new problem from prior cases: Aamodt and Plaza, AI Communications 7(1),
   39-59 (1994), doi:10.3233/AIC-1994-7104.
+- Holland's adaptive-system work is the design analogy for treating useful
+  past branch fragments as recombinable proposal building blocks:
+  https://direct.mit.edu/books/monograph/2574/Adaptation-in-Natural-and-Artificial-SystemsAn
 - Negative-transfer surveys motivate explicit rejection of misleading sources:
   https://arxiv.org/abs/2009.00909
 - Counterexample-guided abstraction refinement is the analogy for refining a

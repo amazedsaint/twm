@@ -69,6 +69,10 @@ This repository currently targets `G1` evidence:
 - branch-selection certificates that bind receipt hashes, accepted/rejected/
   abstained index sets, selected and committed indices, and loser rollback to
   prove local rank-after-hard-filter,
+- branch-composition certificates that bind two source branch fragments,
+  source and target receipt hashes, static/component/composed target
+  comparisons, and same-budget verifier-call evidence before a composed
+  proposal can be treated as supported G1 exploration lift,
 - replay checkpoint certificates that compact audited receipt prefixes while
   preserving suffix parent-head replay and final state/head validation,
 - projection contracts that require safety-critical typed-projector fields,

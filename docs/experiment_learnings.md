@@ -163,6 +163,20 @@ current target commits, selected/quarantined context ids, and the quarantine
 reason. The substrate implication is that memory needs explicit validity scope:
 old branches should not influence exploration just because they once committed.
 
+The branch-composition transfer example adds a proposal-construction check.
+Each domain records two source branches whose committed receipts stand for
+distinct hard-gate fragments. A static target branch fails under one verifier
+call, and both single-fragment target branches also fail under one verifier
+call. Only the composed target proposal, built from both receipt-bound
+fragments, commits under the same one-call budget. The new
+`trwm.branch_composition_certificate.v1` artifact binds source contexts,
+fragment keys, source commit/reject receipts, target static/component/composed
+receipts, branch-selection certificates, and the same-budget comparison. The
+substrate implication is that reusable past branches need a construction layer
+as well as a ranking layer: fragments may shape a proposal, but the composed
+proposal still needs its own hard-verifier receipt before any claim can be
+promoted.
+
 The context-retention transfer example adds the next memory transition. After
 refinement commits, the committed target branch is retained with a
 `trwm.ancestral_branch_retention_certificate.v1` artifact that binds the
@@ -192,18 +206,19 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the seven local branch-memory
+The branch-history frontier report now aggregates the eight local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
 receipt-bound ordering, analogical ancestor reuse, certified context selection,
 counterexample refinement, conflict-aware query-policy transfer, drift
-quarantine, and retained memory influence. This changes the design posture from
-isolated demos to a staged substrate map: each branch-history capability must
-expose its own certificate, and later stages are only meaningful if earlier
-evidence still validates.
+quarantine, receipt-bound branch composition, and retained memory influence.
+This changes the design posture from isolated demos to a staged substrate map:
+each branch-history capability must expose its own certificate, and later
+stages are only meaningful if earlier evidence still validates.
 
 The boundary remains narrow. This is a deterministic G1 canary inspired by
 experience replay, counterfactual regret evidence, and selective tree-search
-sampling; it is not a statistical exploration algorithm, regret guarantee,
-MCTS implementation, automatic similarity metric, CEGAR system, or cross-domain
-scientific discovery result.
+sampling plus recombinable building-block search; it is not a statistical
+exploration algorithm, regret guarantee, MCTS implementation, automatic
+similarity metric, CEGAR system, genetic algorithm, program synthesizer, or
+cross-domain scientific discovery result.

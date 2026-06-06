@@ -13,6 +13,10 @@ from examples.ancestral_branch_exploration import (
     validate_ancestral_branch_exploration_certificate,
 )
 from examples.common import CertifiedExampleResult, report_as_dict, validate_example_evidence_certificate
+from examples.branch_composition_transfer import (
+    run_branch_composition_transfer_certified_experiment,
+    validate_branch_composition_transfer_certificate,
+)
 from examples.context_query_policy_transfer import (
     run_context_query_policy_transfer_certified_experiment,
     validate_context_query_policy_transfer_certificate,
@@ -44,11 +48,13 @@ BRANCH_HISTORY_FRONTIER_SOURCES = (
     "https://arxiv.org/abs/2009.00909",
     "https://doi.org/10.1007/10722167_15",
     "https://minds.wisconsin.edu/handle/1793/60660",
+    "https://direct.mit.edu/books/monograph/2574/Adaptation-in-Natural-and-Artificial-SystemsAn",
+    "https://journals.sagepub.com/doi/10.3233/AIC-1994-7104",
 )
 BRANCH_HISTORY_FRONTIER_CLAIM_BOUNDARY = (
     "G1 aggregate over local deterministic branch-history examples only. It shows a staged evidence "
     "path for proposal ordering, context selection, retrieval refinement, query-policy reuse, conflict "
-    "resolution, drift quarantine, and retained-memory influence. It is not a statistical exploration "
+    "resolution, drift quarantine, branch composition, and retained-memory influence. It is not a statistical exploration "
     "algorithm, regret guarantee, MCTS result, automatic similarity metric, or scientific-discovery claim."
 )
 
@@ -89,6 +95,7 @@ class BranchHistoryFrontierReport:
     query_policy_certificate_count: int
     drift_quarantine_certificate_count: int
     quarantined_context_count: int
+    branch_composition_certificate_count: int
     retention_certificate_count: int
     influence_certificate_count: int
     aggregate_sources: tuple[str, ...]
@@ -110,6 +117,7 @@ def run_branch_history_frontier_experiment() -> BranchHistoryFrontierResult:
             run_context_refinement_transfer_certified_experiment(),
             run_context_query_policy_transfer_certified_experiment(),
             run_context_drift_quarantine_certified_experiment(),
+            run_branch_composition_transfer_certified_experiment(),
             run_context_retention_transfer_certified_experiment(),
         )
     )
@@ -144,6 +152,7 @@ def build_branch_history_frontier_result(
         query_policy_certificate_count=_metric(children, "query_policy_certificate_count"),
         drift_quarantine_certificate_count=_metric(children, "drift_quarantine_certificate_count"),
         quarantined_context_count=_metric(children, "quarantined_context_count"),
+        branch_composition_certificate_count=_metric(children, "branch_composition_certificate_count"),
         retention_certificate_count=_metric(children, "retention_certificate_count"),
         influence_certificate_count=_metric(children, "influence_certificate_count"),
         aggregate_sources=tuple(sorted({source for child in children for source in child.evidence_certificate.sources})),
@@ -151,7 +160,8 @@ def build_branch_history_frontier_result(
             "The branch-history evidence path is now staged: receipt-bound ordering first, explicit "
             "ancestor reuse second, certified context selection third, counterexample-driven refinement "
             "fourth, reusable query-policy and conflict-resolution certificates fifth, drift quarantine "
-            "sixth, and retained-memory influence with matched ablation seventh."
+            "sixth, receipt-bound branch composition seventh, and retained-memory influence with matched "
+            "ablation eighth."
         ),
     )
     claim = certify_claim(
@@ -159,12 +169,12 @@ def build_branch_history_frontier_result(
         claim_text=(
             "The certified branch-history examples identify a local G1 substrate path where branches of "
             "the past improve exploration only through audited proposal ordering, selection, refinement, "
-            "query-policy, conflict-resolution, drift-quarantine, retention, and influence certificates."
+            "query-policy, conflict-resolution, drift-quarantine, composition, retention, and influence certificates."
         ),
         evidence_grade="G1",
         scope="branch_history_frontier",
         requirements=(
-            requirement("exactly_seven_branch_history_stages", report.stage_count == 7),
+            requirement("exactly_eight_branch_history_stages", report.stage_count == 8),
             requirement(
                 "expected_child_experiments",
                 set(report.child_experiment_ids)
@@ -175,6 +185,7 @@ def build_branch_history_frontier_result(
                     "context_refinement_transfer",
                     "context_query_policy_transfer",
                     "context_drift_quarantine",
+                    "branch_composition_transfer",
                     "context_retention_transfer",
                 },
             ),
@@ -188,6 +199,7 @@ def build_branch_history_frontier_result(
                 "drift_quarantine_certificates_present",
                 report.drift_quarantine_certificate_count == 3 and report.quarantined_context_count == 3,
             ),
+            requirement("branch_composition_certificates_present", report.branch_composition_certificate_count == 3),
             requirement("retention_and_influence_certificates_present", report.retention_certificate_count == 3 and report.influence_certificate_count == 3),
             requirement("source_coverage", set(report.aggregate_sources) == set(BRANCH_HISTORY_FRONTIER_SOURCES)),
         ),
@@ -200,6 +212,7 @@ def build_branch_history_frontier_result(
             "query_policy_certificate_count": report.query_policy_certificate_count,
             "drift_quarantine_certificate_count": report.drift_quarantine_certificate_count,
             "quarantined_context_count": report.quarantined_context_count,
+            "branch_composition_certificate_count": report.branch_composition_certificate_count,
             "retention_certificate_count": report.retention_certificate_count,
             "influence_certificate_count": report.influence_certificate_count,
         },
@@ -257,6 +270,8 @@ def _primary_certificate(child: CertifiedExampleResult) -> Any:
         return child.context_query_policy_transfer_certificate
     if experiment_id == "context_drift_quarantine":
         return child.context_drift_quarantine_transfer_certificate
+    if experiment_id == "branch_composition_transfer":
+        return child.branch_composition_transfer_certificate
     if experiment_id == "context_retention_transfer":
         return child.context_retention_transfer_certificate
     raise ValueError(f"unknown branch-history experiment: {experiment_id}")
@@ -276,6 +291,8 @@ def _primary_certificate_valid(child: CertifiedExampleResult) -> bool:
         return validate_context_query_policy_transfer_certificate(child.context_query_policy_transfer_certificate, child.report)
     if experiment_id == "context_drift_quarantine":
         return validate_context_drift_quarantine_transfer_certificate(child.context_drift_quarantine_transfer_certificate, child.report)
+    if experiment_id == "branch_composition_transfer":
+        return validate_branch_composition_transfer_certificate(child.branch_composition_transfer_certificate, child.report)
     if experiment_id == "context_retention_transfer":
         return validate_context_retention_transfer_certificate(child.context_retention_transfer_certificate, child.report)
     return False
@@ -337,6 +354,15 @@ def _stage_fields(child: CertifiedExampleResult) -> tuple[str, str, str, str, bo
             f"quarantined contexts {report.quarantined_context_count}",
             True,
             "validity-scoped branch memory and drift quarantine certificates",
+        )
+    if experiment_id == "branch_composition_transfer":
+        return (
+            "receipt_bound_branch_composition",
+            f"static and single-fragment commits {report.static_budget_success_count + report.component_only_budget_success_count}/{report.domain_count * 3}",
+            f"composed proposals commit {report.composed_budget_success_count}/{report.domain_count}",
+            f"composition certificates {report.branch_composition_certificate_count}",
+            True,
+            "fragment-level branch composition certificates before proposal promotion",
         )
     if experiment_id == "context_retention_transfer":
         return (
