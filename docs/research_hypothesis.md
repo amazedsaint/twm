@@ -125,6 +125,10 @@ This repository currently targets `G1` evidence:
   static and allocated target receipts, abstain counts, exact spent verifier
   cost, and same-budget evidence before past branches can shape scarce
   verifier-resource allocation,
+- branch-stop-rule certificates that bind source no-good reject receipts,
+  source positive-control commits, static target rejects, stop-rule target
+  abstentions, unused verifier budget, and same-budget evidence before past
+  branches can avoid target verifier calls without promoting a commit,
 - branch-composition certificates that bind two source branch fragments,
   source and target receipt hashes, static/component/composed target
   comparisons, and same-budget verifier-call evidence before a composed

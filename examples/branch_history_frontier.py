@@ -73,6 +73,10 @@ from examples.branch_budget_transfer import (
     run_branch_budget_transfer_certified_experiment,
     validate_branch_budget_transfer_certificate,
 )
+from examples.branch_stop_rule_transfer import (
+    run_branch_stop_rule_transfer_certified_experiment,
+    validate_branch_stop_rule_transfer_certificate,
+)
 from examples.context_query_policy_transfer import (
     run_context_query_policy_transfer_certified_experiment,
     validate_context_query_policy_transfer_certificate,
@@ -121,6 +125,7 @@ BRANCH_HISTORY_FRONTIER_SOURCES = (
     "https://proceedings.mlr.press/v37/sui15.html",
     "https://doi.org/10.1145/130385.130417",
     "https://www.ijcai.org/Proceedings/77-1/Papers/048.pdf",
+    "https://www.sciencedirect.com/science/article/pii/0004370290900463",
 )
 BRANCH_HISTORY_FRONTIER_CLAIM_BOUNDARY = (
     "G1 aggregate over local deterministic branch-history examples only. It shows a staged evidence "
@@ -128,7 +133,8 @@ BRANCH_HISTORY_FRONTIER_CLAIM_BOUNDARY = (
     "prerequisite ordering, regime-conditioned contingency reuse, hindsight goal relabeling, receipt-bound "
     "field intervention, diagnostic probing, residual-template repair, boundary bracketing, source consensus, "
     "contrastive invariant transfer, context selection, retrieval refinement, query-policy reuse, conflict resolution, "
-    "drift quarantine, branch pruning, branch diversity, budget allocation, branch composition, and retained-memory influence. "
+    "drift quarantine, branch pruning, branch diversity, budget allocation, stop-rule abstention, branch composition, "
+    "and retained-memory influence. "
     "It is not a statistical exploration algorithm, regret guarantee, MCTS result, contextual-bandit "
     "result, Hindsight Experience Replay result, causal inference result, do-calculus result, Bayesian "
     "experimental-design result, active-learning result, case-based reasoning system, automatic similarity "
@@ -199,6 +205,9 @@ class BranchHistoryFrontierReport:
     diverse_family_count: int
     branch_budget_certificate_count: int
     static_abstain_count: int
+    branch_stop_rule_certificate_count: int
+    stopped_abstain_count: int
+    avoided_verifier_call_count: int
     branch_composition_certificate_count: int
     retention_certificate_count: int
     influence_certificate_count: int
@@ -235,6 +244,7 @@ def run_branch_history_frontier_experiment() -> BranchHistoryFrontierResult:
             run_branch_pruning_transfer_certified_experiment(),
             run_branch_diversity_transfer_certified_experiment(),
             run_branch_budget_transfer_certified_experiment(),
+            run_branch_stop_rule_transfer_certified_experiment(),
             run_branch_composition_transfer_certified_experiment(),
             run_context_retention_transfer_certified_experiment(),
         )
@@ -297,6 +307,9 @@ def build_branch_history_frontier_result(
         diverse_family_count=_metric(children, "diverse_family_count"),
         branch_budget_certificate_count=_metric(children, "branch_budget_certificate_count"),
         static_abstain_count=_metric(children, "static_abstain_count"),
+        branch_stop_rule_certificate_count=_metric(children, "branch_stop_rule_certificate_count"),
+        stopped_abstain_count=_metric(children, "stopped_abstain_count"),
+        avoided_verifier_call_count=_metric(children, "avoided_verifier_call_count"),
         branch_composition_certificate_count=_metric(children, "branch_composition_certificate_count"),
         retention_certificate_count=_metric(children, "retention_certificate_count"),
         influence_certificate_count=_metric(children, "influence_certificate_count"),
@@ -310,8 +323,9 @@ def build_branch_history_frontier_result(
             "invariant transfer twelfth, explicit ancestor reuse thirteenth, certified context selection fourteenth, "
             "counterexample-driven refinement fifteenth, reusable query-policy and conflict-resolution certificates "
             "sixteenth, drift quarantine seventeenth, receipt-bound branch pruning eighteenth, diversity-certified "
-            "family coverage nineteenth, budget-allocation transfer twentieth, branch composition twenty-first, "
-            "and retained-memory influence with matched ablation twenty-second."
+            "family coverage nineteenth, budget-allocation transfer twentieth, no-good stop-rule abstention "
+            "twenty-first, branch composition twenty-second, and retained-memory influence with matched ablation "
+            "twenty-third."
         ),
     )
     claim = certify_claim(
@@ -323,12 +337,12 @@ def build_branch_history_frontier_result(
             "counterfactual accepted-loser reuse, option-family abstraction, prerequisite ordering, "
             "regime-conditioned contingency reuse, hindsight goal relabeling, field intervention, diagnostic "
             "probing, residual-template repair, boundary bracketing, source consensus, contrastive invariant transfer, "
-            "composition, retention, and influence certificates."
+            "no-good stop-rule abstention, composition, retention, and influence certificates."
         ),
         evidence_grade="G1",
         scope="branch_history_frontier",
         requirements=(
-            requirement("exactly_twenty_two_branch_history_stages", report.stage_count == 22),
+            requirement("exactly_twenty_three_branch_history_stages", report.stage_count == 23),
             requirement(
                 "expected_child_experiments",
                 set(report.child_experiment_ids)
@@ -353,6 +367,7 @@ def build_branch_history_frontier_result(
                     "branch_pruning_transfer",
                     "branch_diversity_transfer",
                     "branch_budget_transfer",
+                    "branch_stop_rule_transfer",
                     "branch_composition_transfer",
                     "context_retention_transfer",
                 },
@@ -410,6 +425,12 @@ def build_branch_history_frontier_result(
             requirement("branch_pruning_certificates_present", report.branch_pruning_certificate_count == 3 and report.pruned_action_count == 6),
             requirement("branch_diversity_certificates_present", report.branch_diversity_certificate_count == 3 and report.diverse_family_count == 3),
             requirement("branch_budget_certificates_present", report.branch_budget_certificate_count == 3 and report.static_abstain_count == 3),
+            requirement(
+                "branch_stop_rule_certificates_present",
+                report.branch_stop_rule_certificate_count == 3
+                and report.stopped_abstain_count == 6
+                and report.avoided_verifier_call_count == 6,
+            ),
             requirement("branch_composition_certificates_present", report.branch_composition_certificate_count == 3),
             requirement("retention_and_influence_certificates_present", report.retention_certificate_count == 3 and report.influence_certificate_count == 3),
             requirement("source_coverage", set(report.aggregate_sources) == set(BRANCH_HISTORY_FRONTIER_SOURCES)),
@@ -450,6 +471,9 @@ def build_branch_history_frontier_result(
             "diverse_family_count": report.diverse_family_count,
             "branch_budget_certificate_count": report.branch_budget_certificate_count,
             "static_abstain_count": report.static_abstain_count,
+            "branch_stop_rule_certificate_count": report.branch_stop_rule_certificate_count,
+            "stopped_abstain_count": report.stopped_abstain_count,
+            "avoided_verifier_call_count": report.avoided_verifier_call_count,
             "branch_composition_certificate_count": report.branch_composition_certificate_count,
             "retention_certificate_count": report.retention_certificate_count,
             "influence_certificate_count": report.influence_certificate_count,
@@ -536,6 +560,8 @@ def _primary_certificate(child: CertifiedExampleResult) -> Any:
         return child.branch_diversity_transfer_certificate
     if experiment_id == "branch_budget_transfer":
         return child.branch_budget_transfer_certificate
+    if experiment_id == "branch_stop_rule_transfer":
+        return child.branch_stop_rule_transfer_certificate
     if experiment_id == "branch_composition_transfer":
         return child.branch_composition_transfer_certificate
     if experiment_id == "context_retention_transfer":
@@ -585,6 +611,8 @@ def _primary_certificate_valid(child: CertifiedExampleResult) -> bool:
         return validate_branch_diversity_transfer_certificate(child.branch_diversity_transfer_certificate, child.report)
     if experiment_id == "branch_budget_transfer":
         return validate_branch_budget_transfer_certificate(child.branch_budget_transfer_certificate, child.report)
+    if experiment_id == "branch_stop_rule_transfer":
+        return validate_branch_stop_rule_transfer_certificate(child.branch_stop_rule_transfer_certificate, child.report)
     if experiment_id == "branch_composition_transfer":
         return validate_branch_composition_transfer_certificate(child.branch_composition_transfer_certificate, child.report)
     if experiment_id == "context_retention_transfer":
@@ -783,6 +811,15 @@ def _stage_fields(child: CertifiedExampleResult) -> tuple[str, str, str, str, bo
             f"budget certificates {report.branch_budget_certificate_count}",
             True,
             "successive-halving-style budget allocation certificates before hard verification",
+        )
+    if experiment_id == "branch_stop_rule_transfer":
+        return (
+            "receipt_bound_stop_rule_abstention",
+            f"static target spends {report.static_verifier_call_count} verifier calls with {report.static_success_count} commits",
+            f"stop rule spends {report.stopped_verifier_call_count} verifier calls with {report.stopped_abstain_count} abstains",
+            f"avoided verifier calls {report.avoided_verifier_call_count}",
+            True,
+            "no-good stop-rule certificates before abstaining from matched target families",
         )
     if experiment_id == "context_retention_transfer":
         return (

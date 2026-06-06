@@ -346,6 +346,19 @@ should be allowed to shape resource allocation only through receipt-bound cost
 certificates: resource policy can decide which hard checks to spend, but it
 still cannot commit without a domain verifier receipt.
 
+The branch-stop-rule transfer example adds explicit no-good abstention. Each
+domain records two source rejects from a matched failure family and one source
+commit as a positive control. The static target spends two verifier calls on
+the matched failure family and commits nothing. The stop-rule target sees the
+same target candidate surface but records two abstain receipts, spends zero
+verifier calls, and promotes no target commit. The new
+`trwm.branch_stop_rule_certificate.v1` artifact binds source rejects, source
+commits, static target rejects, stop-rule abstentions, branch-selection
+certificates, unused verifier budget, and the same-budget comparison. The
+substrate implication is that past branches should sometimes improve
+exploration by proving when not to explore: abstention is a first-class
+receipt outcome, not missing data.
+
 The branch-composition transfer example adds a proposal-construction check.
 Each domain records two source branches whose committed receipts stand for
 distinct hard-gate fragments. A static target branch fails under one verifier
@@ -389,7 +402,7 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the twenty-two local branch-memory
+The branch-history frontier report now aggregates the twenty-three local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
 receipt-bound ordering, accepted-loser counterfactual reuse, option-family
@@ -400,7 +413,7 @@ bracketing, source consensus, contrastive invariant transfer, analogical
 ancestor reuse, certified context selection, counterexample refinement,
 conflict-aware query-policy transfer,
 drift quarantine, receipt-bound branch pruning, diversity-certified family
-coverage, receipt-bound budget allocation, branch composition, and retained
+coverage, receipt-bound budget allocation, no-good stop-rule abstention, branch composition, and retained
 memory influence.
 This changes the design posture from isolated demos to a staged substrate map:
 each branch-history capability must expose its own certificate, and later
@@ -415,7 +428,8 @@ experience replay plus intervention notation as a variable-edit analogy and
 experimental-design information as a probe-selection analogy plus case-based
 reuse/revise as a residual-template analogy plus safe exploration as a
 boundary-bracketing analogy plus query-by-committee as a source-consensus
-analogy plus version-space learning as a positive/negative invariant analogy;
+analogy plus version-space learning as a positive/negative invariant analogy
+plus nogood learning and backjumping as a stop-rule analogy;
 it is not a
 statistical exploration algorithm, regret guarantee, MCTS implementation,
 automatic similarity metric, CEGAR system, CDCL solver, novelty-search result,

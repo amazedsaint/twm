@@ -32,6 +32,7 @@ python3 -m examples.context_drift_quarantine
 python3 -m examples.branch_pruning_transfer
 python3 -m examples.branch_diversity_transfer
 python3 -m examples.branch_budget_transfer
+python3 -m examples.branch_stop_rule_transfer
 python3 -m examples.branch_composition_transfer
 python3 -m examples.context_retention_transfer
 python3 -m examples.branch_history_frontier
@@ -107,6 +108,9 @@ families under the same verifier budget. The
 branch-budget command adds `trwm.branch_budget_certificate.v1` artifacts
 showing that past receipt costs can allocate a fixed verifier budget toward a
 higher-cost repair after a cheap reject probe. The
+branch-stop-rule command adds `trwm.branch_stop_rule_certificate.v1` artifacts
+showing that negative source receipts can record target abstentions and avoid
+verifier calls on a matched no-good family. The
 branch-composition command adds `trwm.branch_composition_certificate.v1`
 artifacts showing that two receipt-bound source fragments can be combined into
 a target proposal only after static and single-fragment branches fail under the
@@ -120,7 +124,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the twenty-two branch-memory stages into one bounded G1 report. The physical
+the twenty-three branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -469,6 +473,21 @@ verifier cost is allocated, not only by choosing an order or pruning actions.
 allocated receipt hashes, abstain counts, exact spent verifier cost, and
 same-budget comparison before claiming budget-allocation lift.
 
+### Branch Stop-Rule Transfer
+
+`examples.branch_stop_rule_transfer` tests no-good abstention. Each domain
+records source receipts with two hard rejects from the same failure family and
+one committed repair as a positive control. The static target spends two
+verifier calls on the matched failure family and commits nothing. The
+stop-rule target sees the same candidate surface, records two abstain receipts,
+spends zero verifier calls, and promotes no target commit.
+
+Learning: branches of the past can improve exploration by certifying when not
+to explore. `trwm.branch_stop_rule_certificate.v1` binds source rejects,
+source commits, static target rejects, stop-rule abstentions, branch-selection
+certificates, unused verifier budget, and the same-budget comparison before
+claiming that no-good stop evidence avoided verifier spend.
+
 ### Branch Composition Transfer
 
 `examples.branch_composition_transfer` tests whether branches of the past can
@@ -508,7 +527,7 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the twenty-two branch-history experiments and
+`examples.branch_history_frontier` runs the twenty-three branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
@@ -520,7 +539,7 @@ consensus, contrastive invariant transfer, analogical ancestor reuse, certified 
 counterexample refinement,
 conflict-aware query-policy transfer,
 drift quarantine, receipt-bound branch pruning, diversity-certified family
-coverage, branch budget allocation, branch composition, and retained-memory
+coverage, branch budget allocation, no-good stop-rule abstention, branch composition, and retained-memory
 influence.
 
 Learning: the current branch-history direction is only coherent when every

@@ -62,6 +62,7 @@ python3 -m examples.context_drift_quarantine
 python3 -m examples.branch_pruning_transfer
 python3 -m examples.branch_diversity_transfer
 python3 -m examples.branch_budget_transfer
+python3 -m examples.branch_stop_rule_transfer
 python3 -m examples.branch_composition_transfer
 python3 -m examples.context_retention_transfer
 python3 -m examples.branch_history_frontier
@@ -100,6 +101,8 @@ branch-diversity example uses same-family rejects to force coverage of a
 distinct candidate family under the same verifier budget; the
 branch-budget example uses past receipt costs to allocate a fixed verifier
 budget toward a higher-cost repair after a cheap reject probe; the
+branch-stop-rule example uses negative source receipts to record target
+abstentions and avoid verifier calls on a matched no-good family; the
 branch-composition example combines two receipt-bound past branch fragments only
 as a verifier-gated target proposal; the residual-template example turns a
 source residual/repair pair into a named repair-template proposal without
@@ -115,7 +118,7 @@ future proposal evidence for a sibling target and
 certifies the memory query that ranks the sibling proposals against a
 same-budget static sibling baseline; the frontier example aggregates the three
 physical certified domains, while the branch-history frontier aggregates the
-twenty-two branch-memory stages. See `examples/README.md` and
+twenty-three branch-memory stages. See `examples/README.md` and
 `docs/experiment_learnings.md`.
 
 ## Package Layout
