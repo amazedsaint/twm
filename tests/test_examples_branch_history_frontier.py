@@ -19,6 +19,7 @@ from examples.branch_calibration_transfer import run_branch_calibration_transfer
 from examples.branch_conformal_transfer import run_branch_conformal_transfer_certified_experiment
 from examples.branch_active_subspace_transfer import run_branch_active_subspace_transfer_certified_experiment
 from examples.branch_continuation_transfer import run_branch_continuation_transfer_certified_experiment
+from examples.branch_commutativity_transfer import run_branch_commutativity_transfer_certified_experiment
 from examples.branch_switch_transfer import run_branch_switch_transfer_certified_experiment
 from examples.branch_transposition_transfer import run_branch_transposition_transfer_certified_experiment
 from examples.branch_outlier_filter_transfer import run_branch_outlier_filter_transfer_certified_experiment
@@ -59,7 +60,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         claim = result.claim_certificate
 
         self.assertEqual(report.schema_version, "trwm.example.branch_history_frontier.v1")
-        self.assertEqual(report.stage_count, 42)
+        self.assertEqual(report.stage_count, 43)
         self.assertEqual(
             report.child_experiment_ids,
             (
@@ -97,6 +98,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
                 "branch_conformal_transfer",
                 "branch_active_subspace_transfer",
                 "branch_continuation_transfer",
+                "branch_commutativity_transfer",
                 "branch_switch_transfer",
                 "branch_transposition_transfer",
                 "branch_pruning_transfer",
@@ -144,6 +146,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
                 "receipt_bound_nonconformity_quantile",
                 "receipt_bound_active_subspace_projection",
                 "receipt_bound_continuation_path",
+                "receipt_bound_partial_order_commutativity",
                 "receipt_bound_branch_switchpoint",
                 "receipt_bound_canonical_transposition",
                 "receipt_bound_branch_pruning",
@@ -157,11 +160,11 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         self.assertTrue(report.all_evidence_valid)
         self.assertTrue(report.all_claims_supported)
         self.assertTrue(report.all_primary_certificates_valid)
-        self.assertEqual(report.total_receipt_count, 813)
-        self.assertEqual(report.total_committed_count, 399)
-        self.assertEqual(report.total_rejected_count, 309)
+        self.assertEqual(report.total_receipt_count, 828)
+        self.assertEqual(report.total_committed_count, 408)
+        self.assertEqual(report.total_rejected_count, 315)
         self.assertEqual(report.total_invalid_commit_count, 0)
-        self.assertEqual(report.same_budget_stage_count, 42)
+        self.assertEqual(report.same_budget_stage_count, 43)
         self.assertEqual(report.branch_abstraction_certificate_count, 3)
         self.assertEqual(report.branch_prerequisite_certificate_count, 3)
         self.assertEqual(report.branch_curriculum_certificate_count, 3)
@@ -221,6 +224,8 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         self.assertEqual(report.active_subspace_success_count, 3)
         self.assertEqual(report.branch_continuation_certificate_count, 3)
         self.assertEqual(report.continuation_success_count, 3)
+        self.assertEqual(report.branch_commutativity_certificate_count, 3)
+        self.assertEqual(report.commutative_success_count, 3)
         self.assertEqual(report.branch_switch_certificate_count, 3)
         self.assertEqual(report.switched_success_count, 3)
         self.assertEqual(report.branch_transposition_certificate_count, 3)
@@ -277,6 +282,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
             run_branch_conformal_transfer_certified_experiment(),
             run_branch_active_subspace_transfer_certified_experiment(),
             run_branch_continuation_transfer_certified_experiment(),
+            run_branch_commutativity_transfer_certified_experiment(),
             run_branch_switch_transfer_certified_experiment(),
             run_branch_transposition_transfer_certified_experiment(),
             run_branch_pruning_transfer_certified_experiment(),

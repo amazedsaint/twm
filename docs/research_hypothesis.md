@@ -187,6 +187,11 @@ This repository currently targets `G1` evidence:
   source continuation receipts, source direct-jump rejects, static direct-jump
   target rejects, continuation target commits, and same-budget verifier-call
   evidence before path schedules can filter direct target jumps,
+- branch-commutativity certificates that bind canonical order keys, conflict
+  order keys, source AB commits, source BA commits, source conflict rejects,
+  static non-canonical target rejects, commutative target commits, and
+  same-budget verifier-call evidence before independent orders can be
+  canonicalized,
 - branch-switch certificates that bind switch parameter, stale and switched
   branch ids, source pre-switch receipt, source stale reject, source switched
   commit, static stale reject, switched target commit, and same-budget
@@ -725,6 +730,10 @@ search.
   Parameter Studies: https://doi.org/10.1137/1.9781611973860
 - Allgower and Georg, Introduction to Numerical Continuation Methods:
   https://doi.org/10.1137/1.9780898719154
+- Willems and Wolper, Partial-Order Methods for Model Checking:
+  https://lics.siglog.org/1996/WillemsWolper-PartialOrderMethods.html
+- Flanagan and Godefroid, Dynamic Partial-Order Reduction for Model Checking
+  Software: https://patricegodefroid.github.io/public_psfiles/popl2005.pdf
 - Seydel, Branch Switching in Bifurcation Problems:
   https://eudml.org/doc/132842
 - Henderson, Multiparameter Parallel Search Branch Switching:

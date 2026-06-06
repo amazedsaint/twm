@@ -46,6 +46,7 @@ python3 -m examples.branch_calibration_transfer
 python3 -m examples.branch_conformal_transfer
 python3 -m examples.branch_active_subspace_transfer
 python3 -m examples.branch_continuation_transfer
+python3 -m examples.branch_commutativity_transfer
 python3 -m examples.branch_switch_transfer
 python3 -m examples.branch_transposition_transfer
 python3 -m examples.branch_pruning_transfer
@@ -186,6 +187,10 @@ branch-continuation command adds
 `trwm.branch_continuation_certificate.v1` artifacts that bind lambda schedules,
 max path step, source continuation commits, source direct-jump reject, failed
 same-budget direct target jumps, and verified continuation target commits. The
+branch-commutativity command adds `trwm.branch_commutativity_certificate.v1`
+artifacts that bind two source orders with a shared canonical key, a rejected
+conflict order, a failed static target order, and a same-budget canonical
+target commit. The
 branch-switch command adds `trwm.branch_switch_certificate.v1` artifacts that
 bind switch parameter, stale and switched branch ids, source pre-switch
 commit, source stale reject, source switched commit, failed stale target branch,
@@ -219,7 +224,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the forty-two branch-memory stages into one bounded G1 report. The physical
+the forty-three branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -833,6 +838,28 @@ path-following analogy here; this is not numerical continuation, homotopy
 continuation, nonlinear root finding, or path-following performance:
 https://doi.org/10.1137/1.9780898719154
 
+### Branch Commutativity Transfer
+
+`examples.branch_commutativity_transfer` tests receipt-bound partial-order
+commutativity for source branch reuse. Each domain records two committed source
+orders that share a canonical key and one rejected source conflict order. The
+static target spends one verifier call on the non-canonical conflict order and
+fails. The commutativity-guided target spends the same one verifier call on the
+canonical independent order and commits only after fresh hard verification.
+
+Learning: branches of the past can improve exploration when the substrate can
+prove which orders are independent and which order is a known conflict.
+`trwm.branch_commutativity_certificate.v1` binds the canonical order key,
+conflict order key, source AB commit, source BA commit, source conflict reject,
+failed static target order, commutative target commit, branch-selection
+certificates, and same-budget comparison before claiming commutativity-guided
+exploration lift. Partial-order reduction is only the independence analogy
+here; this is not a partial-order reduction algorithm, model-checking
+correctness proof, dynamic partial-order reduction result, concurrency
+verification result, or state-space reduction guarantee:
+https://lics.siglog.org/1996/WillemsWolper-PartialOrderMethods.html and
+https://patricegodefroid.github.io/public_psfiles/popl2005.pdf
+
 ### Branch Switch Transfer
 
 `examples.branch_switch_transfer` tests receipt-bound switchpoint admission for
@@ -977,7 +1004,7 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the forty-two branch-history experiments and
+`examples.branch_history_frontier` runs the forty-three branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
@@ -988,7 +1015,7 @@ diagnostic probing, residual-template repair, boundary bracketing, source
 consensus, contrastive invariant transfer, trust-region radius transfer, analogical ancestor reuse, certified context selection,
 counterexample refinement,
 conflict-aware query-policy transfer,
-drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, confidence calibration, conformal transfer, active-subspace transfer, continuation transfer, branch-switch transfer, transposition transfer, receipt-bound branch pruning, diversity-certified family
+drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, confidence calibration, conformal transfer, active-subspace transfer, continuation transfer, commutativity transfer, branch-switch transfer, transposition transfer, receipt-bound branch pruning, diversity-certified family
 coverage, branch budget allocation, no-good stop-rule abstention, branch composition, and retained-memory
 influence.
 
@@ -1008,7 +1035,7 @@ receipts and fresh target verification, source consensus is admitted only
 through majority receipts plus fresh target verification, contrastive invariants
 are admitted only through positive/negative source receipts plus fresh target
 verification, context selection is certified, failed branches refine retrieval,
-conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, Pareto dominance is certificate-bound, outlier filtering is certificate-bound, source provenance is certificate-bound, source-fragment credit is certificate-bound, source-context matching is certificate-bound, uncertainty-set coverage is certificate-bound, confidence-bin calibration is certificate-bound, nonconformity quantiles are certificate-bound, active-subspace directions are certificate-bound, continuation paths are certificate-bound, switchpoints are certificate-bound, canonical transpositions are certificate-bound, rejected branches prune
+conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, Pareto dominance is certificate-bound, outlier filtering is certificate-bound, source provenance is certificate-bound, source-fragment credit is certificate-bound, source-context matching is certificate-bound, uncertainty-set coverage is certificate-bound, confidence-bin calibration is certificate-bound, nonconformity quantiles are certificate-bound, active-subspace directions are certificate-bound, continuation paths are certificate-bound, commutative orders are certificate-bound, switchpoints are certificate-bound, canonical transpositions are certificate-bound, rejected branches prune
 known-dead target candidates, same-family failures force coverage only through
 a certificate, verifier budget is allocated only through a cost-bound
 certificate, branch fragments compose
@@ -1064,6 +1091,11 @@ certificates before claim promotion.
 - Numerical continuation is the path-following analogy for branch-continuation
   transfer, not a continuation-method guarantee:
   https://doi.org/10.1137/1.9780898719154
+- Partial-order methods are the independence analogy for branch-commutativity
+  transfer, not a model-checking correctness or state-space reduction
+  guarantee:
+  https://lics.siglog.org/1996/WillemsWolper-PartialOrderMethods.html and
+  https://patricegodefroid.github.io/public_psfiles/popl2005.pdf
 - Branch switching and bifurcation points are the switchpoint analogy for
   branch-switch transfer, not a bifurcation or branch-switching performance
   guarantee:
