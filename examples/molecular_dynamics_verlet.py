@@ -1,10 +1,17 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 import json
 import math
 from typing import Any, Mapping
 
+from examples.common import (
+    CertifiedExampleResult,
+    build_example_evidence_certificate,
+    report_as_dict,
+    validate_example_evidence_certificate,
+)
+from trwm.claims import certify_claim, requirement
 from trwm.core import HardVerifierResult, Ledger, ProposalTrace, Receipt, TransactionEngine, TypedCandidate, stable_hash
 
 
@@ -16,6 +23,13 @@ DEFAULT_STEP_TOLERANCE = 1e-11
 DEFAULT_ENERGY_TOLERANCE = 1e-5
 DEFAULT_MOMENTUM_TOLERANCE = 1e-12
 DEFAULT_MIN_SEPARATION = 0.78
+MOLECULAR_DYNAMICS_SOURCES = (
+    "https://doi.org/10.1063/1.442716",
+)
+MOLECULAR_DYNAMICS_CLAIM_BOUNDARY = (
+    "G1 two-particle Lennard-Jones integration canary only; not production molecular dynamics, "
+    "force-field validation, thermodynamic sampling, or molecular discovery evidence."
+)
 
 
 @dataclass(frozen=True)
@@ -47,8 +61,12 @@ class MolecularDynamicsReport:
     rollback_audit_ok: bool
     ledger_audit_ok: bool
     invalid_commit_count: int
+    ledger_head: str
+    verifier_id: str
+    verifier_version: str
     receipt_count: int
     committed_count: int
+    rejected_count: int
     receipt_hashes: tuple[str, ...]
     learned_residual_kinds: Mapping[str, int]
     learning: str
@@ -405,8 +423,12 @@ def run_molecular_dynamics_verlet_experiment() -> MolecularDynamicsReport:
         rollback_audit_ok=rollback_ok,
         ledger_audit_ok=ledger.audit(),
         invalid_commit_count=engine.invalid_commit_count,
+        ledger_head=ledger.head,
+        verifier_id=MolecularDynamicsVerletAdapter.verifier_id,
+        verifier_version=MolecularDynamicsVerletAdapter.verifier_version,
         receipt_count=len(ledger.rows),
         committed_count=sum(1 for row in ledger.rows if row.committed),
+        rejected_count=sum(1 for row in ledger.rows if row.hard_result.rejected),
         receipt_hashes=tuple(row.receipt_hash for row in ledger.rows),
         learned_residual_kinds={residual_kind: 1},
         learning=(
@@ -414,6 +436,62 @@ def run_molecular_dynamics_verlet_experiment() -> MolecularDynamicsReport:
             "the symplectic step, contact bound, energy drift, and momentum drift before state changes."
         ),
     )
+
+
+def run_molecular_dynamics_verlet_certified_experiment() -> CertifiedExampleResult:
+    report = run_molecular_dynamics_verlet_experiment()
+    evidence = build_example_evidence_certificate(
+        report,
+        domain="molecular_dynamics",
+        verifier_id=report.verifier_id,
+        verifier_version=report.verifier_version,
+        ledger_head=report.ledger_head,
+        receipt_hashes=report.receipt_hashes,
+        committed_count=report.committed_count,
+        rejected_count=report.rejected_count,
+        replay_audit_ok=report.replay_audit_ok,
+        rollback_audit_ok=report.rollback_audit_ok,
+        ledger_audit_ok=report.ledger_audit_ok,
+        invalid_commit_count=report.invalid_commit_count,
+        hard_gate_keys=(
+            "contact_bound",
+            "energy_drift",
+            "momentum_drift",
+            "replay",
+            "rollback",
+            "velocity_verlet_integrator",
+        ),
+        residual_kinds=tuple(report.learned_residual_kinds),
+        claim_boundary=MOLECULAR_DYNAMICS_CLAIM_BOUNDARY,
+        sources=MOLECULAR_DYNAMICS_SOURCES,
+    )
+    claim = certify_claim(
+        claim_id="molecular_dynamics_verlet_g1",
+        claim_text=(
+            "A velocity-Verlet hard gate blocks Euler dynamics and commits only a bounded "
+            "invariant-preserving repair in the local G1 molecular dynamics canary."
+        ),
+        evidence_grade="G1",
+        scope="molecular_dynamics_verlet",
+        requirements=(
+            requirement("evidence_certificate_valid", validate_example_evidence_certificate(evidence, report)),
+            requirement("euler_proposal_rejected", report.first_decision == "hard_reject"),
+            requirement("verlet_repair_committed", report.repaired_committed and report.integrator == "velocity_verlet"),
+            requirement("energy_and_momentum_bounded", report.energy_drift <= DEFAULT_ENERGY_TOLERANCE and report.momentum_drift <= DEFAULT_MOMENTUM_TOLERANCE),
+            requirement("replay_and_rollback_valid", report.replay_audit_ok and report.rollback_audit_ok),
+            requirement("zero_invalid_commits", report.invalid_commit_count == 0),
+            requirement("source_bound", bool(evidence.sources)),
+        ),
+        metrics={
+            "energy_drift": report.energy_drift,
+            "momentum_drift": report.momentum_drift,
+            "receipt_count": report.receipt_count,
+            "certificate_hash": evidence.certificate_hash,
+        },
+        boundary=MOLECULAR_DYNAMICS_CLAIM_BOUNDARY,
+        sources=MOLECULAR_DYNAMICS_SOURCES,
+    )
+    return CertifiedExampleResult(report=report, evidence_certificate=evidence, claim_certificate=claim)
 
 
 def _state_shape_error(state: MolecularDynamicsState) -> str | None:
@@ -440,12 +518,8 @@ def _positive_float(value: Any, label: str) -> float:
     return out
 
 
-def report_as_dict(report: MolecularDynamicsReport) -> dict[str, Any]:
-    return asdict(report)
-
-
 def main() -> None:
-    print(json.dumps(report_as_dict(run_molecular_dynamics_verlet_experiment()), indent=2, sort_keys=True))
+    print(json.dumps(report_as_dict(run_molecular_dynamics_verlet_certified_experiment()), indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":
