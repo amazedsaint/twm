@@ -13,15 +13,18 @@ python3 -m examples.robotic_safety_envelope
 python3 -m examples.molecular_dynamics_verlet
 python3 -m examples.material_lattice_metropolis
 python3 -m examples.ancestral_branch_exploration
+python3 -m examples.analogical_branch_transfer
 python3 -m examples.programmable_world_model_frontier
 ```
 
 Each command emits JSON. The three domain commands now include top-level
 `report`, `evidence_certificate`, and `claim_certificate` objects. The
 ancestral branch command adds an `exploration_certificate` that binds past
-branch receipts to later budgeted proposal ordering. The frontier command
-aggregates the three physical certified examples into a cross-domain report and
-bounded G1 claim certificate.
+branch receipts to later budgeted proposal ordering. The analogical branch
+command adds an `analogical_certificate` that binds explicit ancestor-context
+reuse and misleading-ancestor rejection. The frontier command aggregates the
+three physical certified examples into a cross-domain report and bounded G1
+claim certificate.
 
 ## Experiments
 
@@ -71,6 +74,19 @@ Learning: branches of the past can improve exploration by changing which
 candidate gets scarce verifier budget first. They do not become authority: the
 candidate still has to pass the domain hard gate, branch-selection certificate,
 ledger audit, replay audit, and rollback audit.
+
+### Analogical Branch Transfer
+
+`examples.analogical_branch_transfer` runs the same three toy domains with two
+positive ancestor contexts and one misleading ancestor context per domain. The
+static target pass spends its only verifier call on the old first proposal and
+fails. The explicit ancestor-context pass ranks the previously committed action
+first and commits. The misleading-context pass ranks a context-local winner that
+is unsafe in the target context; the target hard verifier rejects it.
+
+Learning: branch history can transfer across explicitly named related contexts,
+but context choice is itself a future verifier surface. Misleading ancestors are
+allowed to propose; they are not allowed to commit.
 
 ### Programmable World Model Frontier
 

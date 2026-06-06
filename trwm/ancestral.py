@@ -135,7 +135,10 @@ class AncestralBranchMemory:
         )
 
     def rank(self, context: str, candidates: Iterable[Any]) -> list[Any]:
-        def key(candidate: Any) -> tuple[float, int, int, int, int, str]:
+        indexed = tuple(enumerate(candidates))
+
+        def key(row_candidate: tuple[int, Any]) -> tuple[float, int, int, int, int, int]:
+            idx, candidate = row_candidate
             row = self.stats(context, candidate)
             return (
                 -self.score(context, candidate),
@@ -143,10 +146,62 @@ class AncestralBranchMemory:
                 row.rolled_back,
                 row.rejected,
                 row.abstained,
-                _token(candidate),
+                idx,
             )
 
-        return sorted(candidates, key=key)
+        return [candidate for _, candidate in sorted(indexed, key=key)]
+
+    def stats_from_contexts(self, contexts: Iterable[str], candidate: Any) -> AncestralBranchActionStats:
+        context_tokens = _unique_contexts(contexts)
+        action_token = _token(candidate)
+        committed = 0
+        rolled_back = 0
+        rejected = 0
+        abstained = 0
+        receipt_hashes: list[str] = []
+        for context in context_tokens:
+            row = self._rows.get((context, action_token), _MutableActionStats())
+            committed += row.committed
+            rolled_back += row.rolled_back
+            rejected += row.rejected
+            abstained += row.abstained
+            receipt_hashes.extend(row.receipt_hashes or ())
+        return AncestralBranchActionStats(
+            context="+".join(context_tokens) if context_tokens else "none",
+            action=action_token,
+            committed=committed,
+            rolled_back=rolled_back,
+            rejected=rejected,
+            abstained=abstained,
+            receipt_hashes=tuple(receipt_hashes),
+        )
+
+    def score_from_contexts(self, contexts: Iterable[str], candidate: Any) -> float:
+        row = self.stats_from_contexts(contexts, candidate)
+        return (
+            self.commit_weight * row.committed
+            - self.rollback_weight * row.rolled_back
+            - self.reject_weight * row.rejected
+            - self.abstain_weight * row.abstained
+        )
+
+    def rank_from_contexts(self, contexts: Iterable[str], candidates: Iterable[Any]) -> list[Any]:
+        context_tokens = _unique_contexts(contexts)
+        indexed = tuple(enumerate(candidates))
+
+        def key(row_candidate: tuple[int, Any]) -> tuple[float, int, int, int, int, int]:
+            idx, candidate = row_candidate
+            row = self.stats_from_contexts(context_tokens, candidate)
+            return (
+                -self.score_from_contexts(context_tokens, candidate),
+                -row.committed,
+                row.rolled_back,
+                row.rejected,
+                row.abstained,
+                idx,
+            )
+
+        return [candidate for _, candidate in sorted(indexed, key=key)]
 
     def snapshot(self) -> AncestralBranchMemorySnapshot:
         rows = tuple(
@@ -257,6 +312,19 @@ def _token(value: Any) -> str:
     if isinstance(value, (Mapping, list, tuple, set, bytes)):
         return canonical_json(value)
     return str(value)
+
+
+def _unique_contexts(contexts: Iterable[str]) -> tuple[str, ...]:
+    rows: list[str] = []
+    seen: set[str] = set()
+    for context in contexts:
+        token = str(context)
+        if not token:
+            raise ValueError("ancestor context must be non-empty")
+        if token not in seen:
+            rows.append(token)
+            seen.add(token)
+    return tuple(rows)
 
 
 def _is_hash(value: str) -> bool:

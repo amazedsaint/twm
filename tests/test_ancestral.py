@@ -51,6 +51,45 @@ class AncestralBranchMemoryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             memory.update_branch(outcome.receipts, tampered)
 
+    def test_memory_ranks_from_explicit_ancestor_contexts(self) -> None:
+        source_context = "source-route"
+        target_candidates = ("a_slow", "b_fast", "c_unsafe")
+        actions = tuple(
+            {**dict(action), "context": source_context}
+            for action in (
+                {"action": "a_slow", "cost": 2, "risk": 0.10},
+                {"action": "b_fast", "cost": 1, "risk": 0.20},
+                {"action": "c_unsafe", "cost": 0, "risk": 1.20},
+            )
+        )
+        engine = TransactionEngine(CounterfactualChoiceAdapter(), ledger=Ledger())
+        outcome = BranchRuntime(engine, CounterfactualChoiceProjector()).step(
+            CounterfactualChoiceState(),
+            make_counterfactual_traces(0, actions),
+        )
+        certificate = build_branch_selection_certificate(outcome.receipts, verifier_call_count=outcome.verifier_calls)
+        memory = AncestralBranchMemory()
+        memory.update_branch(outcome.receipts, certificate)
+
+        ranked = memory.rank_from_contexts((source_context,), target_candidates)
+        stats = memory.stats_from_contexts((source_context,), "b_fast")
+
+        self.assertEqual(ranked[0], "b_fast")
+        self.assertEqual(stats.committed, 1)
+        self.assertEqual(stats.rolled_back, 0)
+        self.assertEqual(len(stats.receipt_hashes), 1)
+
+    def test_missing_ancestor_context_preserves_candidate_order(self) -> None:
+        memory = AncestralBranchMemory()
+
+        self.assertEqual(memory.rank_from_contexts(("missing-context",), ("z", "a", "m")), ["z", "a", "m"])
+
+    def test_empty_ancestor_context_fails_closed(self) -> None:
+        memory = AncestralBranchMemory()
+
+        with self.assertRaises(ValueError):
+            memory.rank_from_contexts(("",), ("a", "b"))
+
     def test_snapshot_tampering_fails_validation(self) -> None:
         engine = TransactionEngine(CounterfactualChoiceAdapter(), ledger=Ledger())
         outcome = BranchRuntime(engine, CounterfactualChoiceProjector()).step(

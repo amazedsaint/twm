@@ -102,7 +102,18 @@ The next programmable transactional world model substrate therefore needs:
 - claim promotion gates that prove exploration improvement under the same
   verifier budget.
 
+The analogical branch transfer example adds one more design constraint:
+cross-context reuse must name its ancestor contexts explicitly. For each toy
+domain, two positive ancestor contexts reorder the target budget-one search
+toward the previously committed action. A separate misleading ancestor context
+also reorders the target search, but toward an action that is unsafe under the
+target payload; the hard verifier rejects that proposal in all domains. The
+substrate lesson is that context-neighborhood selection is now part of the
+world-model surface and needs certificates before it can become trusted
+proposal evidence.
+
 The boundary remains narrow. This is a deterministic G1 canary inspired by
 experience replay, counterfactual regret evidence, and selective tree-search
 sampling; it is not a statistical exploration algorithm, regret guarantee,
-MCTS implementation, or cross-domain scientific discovery result.
+MCTS implementation, automatic similarity metric, or cross-domain scientific
+discovery result.
