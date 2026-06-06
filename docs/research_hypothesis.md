@@ -191,6 +191,10 @@ This repository currently targets `G1` evidence:
   branch ids, source pre-switch receipt, source stale reject, source switched
   commit, static stale reject, switched target commit, and same-budget
   verifier-call evidence before stale post-switch branches can be replaced,
+- branch-transposition certificates that bind canonical state keys, duplicate
+  source rejects, non-duplicate source commits, static duplicate target
+  rejects, transposition target commits, and same-budget verifier-call
+  evidence before duplicate target branches can be skipped or demoted,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can
@@ -725,6 +729,10 @@ search.
   https://eudml.org/doc/132842
 - Henderson, Multiparameter Parallel Search Branch Switching:
   https://research.ibm.com/publications/multiparameter-parallel-search-branch-switching--1
+- Zobrist, A New Hashing Method With Application for Game Playing:
+  https://journals.sagepub.com/doi/10.3233/ICG-1990-13203
+- Zhou and Hansen, Structured Duplicate Detection in External-Memory Graph
+  Search: https://aaai.org/Papers/AAAI/2004/AAAI04-108.pdf
 - ISO/IEC/IEEE 15026-2 assurance case structure and terminology:
   https://standards.iteh.ai/catalog/standards/iso/4734d411-2bff-428f-8f4a-164859f171b8/iso-iec-ieee-15026-2-2022
 - OpenTelemetry Semantic Conventions:

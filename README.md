@@ -77,6 +77,7 @@ python3 -m examples.branch_conformal_transfer
 python3 -m examples.branch_active_subspace_transfer
 python3 -m examples.branch_continuation_transfer
 python3 -m examples.branch_switch_transfer
+python3 -m examples.branch_transposition_transfer
 python3 -m examples.branch_pruning_transfer
 python3 -m examples.branch_diversity_transfer
 python3 -m examples.branch_budget_transfer
@@ -147,6 +148,8 @@ the branch-continuation example uses receipt-bound continuation paths to avoid
 direct target jumps under the same three-call verifier budget;
 the branch-switch example uses receipt-bound switchpoint evidence to avoid
 stale post-switch target branches under the same one-call budget;
+the branch-transposition example uses receipt-bound canonical state signatures
+to avoid duplicate known-bad target branches under the same one-call budget;
 the branch-pruning example uses rejected branch
 receipts to remove known-dead target candidates before verifier-budget allocation; the
 branch-diversity example uses same-family rejects to force coverage of a
@@ -172,7 +175,7 @@ future proposal evidence for a sibling target and
 certifies the memory query that ranks the sibling proposals against a
 same-budget static sibling baseline; the frontier example aggregates the three
 physical certified domains, while the branch-history frontier aggregates the
-forty-one branch-memory stages. See `examples/README.md` and
+forty-two branch-memory stages. See `examples/README.md` and
 `docs/experiment_learnings.md`.
 
 ## Package Layout

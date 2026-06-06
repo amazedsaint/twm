@@ -47,6 +47,7 @@ python3 -m examples.branch_conformal_transfer
 python3 -m examples.branch_active_subspace_transfer
 python3 -m examples.branch_continuation_transfer
 python3 -m examples.branch_switch_transfer
+python3 -m examples.branch_transposition_transfer
 python3 -m examples.branch_pruning_transfer
 python3 -m examples.branch_diversity_transfer
 python3 -m examples.branch_budget_transfer
@@ -189,6 +190,10 @@ branch-switch command adds `trwm.branch_switch_certificate.v1` artifacts that
 bind switch parameter, stale and switched branch ids, source pre-switch
 commit, source stale reject, source switched commit, failed stale target branch,
 and same-budget switched target commit. The
+branch-transposition command adds `trwm.branch_transposition_certificate.v1`
+artifacts that bind canonical state keys, duplicate source rejects,
+non-duplicate source commits, failed duplicate target branches, and
+same-budget non-duplicate target commits. The
 branch-pruning command adds `trwm.branch_pruning_certificate.v1` artifacts
 showing that rejected source branch receipts can prune known-dead target
 candidates before scarce verifier budget is spent. The
@@ -214,7 +219,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the forty-one branch-memory stages into one bounded G1 report. The physical
+the forty-two branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -849,6 +854,28 @@ branch-switching algorithm performance, numerical continuation, or homotopy
 continuation: https://eudml.org/doc/132842 and
 https://research.ibm.com/publications/multiparameter-parallel-search-branch-switching--1
 
+### Branch Transposition Transfer
+
+`examples.branch_transposition_transfer` tests receipt-bound canonical-state
+transposition for source branch reuse. Each domain records a source branch that
+reaches a rejected canonical state and a non-duplicate source branch that
+commits. The static target spends one verifier call on a different action that
+reaches the same rejected canonical state and fails. The transposition-guided
+target spends the same one verifier call on a non-duplicate candidate and
+commits only after fresh hard verification.
+
+Learning: branches of the past can improve exploration when the substrate can
+prove two differently named branches hit the same canonical state. The
+`trwm.branch_transposition_certificate.v1` artifact binds canonical state key,
+source duplicate reject, source alternative commit, static duplicate target
+reject, transposition target commit, branch-selection certificates, and
+same-budget comparison before claiming transposition-guided exploration lift.
+Transposition tables, Zobrist hashing, and duplicate detection are only the
+analogy here; this is not a transposition-table performance result,
+Zobrist-hashing implementation, duplicate-detection algorithm, or graph-search
+scalability result: https://journals.sagepub.com/doi/10.3233/ICG-1990-13203
+and https://aaai.org/Papers/AAAI/2004/AAAI04-108.pdf
+
 ### Branch Pruning Transfer
 
 `examples.branch_pruning_transfer` tests negative branch evidence. Each domain
@@ -950,7 +977,7 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the forty-one branch-history experiments and
+`examples.branch_history_frontier` runs the forty-two branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
@@ -961,7 +988,7 @@ diagnostic probing, residual-template repair, boundary bracketing, source
 consensus, contrastive invariant transfer, trust-region radius transfer, analogical ancestor reuse, certified context selection,
 counterexample refinement,
 conflict-aware query-policy transfer,
-drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, confidence calibration, conformal transfer, active-subspace transfer, continuation transfer, branch-switch transfer, receipt-bound branch pruning, diversity-certified family
+drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, confidence calibration, conformal transfer, active-subspace transfer, continuation transfer, branch-switch transfer, transposition transfer, receipt-bound branch pruning, diversity-certified family
 coverage, branch budget allocation, no-good stop-rule abstention, branch composition, and retained-memory
 influence.
 
@@ -981,7 +1008,7 @@ receipts and fresh target verification, source consensus is admitted only
 through majority receipts plus fresh target verification, contrastive invariants
 are admitted only through positive/negative source receipts plus fresh target
 verification, context selection is certified, failed branches refine retrieval,
-conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, Pareto dominance is certificate-bound, outlier filtering is certificate-bound, source provenance is certificate-bound, source-fragment credit is certificate-bound, source-context matching is certificate-bound, uncertainty-set coverage is certificate-bound, confidence-bin calibration is certificate-bound, nonconformity quantiles are certificate-bound, active-subspace directions are certificate-bound, continuation paths are certificate-bound, switchpoints are certificate-bound, rejected branches prune
+conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, Pareto dominance is certificate-bound, outlier filtering is certificate-bound, source provenance is certificate-bound, source-fragment credit is certificate-bound, source-context matching is certificate-bound, uncertainty-set coverage is certificate-bound, confidence-bin calibration is certificate-bound, nonconformity quantiles are certificate-bound, active-subspace directions are certificate-bound, continuation paths are certificate-bound, switchpoints are certificate-bound, canonical transpositions are certificate-bound, rejected branches prune
 known-dead target candidates, same-family failures force coverage only through
 a certificate, verifier budget is allocated only through a cost-bound
 certificate, branch fragments compose
@@ -1042,6 +1069,11 @@ certificates before claim promotion.
   guarantee:
   https://eudml.org/doc/132842 and
   https://research.ibm.com/publications/multiparameter-parallel-search-branch-switching--1
+- Zobrist-style transposition tables and structured duplicate detection are
+  the canonical-state analogy for branch-transposition transfer, not a
+  graph-search scalability guarantee:
+  https://journals.sagepub.com/doi/10.3233/ICG-1990-13203 and
+  https://aaai.org/Papers/AAAI/2004/AAAI04-108.pdf
 - UCT/MCTS is the planning analogy for spending samples selectively:
   https://doi.org/10.1007/11871842_29
 - Case-based reasoning is the retrieval/reuse/revision analogy for solving a
