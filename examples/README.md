@@ -16,6 +16,7 @@ python3 -m examples.ancestral_branch_exploration
 python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
+python3 -m examples.context_retention_transfer
 python3 -m examples.programmable_world_model_frontier
 ```
 
@@ -28,9 +29,11 @@ reuse and misleading-ancestor rejection. The context-selection command adds
 descriptor-level `trwm.ancestral_context_selection_certificate.v1` artifacts
 before branch-memory reuse. The context-refinement command adds
 `trwm.ancestral_context_refinement_certificate.v1` artifacts that bind a failed
-coarse retrieval to a stricter refined retrieval. The frontier command
-aggregates the three physical certified examples into a cross-domain report and
-bounded G1 claim certificate.
+coarse retrieval to a stricter refined retrieval. The context-retention command
+adds `trwm.ancestral_branch_retention_certificate.v1` artifacts that bind
+committed target branches into a hash-checked future-memory update. The
+frontier command aggregates the three physical certified examples into a
+cross-domain report and bounded G1 claim certificate.
 
 ## Experiments
 
@@ -120,6 +123,20 @@ the next budget-one target pass commits.
 Learning: failed branches of the past should not only train proposal order; they
 should also refine the retrieval policy that decides which past branches are
 allowed to influence exploration.
+
+### Context Retention Transfer
+
+`examples.context_retention_transfer` extends the refinement loop. After each
+domain records a failed coarse target branch, it refines ancestor retrieval,
+commits the refined target branch, and emits an
+`trwm.ancestral_branch_retention_certificate.v1` certificate for adding that
+committed target receipt to memory. A sibling target then uses only the retained
+target context as its ancestor and commits under the same hard verifier.
+
+Learning: the closed loop is now retrieve, fail, refine, commit, retain, then
+improve the next exploration. Retention is still evidence, not authority: the
+sibling branch must pass verification, branch-selection audit, ledger audit,
+replay audit, and rollback audit before commit.
 
 ### Programmable World Model Frontier
 

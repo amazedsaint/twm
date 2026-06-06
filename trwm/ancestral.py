@@ -12,6 +12,7 @@ ANCESTRAL_BRANCH_MEMORY_SNAPSHOT_SCHEMA = "trwm.ancestral_branch_memory_snapshot
 ANCESTRAL_CONTEXT_DESCRIPTOR_SCHEMA = "trwm.ancestral_context_descriptor.v1"
 ANCESTRAL_CONTEXT_SELECTION_CERTIFICATE_SCHEMA = "trwm.ancestral_context_selection_certificate.v1"
 ANCESTRAL_CONTEXT_REFINEMENT_CERTIFICATE_SCHEMA = "trwm.ancestral_context_refinement_certificate.v1"
+ANCESTRAL_BRANCH_RETENTION_CERTIFICATE_SCHEMA = "trwm.ancestral_branch_retention_certificate.v1"
 
 
 @dataclass(frozen=True)
@@ -136,6 +137,50 @@ class AncestralContextRefinementCertificate:
 
 
 @dataclass(frozen=True)
+class AncestralBranchRetentionCertificate:
+    schema_version: str
+    retention_rule_id: str
+    retention_rule_version: str
+    retained_context_id: str
+    retained_context_hash: str
+    pre_memory_snapshot_hash: str
+    post_memory_snapshot_hash: str
+    branch_selection_certificate_hash: str
+    retained_receipt_hashes: tuple[str, ...]
+    committed_receipt_hashes: tuple[str, ...]
+    rejected_receipt_hashes: tuple[str, ...]
+    rolled_back_receipt_hashes: tuple[str, ...]
+    abstained_receipt_hashes: tuple[str, ...]
+    pre_receipt_count: int
+    post_receipt_count: int
+    added_receipt_count: int
+    pre_row_count: int
+    post_row_count: int
+    added_row_count: int
+    retention_reason: str
+    certificate_hash: str = ""
+
+    def __post_init__(self) -> None:
+        if self.schema_version != ANCESTRAL_BRANCH_RETENTION_CERTIFICATE_SCHEMA:
+            raise ValueError(f"invalid ancestral branch retention certificate schema: {self.schema_version}")
+        for field_name in (
+            "retained_receipt_hashes",
+            "committed_receipt_hashes",
+            "rejected_receipt_hashes",
+            "rolled_back_receipt_hashes",
+            "abstained_receipt_hashes",
+        ):
+            object.__setattr__(self, field_name, tuple(getattr(self, field_name)))
+        if not self.certificate_hash:
+            object.__setattr__(self, "certificate_hash", ancestral_branch_retention_certificate_hash(self))
+
+    def without_hash(self) -> dict[str, Any]:
+        data = asdict(self)
+        data.pop("certificate_hash", None)
+        return data
+
+
+@dataclass(frozen=True)
 class AncestralBranchActionStats:
     context: str
     action: str
@@ -223,6 +268,31 @@ class AncestralBranchMemory:
             self._branch_selection_certificate_hashes.append(certificate.certificate_hash)
         for receipt in rows:
             self.update_receipt(receipt)
+
+    def retain_branch(
+        self,
+        retained_context: AncestralContextDescriptor,
+        receipts: Iterable[Receipt],
+        certificate: BranchSelectionCertificate,
+        *,
+        retention_reason: str,
+        retention_rule_id: str = "committed_branch_retention",
+        retention_rule_version: str = "1.0",
+    ) -> AncestralBranchRetentionCertificate:
+        pre_snapshot = self.snapshot()
+        rows = tuple(receipts)
+        self.update_branch(rows, certificate)
+        post_snapshot = self.snapshot()
+        return build_ancestral_branch_retention_certificate(
+            retained_context=retained_context,
+            pre_memory_snapshot=pre_snapshot,
+            post_memory_snapshot=post_snapshot,
+            receipts=rows,
+            branch_selection_certificate=certificate,
+            retention_reason=retention_reason,
+            retention_rule_id=retention_rule_id,
+            retention_rule_version=retention_rule_version,
+        )
 
     def update_receipt(self, receipt: Receipt) -> None:
         if not receipt.static_valid():
@@ -660,6 +730,219 @@ def validate_ancestral_context_refinement_certificate(
         return False
 
 
+def build_ancestral_branch_retention_certificate(
+    *,
+    retained_context: AncestralContextDescriptor,
+    pre_memory_snapshot: AncestralBranchMemorySnapshot,
+    post_memory_snapshot: AncestralBranchMemorySnapshot,
+    receipts: Iterable[Receipt],
+    branch_selection_certificate: BranchSelectionCertificate,
+    retention_reason: str,
+    retention_rule_id: str = "committed_branch_retention",
+    retention_rule_version: str = "1.0",
+) -> AncestralBranchRetentionCertificate:
+    rows = tuple(receipts)
+    if not retention_reason:
+        raise ValueError("retention_reason must be non-empty")
+    if not validate_ancestral_branch_memory_snapshot(pre_memory_snapshot):
+        raise ValueError("pre-memory snapshot must validate before retention")
+    if not validate_ancestral_branch_memory_snapshot(post_memory_snapshot):
+        raise ValueError("post-memory snapshot must validate after retention")
+    if not validate_branch_selection_certificate(branch_selection_certificate):
+        raise ValueError("branch selection certificate must validate before retention")
+    if not audit_branch_selection(rows, branch_selection_certificate):
+        raise ValueError("branch selection certificate must audit against retained receipts")
+    for receipt in rows:
+        if not receipt.static_valid():
+            raise ValueError("retained receipt must be statically valid")
+        context, _ = _receipt_context_action(receipt)
+        if context != retained_context.context_id:
+            raise ValueError("retained receipts must match the retained context")
+    committed_hashes = tuple(receipt.receipt_hash for receipt in rows if receipt.committed)
+    rejected_hashes = tuple(receipt.receipt_hash for receipt in rows if receipt.hard_result.rejected)
+    rolled_back_hashes = tuple(
+        receipt.receipt_hash
+        for receipt in rows
+        if receipt.hard_result.accepted and receipt.commit_decision == "rolled_back_loser"
+    )
+    abstained_hashes = tuple(receipt.receipt_hash for receipt in rows if receipt.hard_result.abstained)
+    certificate = AncestralBranchRetentionCertificate(
+        schema_version=ANCESTRAL_BRANCH_RETENTION_CERTIFICATE_SCHEMA,
+        retention_rule_id=retention_rule_id,
+        retention_rule_version=retention_rule_version,
+        retained_context_id=retained_context.context_id,
+        retained_context_hash=retained_context.descriptor_hash,
+        pre_memory_snapshot_hash=pre_memory_snapshot.snapshot_hash,
+        post_memory_snapshot_hash=post_memory_snapshot.snapshot_hash,
+        branch_selection_certificate_hash=branch_selection_certificate.certificate_hash,
+        retained_receipt_hashes=tuple(receipt.receipt_hash for receipt in rows),
+        committed_receipt_hashes=committed_hashes,
+        rejected_receipt_hashes=rejected_hashes,
+        rolled_back_receipt_hashes=rolled_back_hashes,
+        abstained_receipt_hashes=abstained_hashes,
+        pre_receipt_count=len(pre_memory_snapshot.receipt_hashes),
+        post_receipt_count=len(post_memory_snapshot.receipt_hashes),
+        added_receipt_count=len(rows),
+        pre_row_count=len(pre_memory_snapshot.rows),
+        post_row_count=len(post_memory_snapshot.rows),
+        added_row_count=len(post_memory_snapshot.rows) - len(pre_memory_snapshot.rows),
+        retention_reason=retention_reason,
+    )
+    if not validate_ancestral_branch_retention_certificate(
+        certificate,
+        retained_context=retained_context,
+        pre_memory_snapshot=pre_memory_snapshot,
+        post_memory_snapshot=post_memory_snapshot,
+        receipts=rows,
+        branch_selection_certificate=branch_selection_certificate,
+    ):
+        raise ValueError("branch retention certificate must validate against retained artifacts")
+    return certificate
+
+
+def validate_ancestral_branch_retention_certificate(
+    certificate: AncestralBranchRetentionCertificate,
+    *,
+    retained_context: AncestralContextDescriptor | None = None,
+    pre_memory_snapshot: AncestralBranchMemorySnapshot | None = None,
+    post_memory_snapshot: AncestralBranchMemorySnapshot | None = None,
+    receipts: Iterable[Receipt] | None = None,
+    branch_selection_certificate: BranchSelectionCertificate | None = None,
+) -> bool:
+    try:
+        if certificate.schema_version != ANCESTRAL_BRANCH_RETENTION_CERTIFICATE_SCHEMA:
+            return False
+        if not certificate.retention_rule_id or not certificate.retention_rule_version:
+            return False
+        for value in (
+            certificate.retained_context_hash,
+            certificate.pre_memory_snapshot_hash,
+            certificate.post_memory_snapshot_hash,
+            certificate.branch_selection_certificate_hash,
+        ):
+            if not _is_hash(value):
+                return False
+        if not certificate.retained_context_id:
+            return False
+        hash_groups = (
+            certificate.retained_receipt_hashes,
+            certificate.committed_receipt_hashes,
+            certificate.rejected_receipt_hashes,
+            certificate.rolled_back_receipt_hashes,
+            certificate.abstained_receipt_hashes,
+        )
+        if not certificate.retained_receipt_hashes:
+            return False
+        if any(any(not _is_hash(value) for value in group) for group in hash_groups):
+            return False
+        if len(certificate.retained_receipt_hashes) != len(set(certificate.retained_receipt_hashes)):
+            return False
+        classified = (
+            *certificate.committed_receipt_hashes,
+            *certificate.rejected_receipt_hashes,
+            *certificate.rolled_back_receipt_hashes,
+            *certificate.abstained_receipt_hashes,
+        )
+        if tuple(sorted(classified)) != tuple(sorted(certificate.retained_receipt_hashes)):
+            return False
+        if len(classified) != len(set(classified)):
+            return False
+        if not certificate.committed_receipt_hashes:
+            return False
+        counts = (
+            certificate.pre_receipt_count,
+            certificate.post_receipt_count,
+            certificate.added_receipt_count,
+            certificate.pre_row_count,
+            certificate.post_row_count,
+            certificate.added_row_count,
+        )
+        if any(not isinstance(value, int) or isinstance(value, bool) or value < 0 for value in counts):
+            return False
+        if certificate.added_receipt_count != len(certificate.retained_receipt_hashes):
+            return False
+        if certificate.post_receipt_count != certificate.pre_receipt_count + certificate.added_receipt_count:
+            return False
+        if certificate.post_row_count < certificate.pre_row_count:
+            return False
+        if certificate.added_row_count != certificate.post_row_count - certificate.pre_row_count:
+            return False
+        if not certificate.retention_reason:
+            return False
+        if retained_context is not None:
+            if certificate.retained_context_id != retained_context.context_id:
+                return False
+            if certificate.retained_context_hash != retained_context.descriptor_hash:
+                return False
+        receipt_rows: tuple[Receipt, ...] | None = None
+        if receipts is not None:
+            receipt_rows = tuple(receipts)
+            if tuple(receipt.receipt_hash for receipt in receipt_rows) != certificate.retained_receipt_hashes:
+                return False
+            committed = tuple(receipt.receipt_hash for receipt in receipt_rows if receipt.committed)
+            rejected = tuple(receipt.receipt_hash for receipt in receipt_rows if receipt.hard_result.rejected)
+            rolled_back = tuple(
+                receipt.receipt_hash
+                for receipt in receipt_rows
+                if receipt.hard_result.accepted and receipt.commit_decision == "rolled_back_loser"
+            )
+            abstained = tuple(receipt.receipt_hash for receipt in receipt_rows if receipt.hard_result.abstained)
+            if committed != certificate.committed_receipt_hashes:
+                return False
+            if rejected != certificate.rejected_receipt_hashes:
+                return False
+            if rolled_back != certificate.rolled_back_receipt_hashes:
+                return False
+            if abstained != certificate.abstained_receipt_hashes:
+                return False
+            for receipt in receipt_rows:
+                if not receipt.static_valid():
+                    return False
+                context, _ = _receipt_context_action(receipt)
+                if context != certificate.retained_context_id:
+                    return False
+        if branch_selection_certificate is not None:
+            if not validate_branch_selection_certificate(branch_selection_certificate):
+                return False
+            if branch_selection_certificate.certificate_hash != certificate.branch_selection_certificate_hash:
+                return False
+            if receipt_rows is None:
+                return False
+            if not audit_branch_selection(receipt_rows, branch_selection_certificate):
+                return False
+        if pre_memory_snapshot is not None:
+            if not validate_ancestral_branch_memory_snapshot(pre_memory_snapshot):
+                return False
+            if pre_memory_snapshot.snapshot_hash != certificate.pre_memory_snapshot_hash:
+                return False
+            if len(pre_memory_snapshot.receipt_hashes) != certificate.pre_receipt_count:
+                return False
+            if len(pre_memory_snapshot.rows) != certificate.pre_row_count:
+                return False
+        if post_memory_snapshot is not None:
+            if not validate_ancestral_branch_memory_snapshot(post_memory_snapshot):
+                return False
+            if post_memory_snapshot.snapshot_hash != certificate.post_memory_snapshot_hash:
+                return False
+            if len(post_memory_snapshot.receipt_hashes) != certificate.post_receipt_count:
+                return False
+            if len(post_memory_snapshot.rows) != certificate.post_row_count:
+                return False
+        if pre_memory_snapshot is not None and post_memory_snapshot is not None:
+            expected_receipts = (*pre_memory_snapshot.receipt_hashes, *certificate.retained_receipt_hashes)
+            if post_memory_snapshot.receipt_hashes != expected_receipts:
+                return False
+            expected_certificates = (
+                *pre_memory_snapshot.branch_selection_certificate_hashes,
+                certificate.branch_selection_certificate_hash,
+            )
+            if post_memory_snapshot.branch_selection_certificate_hashes != expected_certificates:
+                return False
+        return certificate.certificate_hash == ancestral_branch_retention_certificate_hash(certificate)
+    except Exception:
+        return False
+
+
 def ancestral_branch_memory_snapshot_hash(snapshot: AncestralBranchMemorySnapshot | Mapping[str, Any]) -> str:
     if isinstance(snapshot, AncestralBranchMemorySnapshot):
         data = snapshot.without_hash()
@@ -693,6 +976,17 @@ def ancestral_context_refinement_certificate_hash(
     certificate: AncestralContextRefinementCertificate | Mapping[str, Any],
 ) -> str:
     if isinstance(certificate, AncestralContextRefinementCertificate):
+        data = certificate.without_hash()
+    else:
+        data = dict(certificate)
+        data.pop("certificate_hash", None)
+    return stable_hash(data)
+
+
+def ancestral_branch_retention_certificate_hash(
+    certificate: AncestralBranchRetentionCertificate | Mapping[str, Any],
+) -> str:
+    if isinstance(certificate, AncestralBranchRetentionCertificate):
         data = certificate.without_hash()
     else:
         data = dict(certificate)

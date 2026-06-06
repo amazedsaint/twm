@@ -133,8 +133,27 @@ set and commits under the same one-call target budget. This is the first local
 evidence that branches of the past can improve exploration policy itself, not
 only candidate order.
 
+The context-retention transfer example adds the next memory transition. After
+refinement commits, the committed target branch is retained with a
+`trwm.ancestral_branch_retention_certificate.v1` artifact that binds the
+pre-memory snapshot hash, post-memory snapshot hash, retained context
+descriptor hash, retained receipt hash, audited branch-selection certificate
+hash, and memory row/receipt deltas. A sibling target then uses the retained
+target context as its only ancestor and commits in all three toy domains under
+the same hard verifier. This turns the loop into:
+
+```text
+retrieve -> fail -> refine -> commit -> retain -> improve sibling exploration
+```
+
+The substrate implication is that world-model memory needs certified mutation,
+not only certified query. A programmable transactional world model should be
+able to prove when a branch becomes reusable future evidence, which memory
+snapshot it entered, and which later exploration was influenced by that
+retained branch.
+
 The boundary remains narrow. This is a deterministic G1 canary inspired by
 experience replay, counterfactual regret evidence, and selective tree-search
 sampling; it is not a statistical exploration algorithm, regret guarantee,
-MCTS implementation, automatic similarity metric, or cross-domain scientific
-discovery result.
+MCTS implementation, automatic similarity metric, CEGAR system, or cross-domain
+scientific discovery result.

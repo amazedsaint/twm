@@ -46,6 +46,7 @@ python3 -m examples.ancestral_branch_exploration
 python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
+python3 -m examples.context_retention_transfer
 python3 -m examples.programmable_world_model_frontier
 ```
 
@@ -56,8 +57,10 @@ and `claim_certificate` JSON; the ancestral branch example adds an
 analogical branch example tests explicit ancestor-context reuse and misleading
 ancestor rejection; the context-selection example certifies which ancestor
 contexts may influence target exploration; the context-refinement example uses
-a rejected target branch to refine ancestor retrieval; the frontier example
-aggregates the three physical certified domains. See `examples/README.md` and
+a rejected target branch to refine ancestor retrieval; the context-retention
+example retains the successful target branch as certified future proposal
+evidence for a sibling target; the frontier example aggregates the three
+physical certified domains. See `examples/README.md` and
 `docs/experiment_learnings.md`.
 
 ## Package Layout
@@ -73,8 +76,9 @@ aggregates the three physical certified domains. See `examples/README.md` and
 - `trwm.branch`: sacred-commit branch runtime, branch-selection certificates,
   verifier-budget abstention, and distributed commit manager.
 - `trwm.ancestral`: receipt-bound ancestral branch memory, candidate ranking
-  from committed/rolled-back/rejected branch history, and hash-checked memory
-  snapshots.
+  from committed/rolled-back/rejected branch history, hash-checked memory
+  snapshots, context selection/refinement certificates, and branch-retention
+  certificates for audited memory updates.
 - `trwm.budget_policy`: receipt-trained verifier-budget planning with exact
   integer-cost subset selection and hash-checked policy snapshots.
 - `trwm.checkpoint`: replay checkpoint certificates for compacting audited

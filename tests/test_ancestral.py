@@ -6,8 +6,10 @@ import unittest
 from trwm.ancestral import (
     AncestralBranchMemory,
     AncestralContextDescriptor,
+    build_ancestral_branch_retention_certificate,
     build_ancestral_context_refinement_certificate,
     build_ancestral_context_selection_certificate,
+    validate_ancestral_branch_retention_certificate,
     validate_ancestral_branch_memory_snapshot,
     validate_ancestral_context_refinement_certificate,
     validate_ancestral_context_selection_certificate,
@@ -219,6 +221,101 @@ class AncestralBranchMemoryTests(unittest.TestCase):
             )
         )
 
+    def test_branch_retention_certificate_binds_memory_delta(self) -> None:
+        engine = TransactionEngine(CounterfactualChoiceAdapter(), ledger=Ledger())
+        outcome = BranchRuntime(engine, CounterfactualChoiceProjector()).step(
+            CounterfactualChoiceState(),
+            make_counterfactual_traces(0),
+        )
+        branch_certificate = build_branch_selection_certificate(outcome.receipts, verifier_call_count=outcome.verifier_calls)
+        memory = AncestralBranchMemory()
+        retained_context = _branch_context(CONTEXT)
+        pre_snapshot = memory.snapshot()
+        memory.update_branch(outcome.receipts, branch_certificate)
+        post_snapshot = memory.snapshot()
+
+        certificate = build_ancestral_branch_retention_certificate(
+            retained_context=retained_context,
+            pre_memory_snapshot=pre_snapshot,
+            post_memory_snapshot=post_snapshot,
+            receipts=outcome.receipts,
+            branch_selection_certificate=branch_certificate,
+            retention_reason="retain_counterfactual_training_branch",
+        )
+
+        self.assertEqual(certificate.retained_context_id, CONTEXT)
+        self.assertEqual(certificate.pre_receipt_count, 0)
+        self.assertEqual(certificate.post_receipt_count, 3)
+        self.assertEqual(certificate.added_receipt_count, 3)
+        self.assertEqual(certificate.pre_row_count, 0)
+        self.assertEqual(certificate.post_row_count, 3)
+        self.assertEqual(certificate.added_row_count, 3)
+        self.assertEqual(len(certificate.committed_receipt_hashes), 1)
+        self.assertEqual(len(certificate.rejected_receipt_hashes), 1)
+        self.assertEqual(len(certificate.rolled_back_receipt_hashes), 1)
+        self.assertTrue(
+            validate_ancestral_branch_retention_certificate(
+                certificate,
+                retained_context=retained_context,
+                pre_memory_snapshot=pre_snapshot,
+                post_memory_snapshot=post_snapshot,
+                receipts=outcome.receipts,
+                branch_selection_certificate=branch_certificate,
+            )
+        )
+
+    def test_memory_retain_branch_returns_valid_certificate(self) -> None:
+        engine = TransactionEngine(CounterfactualChoiceAdapter(), ledger=Ledger())
+        outcome = BranchRuntime(engine, CounterfactualChoiceProjector()).step(
+            CounterfactualChoiceState(),
+            make_counterfactual_traces(0),
+        )
+        branch_certificate = build_branch_selection_certificate(outcome.receipts, verifier_call_count=outcome.verifier_calls)
+        memory = AncestralBranchMemory()
+
+        certificate = memory.retain_branch(
+            _branch_context(CONTEXT),
+            outcome.receipts,
+            branch_certificate,
+            retention_reason="retain_counterfactual_training_branch",
+        )
+
+        self.assertTrue(validate_ancestral_branch_retention_certificate(certificate))
+        self.assertEqual(memory.rank(CONTEXT, ("a_slow", "b_fast", "c_unsafe"))[0], "b_fast")
+
+    def test_branch_retention_certificate_rejects_tampering(self) -> None:
+        engine = TransactionEngine(CounterfactualChoiceAdapter(), ledger=Ledger())
+        outcome = BranchRuntime(engine, CounterfactualChoiceProjector()).step(
+            CounterfactualChoiceState(),
+            make_counterfactual_traces(0),
+        )
+        branch_certificate = build_branch_selection_certificate(outcome.receipts, verifier_call_count=outcome.verifier_calls)
+        memory = AncestralBranchMemory()
+        retained_context = _branch_context(CONTEXT)
+        pre_snapshot = memory.snapshot()
+        memory.update_branch(outcome.receipts, branch_certificate)
+        post_snapshot = memory.snapshot()
+        certificate = build_ancestral_branch_retention_certificate(
+            retained_context=retained_context,
+            pre_memory_snapshot=pre_snapshot,
+            post_memory_snapshot=post_snapshot,
+            receipts=outcome.receipts,
+            branch_selection_certificate=branch_certificate,
+            retention_reason="retain_counterfactual_training_branch",
+        )
+        tampered = replace(certificate, post_memory_snapshot_hash="0" * 64, certificate_hash="")
+
+        self.assertFalse(
+            validate_ancestral_branch_retention_certificate(
+                tampered,
+                retained_context=retained_context,
+                pre_memory_snapshot=pre_snapshot,
+                post_memory_snapshot=post_snapshot,
+                receipts=outcome.receipts,
+                branch_selection_certificate=branch_certificate,
+            )
+        )
+
     def test_snapshot_tampering_fails_validation(self) -> None:
         engine = TransactionEngine(CounterfactualChoiceAdapter(), ledger=Ledger())
         outcome = BranchRuntime(engine, CounterfactualChoiceProjector()).step(
@@ -247,6 +344,17 @@ def _context(context_id: str, *, regime: str) -> AncestralContextDescriptor:
         hard_gate_keys=("clearance", "turn_rate"),
         residual_kinds=("safety_envelope_violation",),
         tags={"regime": regime},
+    )
+
+
+def _branch_context(context_id: str) -> AncestralContextDescriptor:
+    return AncestralContextDescriptor(
+        context_id=context_id,
+        domain="counterfactual_choice",
+        family="route_choice",
+        hard_gate_keys=("risk",),
+        residual_kinds=("risk_limit",),
+        tags={"regime": "toy"},
     )
 
 
