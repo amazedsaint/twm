@@ -32,6 +32,20 @@ python3 -m http.server 8765
 
 Open `http://localhost:8765/html/` for the standalone browser demos.
 
+## Examples
+
+The `examples/` folder contains executable true-substrate experiments for
+robotics, molecular dynamics, and material lattice dynamics:
+
+```sh
+python3 -m examples.robotic_safety_envelope
+python3 -m examples.molecular_dynamics_verlet
+python3 -m examples.material_lattice_metropolis
+```
+
+Each example uses transactional hard verification, receipts, replay audit, and
+rollback audit. See `examples/README.md` and `docs/experiment_learnings.md`.
+
 ## Package Layout
 
 - `trwm.core`: snapshots, typed candidates, verifier results, receipts, ledger,
