@@ -82,9 +82,19 @@ binds report hash, ledger head, receipt hashes, branch-selection certificate
 hashes, static versus learned exploration success, winner-rank improvement,
 hard-gate keys, residual kinds, replay/rollback status, and claim boundary.
 
+The follow-up substrate primitive is `trwm.ancestral`. `AncestralBranchMemory`
+learns only from statically valid receipts, rejects branch updates whose
+`BranchSelectionCertificate` fails validation or receipt audit, deduplicates
+receipt hashes, and emits `trwm.ancestral_branch_memory_snapshot.v1`. That
+snapshot binds the learning weights, receipt hashes, branch-selection
+certificate hashes, per-context action stats, and snapshot hash. The certified
+ancestral branch example now binds this memory snapshot into its exploration
+certificate.
+
 The next programmable transactional world model substrate therefore needs:
 
 - ancestral branch retrieval keyed by typed context,
+- hash-checked ancestral memory snapshots,
 - branch-selection certificate replay before learned ordering is trusted,
 - budget-aware proposal ordering separate from commit authority,
 - residual categories that distinguish unsafe rejects from safe dominated

@@ -28,6 +28,9 @@ class AncestralBranchExplorationExampleTests(unittest.TestCase):
         self.assertEqual(report.total_committed_count, 12)
         self.assertEqual(report.total_rejected_count, 12)
         self.assertEqual(report.total_rolled_back_loser_count, 9)
+        self.assertTrue(report.ancestral_memory_snapshot_valid)
+        self.assertEqual(report.ancestral_memory_row_count, 9)
+        self.assertEqual(report.ancestral_memory_receipt_count, 27)
         self.assertEqual(report.static_budget_success_count, 0)
         self.assertEqual(report.learned_budget_success_count, 3)
         self.assertEqual(report.static_winner_rank_sum, 9)
@@ -45,6 +48,7 @@ class AncestralBranchExplorationExampleTests(unittest.TestCase):
         self.assertEqual(claim.status, "supported")
 
         self.assertEqual(len(certificate.receipt_hashes), report.total_receipt_count)
+        self.assertEqual(certificate.ancestral_memory_snapshot_hash, report.ancestral_memory_snapshot_hash)
         self.assertEqual(evidence.receipt_hashes, certificate.receipt_hashes)
         self.assertEqual(len(certificate.branch_selection_certificate_hashes), 15)
         self.assertEqual(set(evidence.sources), set(ANCESTRAL_BRANCH_SOURCES))
@@ -70,6 +74,8 @@ class AncestralBranchExplorationExampleTests(unittest.TestCase):
         self.assertEqual(report.total_committed_count, 9)
         self.assertEqual(report.total_rejected_count, 9)
         self.assertEqual(report.total_rolled_back_loser_count, 6)
+        self.assertTrue(report.ancestral_memory_snapshot_valid)
+        self.assertEqual(report.ancestral_memory_receipt_count, 18)
         self.assertEqual(report.static_budget_success_count, 0)
         self.assertEqual(report.learned_budget_success_count, 3)
 

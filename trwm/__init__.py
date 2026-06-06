@@ -27,6 +27,14 @@ from .branch import (
     candidate_verifier_cost,
     validate_branch_selection_certificate,
 )
+from .ancestral import (
+    ANCESTRAL_BRANCH_MEMORY_SNAPSHOT_SCHEMA,
+    AncestralBranchActionStats,
+    AncestralBranchMemory,
+    AncestralBranchMemorySnapshot,
+    ancestral_branch_memory_snapshot_hash,
+    validate_ancestral_branch_memory_snapshot,
+)
 from .budget_policy import (
     BUDGET_POLICY_SNAPSHOT_SCHEMA,
     BudgetCandidate,
@@ -318,6 +326,10 @@ from .world_program import (
 
 __all__ = [
     "AdditiveCoupling",
+    "ANCESTRAL_BRANCH_MEMORY_SNAPSHOT_SCHEMA",
+    "AncestralBranchActionStats",
+    "AncestralBranchMemory",
+    "AncestralBranchMemorySnapshot",
     "BlockToken",
     "BRANCH_SELECTION_CERTIFICATE_SCHEMA",
     "BranchOutcome",
@@ -476,6 +488,7 @@ __all__ = [
     "audit_world_program_evidence_bundle",
     "audit_world_program_replay_package",
     "audit_world_program_replay_verification",
+    "ancestral_branch_memory_snapshot_hash",
     "build_projection_manifest",
     "audit_compacted_view",
     "audit_circular_token_log",
@@ -565,6 +578,7 @@ __all__ = [
     "validate_budget_policy_snapshot",
     "validate_branch_selection_certificate",
     "validate_claim_certificate",
+    "validate_ancestral_branch_memory_snapshot",
     "validate_checkpoint",
     "validate_circular_token_log_certificate",
     "validate_domain_manifest",

@@ -65,6 +65,9 @@ example aggregates the three physical certified domains. See `examples/README.md
   deltas into a replayable prefix block plus retained suffix.
 - `trwm.branch`: sacred-commit branch runtime, branch-selection certificates,
   verifier-budget abstention, and distributed commit manager.
+- `trwm.ancestral`: receipt-bound ancestral branch memory, candidate ranking
+  from committed/rolled-back/rejected branch history, and hash-checked memory
+  snapshots.
 - `trwm.budget_policy`: receipt-trained verifier-budget planning with exact
   integer-cost subset selection and hash-checked policy snapshots.
 - `trwm.checkpoint`: replay checkpoint certificates for compacting audited

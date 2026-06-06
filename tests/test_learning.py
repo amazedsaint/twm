@@ -2,7 +2,14 @@ from __future__ import annotations
 
 import unittest
 
-from trwm import AdditiveCoupling, BranchRuntime, CounterfactualRollbackRanker, HyperdimensionalMemory, ReceiptRanker
+from trwm import (
+    AdditiveCoupling,
+    AncestralBranchMemory,
+    BranchRuntime,
+    CounterfactualRollbackRanker,
+    HyperdimensionalMemory,
+    ReceiptRanker,
+)
 from trwm.core import HardVerifierResult, ProposalTrace, TransactionEngine, TypedCandidate
 
 
@@ -30,6 +37,7 @@ class LearningTests(unittest.TestCase):
         self.assertIsNotNone(ReceiptRanker)
         self.assertIsNotNone(CounterfactualRollbackRanker)
         self.assertIsNotNone(HyperdimensionalMemory)
+        self.assertIsNotNone(AncestralBranchMemory)
         self.assertIsNotNone(AdditiveCoupling)
         self.assertIsNotNone(BranchRuntime)
 

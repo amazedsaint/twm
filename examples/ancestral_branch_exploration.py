@@ -21,7 +21,7 @@ from trwm.branch import (
 )
 from trwm.claims import ClaimCertificate, certify_claim, requirement, validate_claim_certificate
 from trwm.core import HardVerifierResult, Ledger, ProposalTrace, Receipt, TransactionEngine, TypedCandidate, stable_hash
-from trwm.learning import CounterfactualRollbackRanker
+from trwm.ancestral import AncestralBranchMemory, validate_ancestral_branch_memory_snapshot
 
 
 ANCESTRAL_BRANCH_EXPLORATION_CERTIFICATE_SCHEMA = "trwm.ancestral_branch_exploration_certificate.v1"
@@ -96,6 +96,10 @@ class AncestralBranchExplorationReport:
     total_committed_count: int
     total_rejected_count: int
     total_rolled_back_loser_count: int
+    ancestral_memory_snapshot_hash: str
+    ancestral_memory_snapshot_valid: bool
+    ancestral_memory_row_count: int
+    ancestral_memory_receipt_count: int
     static_budget_success_count: int
     learned_budget_success_count: int
     static_winner_rank_sum: int
@@ -127,6 +131,7 @@ class AncestralBranchExplorationCertificate:
     ledger_head: str
     receipt_hashes: tuple[str, ...]
     branch_selection_certificate_hashes: tuple[str, ...]
+    ancestral_memory_snapshot_hash: str
     static_budget_success_count: int
     learned_budget_success_count: int
     static_winner_rank_sum: int
@@ -360,7 +365,7 @@ def _run_ancestral_branch_exploration(
     state = seed
     engine = TransactionEngine(AncestralExplorationAdapter(), ledger=Ledger())
     runtime = BranchRuntime(engine, AncestralExplorationProjector(), HighestUtilityRanker())
-    past_branch_ranker = CounterfactualRollbackRanker()
+    past_branch_memory = AncestralBranchMemory()
     rows: list[AncestralDomainReport] = []
     branch_certificate_pairs: list[tuple[tuple[Receipt, ...], BranchSelectionCertificate]] = []
 
@@ -371,14 +376,13 @@ def _run_ancestral_branch_exploration(
             outcome = runtime.step(state, _make_traces(spec, phase="train", episode=episode, actions=spec.actions))
             state = normalize_state(outcome.state)
             training_receipts.extend(outcome.receipts)
-            for receipt in outcome.receipts:
-                past_branch_ranker.update(receipt)
             certificate = build_branch_selection_certificate(outcome.receipts, verifier_call_count=outcome.verifier_calls)
             branch_certificate_pairs.append((tuple(outcome.receipts), certificate))
             training_cert_hashes.append(certificate.certificate_hash)
+            past_branch_memory.update_branch(outcome.receipts, certificate)
 
         action_tokens = tuple(str(action["action"]) for action in spec.actions)
-        learned_order = tuple(str(action) for action in past_branch_ranker.rank(spec.domain_id, action_tokens))
+        learned_order = tuple(str(action) for action in past_branch_memory.rank(spec.domain_id, action_tokens))
         committed_action = spec.committed_action
 
         static_outcome = runtime.step(
@@ -427,6 +431,7 @@ def _run_ancestral_branch_exploration(
             )
         )
 
+    memory_snapshot = past_branch_memory.snapshot()
     all_receipts = tuple(engine.ledger.rows)
     all_branch_certificates_valid = all(
         validate_branch_selection_certificate(certificate) for _, certificate in branch_certificate_pairs
@@ -457,6 +462,10 @@ def _run_ancestral_branch_exploration(
         total_committed_count=sum(1 for receipt in all_receipts if receipt.committed),
         total_rejected_count=sum(1 for receipt in all_receipts if receipt.hard_result.rejected),
         total_rolled_back_loser_count=sum(1 for receipt in all_receipts if receipt.commit_decision == "rolled_back_loser"),
+        ancestral_memory_snapshot_hash=memory_snapshot.snapshot_hash,
+        ancestral_memory_snapshot_valid=validate_ancestral_branch_memory_snapshot(memory_snapshot),
+        ancestral_memory_row_count=len(memory_snapshot.rows),
+        ancestral_memory_receipt_count=len(memory_snapshot.receipt_hashes),
         static_budget_success_count=sum(1 for row in rows if row.static_budget_committed),
         learned_budget_success_count=sum(1 for row in rows if row.learned_budget_committed),
         static_winner_rank_sum=sum(row.static_winner_rank for row in rows),
@@ -490,6 +499,7 @@ def _run_ancestral_branch_exploration(
         report,
         receipt_hashes=tuple(receipt.receipt_hash for receipt in all_receipts),
         branch_selection_certificate_hashes=tuple(certificate.certificate_hash for _, certificate in branch_certificate_pairs),
+        ancestral_memory_snapshot_hash=memory_snapshot.snapshot_hash,
     )
     evidence_certificate = build_example_evidence_certificate(
         report,
@@ -523,6 +533,7 @@ def build_ancestral_branch_exploration_certificate(
     *,
     receipt_hashes: tuple[str, ...],
     branch_selection_certificate_hashes: tuple[str, ...],
+    ancestral_memory_snapshot_hash: str,
 ) -> AncestralBranchExplorationCertificate:
     return AncestralBranchExplorationCertificate(
         schema_version=ANCESTRAL_BRANCH_EXPLORATION_CERTIFICATE_SCHEMA,
@@ -535,6 +546,7 @@ def build_ancestral_branch_exploration_certificate(
         ledger_head=report.ledger_head,
         receipt_hashes=receipt_hashes,
         branch_selection_certificate_hashes=branch_selection_certificate_hashes,
+        ancestral_memory_snapshot_hash=ancestral_memory_snapshot_hash,
         static_budget_success_count=report.static_budget_success_count,
         learned_budget_success_count=report.learned_budget_success_count,
         static_winner_rank_sum=report.static_winner_rank_sum,
@@ -570,6 +582,8 @@ def validate_ancestral_branch_exploration_certificate(
             return False
         if any(not _is_hash(value) for value in certificate.branch_selection_certificate_hashes):
             return False
+        if not _is_hash(certificate.ancestral_memory_snapshot_hash):
+            return False
         if not certificate.receipt_hashes or not certificate.branch_selection_certificate_hashes:
             return False
         if certificate.static_budget_success_count != 0:
@@ -598,6 +612,10 @@ def validate_ancestral_branch_exploration_certificate(
             if report.domain_count != certificate.domain_count or report.domains != certificate.domains:
                 return False
             if report.ledger_head != certificate.ledger_head:
+                return False
+            if report.ancestral_memory_snapshot_hash != certificate.ancestral_memory_snapshot_hash:
+                return False
+            if not report.ancestral_memory_snapshot_valid:
                 return False
             if example_report_hash(report) != certificate.report_hash:
                 return False
@@ -662,6 +680,12 @@ def _build_claim_certificate(
                 "evidence_certificate_valid",
                 validate_example_evidence_certificate(evidence_certificate, report),
                 certificate_hash=evidence_certificate.certificate_hash,
+            ),
+            requirement(
+                "ancestral_memory_snapshot_bound",
+                report.ancestral_memory_snapshot_valid
+                and report.ancestral_memory_snapshot_hash == exploration_certificate.ancestral_memory_snapshot_hash,
+                snapshot_hash=report.ancestral_memory_snapshot_hash,
             ),
             requirement("all_branch_selection_certificates_valid", report.all_branch_selection_certificates_valid),
             requirement("all_branch_selection_audits_valid", report.all_branch_selection_audits_valid),
