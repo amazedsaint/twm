@@ -10,6 +10,7 @@ from examples.branch_history_frontier import (
     tamper_first_child_primary_certificate,
 )
 from examples.context_query_policy_transfer import run_context_query_policy_transfer_certified_experiment
+from examples.context_drift_quarantine import run_context_drift_quarantine_certified_experiment
 from examples.context_refinement_transfer import run_context_refinement_transfer_certified_experiment
 from examples.context_retention_transfer import run_context_retention_transfer_certified_experiment
 from examples.context_selection_transfer import run_context_selection_transfer_certified_experiment
@@ -23,7 +24,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         claim = result.claim_certificate
 
         self.assertEqual(report.schema_version, "trwm.example.branch_history_frontier.v1")
-        self.assertEqual(report.stage_count, 6)
+        self.assertEqual(report.stage_count, 7)
         self.assertEqual(
             report.child_experiment_ids,
             (
@@ -32,6 +33,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
                 "context_selection_transfer",
                 "context_refinement_transfer",
                 "context_query_policy_transfer",
+                "context_drift_quarantine",
                 "context_retention_transfer",
             ),
         )
@@ -43,19 +45,22 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
                 "certified_context_selection",
                 "counterexample_refinement",
                 "heldout_query_policy_conflict",
+                "context_drift_quarantine",
                 "retained_memory_influence",
             ),
         )
         self.assertTrue(report.all_evidence_valid)
         self.assertTrue(report.all_claims_supported)
         self.assertTrue(report.all_primary_certificates_valid)
-        self.assertEqual(report.total_receipt_count, 219)
-        self.assertEqual(report.total_committed_count, 78)
-        self.assertEqual(report.total_rejected_count, 63)
+        self.assertEqual(report.total_receipt_count, 243)
+        self.assertEqual(report.total_committed_count, 87)
+        self.assertEqual(report.total_rejected_count, 69)
         self.assertEqual(report.total_invalid_commit_count, 0)
-        self.assertEqual(report.same_budget_stage_count, 6)
+        self.assertEqual(report.same_budget_stage_count, 7)
         self.assertEqual(report.branch_conflict_certificate_count, 6)
         self.assertEqual(report.query_policy_certificate_count, 6)
+        self.assertEqual(report.drift_quarantine_certificate_count, 3)
+        self.assertEqual(report.quarantined_context_count, 3)
         self.assertEqual(report.retention_certificate_count, 3)
         self.assertEqual(report.influence_certificate_count, 3)
         self.assertTrue(all(row.same_budget_comparison for row in report.rows))
@@ -69,6 +74,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
             run_context_selection_transfer_certified_experiment(),
             run_context_refinement_transfer_certified_experiment(),
             run_context_query_policy_transfer_certified_experiment(),
+            run_context_drift_quarantine_certified_experiment(),
             run_context_retention_transfer_certified_experiment(),
         )
         result = build_branch_history_frontier_result(tamper_first_child_primary_certificate(children))

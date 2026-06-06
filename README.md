@@ -47,6 +47,7 @@ python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
 python3 -m examples.context_query_policy_transfer
+python3 -m examples.context_drift_quarantine
 python3 -m examples.context_retention_transfer
 python3 -m examples.branch_history_frontier
 python3 -m examples.programmable_world_model_frontier
@@ -62,12 +63,13 @@ contexts may influence target exploration; the context-refinement example uses
 a rejected target branch to refine ancestor retrieval; the context-query-policy
 example applies that refined retrieval policy to held-out sibling targets
 against a stale-query baseline and certifies the conflicting committed source
-evidence it overrides; the context-retention example retains the successful
+evidence it overrides; the context-drift example quarantines old-epoch branch
+evidence before reuse; the context-retention example retains the successful
 target branch as certified future proposal evidence for a sibling target and
 certifies the memory query that ranks the sibling proposals against a
 same-budget static sibling baseline; the frontier example aggregates the three
 physical certified domains, while the branch-history frontier aggregates the
-six branch-memory stages. See `examples/README.md` and
+seven branch-memory stages. See `examples/README.md` and
 `docs/experiment_learnings.md`.
 
 ## Package Layout

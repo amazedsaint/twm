@@ -17,6 +17,7 @@ python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
 python3 -m examples.context_query_policy_transfer
+python3 -m examples.context_drift_quarantine
 python3 -m examples.context_retention_transfer
 python3 -m examples.branch_history_frontier
 python3 -m examples.programmable_world_model_frontier
@@ -36,7 +37,9 @@ command adds `trwm.context_query_policy_certificate.v1` artifacts showing that
 the refined retrieval policy improves held-out sibling exploration against a
 stale-query baseline under the same one-call verifier budget, plus
 `trwm.context_branch_conflict_certificate.v1` artifacts that bind the committed
-but misleading source evidence the refined policy overrides. The
+but misleading source evidence the refined policy overrides. The context-drift
+command adds `trwm.context_drift_quarantine_certificate.v1` artifacts that bind
+old-epoch branch evidence quarantine before target reuse. The
 context-retention command adds `trwm.ancestral_branch_retention_certificate.v1`
 artifacts that bind committed target branches into a hash-checked future-memory
 update, plus
@@ -46,7 +49,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the six branch-memory stages into one bounded G1 report. The physical frontier
+the seven branch-memory stages into one bounded G1 report. The physical frontier
 command aggregates the three physical certified examples into a cross-domain
 report and bounded G1 claim certificate.
 
@@ -159,6 +162,20 @@ source receipts committed the stale unsafe action, the calibration and sibling
 targets rejected it, and the refined policy committed the target action at the
 same budget.
 
+### Context Drift Quarantine
+
+`examples.context_drift_quarantine` tests stale branch memory. Each domain first
+records an old-epoch source branch where an action committed, then applies that
+stale memory to a current target and fails under one verifier call. After a
+current-epoch source branch is recorded, an epoch-aware selection certificate
+quarantines the old context and the target commits under the same one-call
+budget.
+
+Learning: past branches need validity scope. A committed receipt is useful
+evidence only when its context tags still match the target; otherwise the
+transactional world model needs a quarantine certificate before memory can
+influence exploration.
+
 ### Context Retention Transfer
 
 `examples.context_retention_transfer` extends the refinement loop. After each
@@ -182,18 +199,18 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the six branch-history experiments and
+`examples.branch_history_frontier` runs the seven branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
-ordering through conflict-aware query-policy transfer and retained-memory
-influence.
+ordering through conflict-aware query-policy transfer, drift quarantine, and
+retained-memory influence.
 
 Learning: the current branch-history direction is only coherent when every
 stage validates: raw past branches reorder proposals, explicit ancestor reuse is
 bounded, context selection is certified, failed branches refine retrieval,
-conflicts are certificate-bound, and retained memory is compared against a
-same-budget baseline.
+conflicts are certificate-bound, drift is quarantined, and retained memory is
+compared against a same-budget baseline.
 
 ### Programmable World Model Frontier
 

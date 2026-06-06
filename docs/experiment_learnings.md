@@ -152,6 +152,17 @@ artifact before it is treated as reusable exploration improvement on future
 contexts, and contradictory past evidence should be resolved by a certificate
 rather than by raw memory score alone.
 
+The context-drift quarantine example adds a validity-scope check. Each domain
+records an old-epoch source branch whose committed action becomes stale for the
+current target. A stale query reuses that old branch and fails under one
+verifier call. An epoch-aware selection certificate then quarantines the old
+context, selects current-compatible branch evidence, and commits under the same
+one-call budget. The new `trwm.context_drift_quarantine_certificate.v1` artifact
+binds stale source commits, current source commits, stale target rejects,
+current target commits, selected/quarantined context ids, and the quarantine
+reason. The substrate implication is that memory needs explicit validity scope:
+old branches should not influence exploration just because they once committed.
+
 The context-retention transfer example adds the next memory transition. After
 refinement commits, the committed target branch is retained with a
 `trwm.ancestral_branch_retention_certificate.v1` artifact that binds the
@@ -181,15 +192,15 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the six local branch-memory
+The branch-history frontier report now aggregates the seven local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
 receipt-bound ordering, analogical ancestor reuse, certified context selection,
-counterexample refinement, conflict-aware query-policy transfer, and retained
-memory influence. This changes the design posture from isolated demos to a
-staged substrate map: each branch-history capability must expose its own
-certificate, and later stages are only meaningful if earlier evidence still
-validates.
+counterexample refinement, conflict-aware query-policy transfer, drift
+quarantine, and retained memory influence. This changes the design posture from
+isolated demos to a staged substrate map: each branch-history capability must
+expose its own certificate, and later stages are only meaningful if earlier
+evidence still validates.
 
 The boundary remains narrow. This is a deterministic G1 canary inspired by
 experience replay, counterfactual regret evidence, and selective tree-search
