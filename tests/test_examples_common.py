@@ -15,7 +15,7 @@ from trwm.core import GENESIS_HEAD, stable_hash
 class DummyReport:
     schema_version: str = "trwm.example.dummy.v1"
     experiment_id: str = "dummy"
-    receipt_count: int = 1
+    receipt_count: int = 2
 
 
 class TestExampleEvidenceCertificate(unittest.TestCase):
@@ -82,6 +82,29 @@ class TestExampleEvidenceCertificate(unittest.TestCase):
             rollback_audit_ok=True,
             ledger_audit_ok=True,
             invalid_commit_count=1,
+            hard_gate_keys=("gate",),
+            residual_kinds=("residual",),
+            claim_boundary="G1 dummy boundary",
+            sources=("https://example.com/source",),
+        )
+
+        self.assertFalse(validate_example_evidence_certificate(certificate, report))
+
+    def test_report_receipt_count_mismatch_fails(self) -> None:
+        report = DummyReport(receipt_count=3)
+        certificate = build_example_evidence_certificate(
+            report,
+            domain="dummy",
+            verifier_id="dummy_verifier",
+            verifier_version="1.0",
+            ledger_head=GENESIS_HEAD,
+            receipt_hashes=(stable_hash({"receipt": 1}), stable_hash({"receipt": 2})),
+            committed_count=1,
+            rejected_count=1,
+            replay_audit_ok=True,
+            rollback_audit_ok=True,
+            ledger_audit_ok=True,
+            invalid_commit_count=0,
             hard_gate_keys=("gate",),
             residual_kinds=("residual",),
             claim_boundary="G1 dummy boundary",

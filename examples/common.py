@@ -138,6 +138,8 @@ def validate_example_evidence_certificate(certificate: ExampleEvidenceCertificat
                 return False
             if example_report_hash(report) != certificate.report_hash:
                 return False
+            if not _report_fields_match_certificate(report_data, certificate):
+                return False
         if not _nonempty_string(certificate.verifier_id) or not _nonempty_string(certificate.verifier_version):
             return False
         if not _is_hash(certificate.ledger_head):
@@ -192,6 +194,27 @@ def _is_hash(value: str) -> bool:
 
 def _nonempty_string(value: Any) -> bool:
     return isinstance(value, str) and bool(value)
+
+
+def _report_fields_match_certificate(report_data: Mapping[str, Any], certificate: ExampleEvidenceCertificate) -> bool:
+    exact_fields = (
+        "ledger_head",
+        "receipt_count",
+        "committed_count",
+        "rejected_count",
+        "invalid_commit_count",
+        "replay_audit_ok",
+        "rollback_audit_ok",
+        "ledger_audit_ok",
+        "verifier_id",
+        "verifier_version",
+    )
+    for field_name in exact_fields:
+        if field_name in report_data and report_data[field_name] != getattr(certificate, field_name):
+            return False
+    if "receipt_hashes" in report_data and tuple(report_data["receipt_hashes"]) != certificate.receipt_hashes:
+        return False
+    return True
 
 
 def _unique_sorted_nonempty_strings(values: tuple[str, ...]) -> tuple[str, ...]:
