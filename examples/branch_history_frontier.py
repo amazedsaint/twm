@@ -88,6 +88,10 @@ from examples.branch_active_subspace_transfer import (
     run_branch_active_subspace_transfer_certified_experiment,
     validate_branch_active_subspace_transfer_certificate,
 )
+from examples.branch_continuation_transfer import (
+    run_branch_continuation_transfer_certified_experiment,
+    validate_branch_continuation_transfer_certificate,
+)
 from examples.branch_consensus_transfer import (
     run_branch_consensus_transfer_certified_experiment,
     validate_branch_consensus_transfer_certificate,
@@ -202,6 +206,7 @@ BRANCH_HISTORY_FRONTIER_SOURCES = (
     "https://arxiv.org/abs/1706.04599",
     "https://arxiv.org/abs/1604.04173",
     "https://doi.org/10.1137/1.9781611973860",
+    "https://doi.org/10.1137/1.9780898719154",
     "https://doi.org/10.1109/4235.996017",
     "https://doi.org/10.1145/358669.358692",
     "https://doi.org/10.1145/357172.357176",
@@ -214,7 +219,7 @@ BRANCH_HISTORY_FRONTIER_CLAIM_BOUNDARY = (
     "prerequisite ordering, curriculum sequencing, regime-conditioned contingency reuse, hindsight goal relabeling, receipt-bound "
     "field intervention, diagnostic probing, residual-template repair, boundary bracketing, source consensus, "
     "contrastive invariant transfer, context selection, retrieval refinement, query-policy reuse, conflict resolution, "
-    "drift quarantine, recency-weighted source freshness, restart-anchor backtracking, symmetry-transform transfer, pairwise-constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, calibration transfer, conformal transfer, active-subspace transfer, branch pruning, branch diversity, budget allocation, trust-region radius transfer, "
+    "drift quarantine, recency-weighted source freshness, restart-anchor backtracking, symmetry-transform transfer, pairwise-constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, calibration transfer, conformal transfer, active-subspace transfer, continuation transfer, branch pruning, branch diversity, budget allocation, trust-region radius transfer, "
     "stop-rule abstention, branch composition, and retained-memory influence. "
     "It is not a statistical exploration algorithm, regret guarantee, MCTS result, contextual-bandit "
     "result, Hindsight Experience Replay result, causal inference result, do-calculus result, Bayesian "
@@ -228,7 +233,8 @@ BRANCH_HISTORY_FRONTIER_CLAIM_BOUNDARY = (
     "distributional robustness, neural-network calibration, statistical calibration, probability "
     "estimation, model reliability assurance, conformal prediction, distribution-free coverage, "
     "conditional coverage, uncertainty quantification, active-subspace discovery, dimensionality-reduction "
-    "performance, optimization result, or scientific-discovery claim."
+    "performance, optimization result, numerical continuation, homotopy continuation, nonlinear root "
+    "finding, path-following performance, or scientific-discovery claim."
 )
 
 
@@ -321,6 +327,8 @@ class BranchHistoryFrontierReport:
     conformal_success_count: int
     branch_active_subspace_certificate_count: int
     active_subspace_success_count: int
+    branch_continuation_certificate_count: int
+    continuation_success_count: int
     branch_pruning_certificate_count: int
     pruned_action_count: int
     branch_diversity_certificate_count: int
@@ -379,6 +387,7 @@ def run_branch_history_frontier_experiment() -> BranchHistoryFrontierResult:
             run_branch_calibration_transfer_certified_experiment(),
             run_branch_conformal_transfer_certified_experiment(),
             run_branch_active_subspace_transfer_certified_experiment(),
+            run_branch_continuation_transfer_certified_experiment(),
             run_branch_pruning_transfer_certified_experiment(),
             run_branch_diversity_transfer_certified_experiment(),
             run_branch_budget_transfer_certified_experiment(),
@@ -471,6 +480,8 @@ def build_branch_history_frontier_result(
         conformal_success_count=_metric_for(children, "branch_conformal_transfer", "conformal_success_count"),
         branch_active_subspace_certificate_count=_metric(children, "branch_active_subspace_certificate_count"),
         active_subspace_success_count=_metric_for(children, "branch_active_subspace_transfer", "active_subspace_success_count"),
+        branch_continuation_certificate_count=_metric(children, "branch_continuation_certificate_count"),
+        continuation_success_count=_metric_for(children, "branch_continuation_transfer", "continuation_success_count"),
         branch_pruning_certificate_count=_metric(children, "branch_pruning_certificate_count"),
         pruned_action_count=_metric(children, "pruned_action_count"),
         branch_diversity_certificate_count=_metric(children, "branch_diversity_certificate_count"),
@@ -499,10 +510,10 @@ def build_branch_history_frontier_result(
             "provenance-guard transfer twenty-seventh, credit-assignment transfer twenty-eighth, "
             "propensity-match transfer twenty-ninth, robustness transfer thirtieth, "
             "calibration transfer thirty-first, conformal transfer thirty-second, "
-            "active-subspace transfer thirty-third, receipt-bound branch pruning thirty-fourth, "
-            "diversity-certified family coverage thirty-fifth, budget-allocation transfer thirty-sixth, "
-            "no-good stop-rule abstention thirty-seventh, branch composition thirty-eighth, and "
-            "retained-memory influence with matched ablation thirty-ninth."
+            "active-subspace transfer thirty-third, continuation transfer thirty-fourth, "
+            "receipt-bound branch pruning thirty-fifth, diversity-certified family coverage thirty-sixth, "
+            "budget-allocation transfer thirty-seventh, no-good stop-rule abstention thirty-eighth, "
+            "branch composition thirty-ninth, and retained-memory influence with matched ablation fortieth."
         ),
     )
     claim = certify_claim(
@@ -510,7 +521,7 @@ def build_branch_history_frontier_result(
         claim_text=(
             "The certified branch-history examples identify a local G1 substrate path where branches of "
             "the past improve exploration only through audited proposal ordering, selection, refinement, "
-            "query-policy, conflict-resolution, drift-quarantine, recency weighting, restart-anchor backtracking, symmetry-transform transfer, pairwise-constraint transfer, confidence-bound support, Pareto-front transfer, outlier filtering, provenance guarding, credit assignment, propensity matching, robustness transfer, confidence calibration, nonconformity quantiles, active-subspace direction filters, pruning, diversity, budget-allocation, "
+            "query-policy, conflict-resolution, drift-quarantine, recency weighting, restart-anchor backtracking, symmetry-transform transfer, pairwise-constraint transfer, confidence-bound support, Pareto-front transfer, outlier filtering, provenance guarding, credit assignment, propensity matching, robustness transfer, confidence calibration, nonconformity quantiles, active-subspace direction filters, continuation paths, pruning, diversity, budget-allocation, "
             "counterfactual accepted-loser reuse, option-family abstraction, prerequisite ordering, "
             "regime-conditioned contingency reuse, hindsight goal relabeling, field intervention, diagnostic "
             "probing, residual-template repair, boundary bracketing, source consensus, contrastive invariant transfer, "
@@ -519,7 +530,7 @@ def build_branch_history_frontier_result(
         evidence_grade="G1",
         scope="branch_history_frontier",
         requirements=(
-            requirement("exactly_thirty_nine_branch_history_stages", report.stage_count == 39),
+            requirement("exactly_forty_branch_history_stages", report.stage_count == 40),
             requirement(
                 "expected_child_experiments",
                 set(report.child_experiment_ids)
@@ -557,6 +568,7 @@ def build_branch_history_frontier_result(
                     "branch_calibration_transfer",
                     "branch_conformal_transfer",
                     "branch_active_subspace_transfer",
+                    "branch_continuation_transfer",
                     "branch_pruning_transfer",
                     "branch_diversity_transfer",
                     "branch_budget_transfer",
@@ -679,6 +691,10 @@ def build_branch_history_frontier_result(
                 "branch_active_subspace_certificates_present",
                 report.branch_active_subspace_certificate_count == 3 and report.active_subspace_success_count == 3,
             ),
+            requirement(
+                "branch_continuation_certificates_present",
+                report.branch_continuation_certificate_count == 3 and report.continuation_success_count == 3,
+            ),
             requirement("branch_pruning_certificates_present", report.branch_pruning_certificate_count == 3 and report.pruned_action_count == 6),
             requirement("branch_diversity_certificates_present", report.branch_diversity_certificate_count == 3 and report.diverse_family_count == 3),
             requirement("branch_budget_certificates_present", report.branch_budget_certificate_count == 3 and report.static_abstain_count == 3),
@@ -754,6 +770,8 @@ def build_branch_history_frontier_result(
             "conformal_success_count": report.conformal_success_count,
             "branch_active_subspace_certificate_count": report.branch_active_subspace_certificate_count,
             "active_subspace_success_count": report.active_subspace_success_count,
+            "branch_continuation_certificate_count": report.branch_continuation_certificate_count,
+            "continuation_success_count": report.continuation_success_count,
             "branch_pruning_certificate_count": report.branch_pruning_certificate_count,
             "pruned_action_count": report.pruned_action_count,
             "branch_diversity_certificate_count": report.branch_diversity_certificate_count,
@@ -875,6 +893,8 @@ def _primary_certificate(child: CertifiedExampleResult) -> Any:
         return child.branch_conformal_transfer_certificate
     if experiment_id == "branch_active_subspace_transfer":
         return child.branch_active_subspace_transfer_certificate
+    if experiment_id == "branch_continuation_transfer":
+        return child.branch_continuation_transfer_certificate
     if experiment_id == "branch_pruning_transfer":
         return child.branch_pruning_transfer_certificate
     if experiment_id == "branch_diversity_transfer":
@@ -980,6 +1000,11 @@ def _primary_certificate_valid(child: CertifiedExampleResult) -> bool:
     if experiment_id == "branch_active_subspace_transfer":
         return validate_branch_active_subspace_transfer_certificate(
             child.branch_active_subspace_transfer_certificate,
+            child.report,
+        )
+    if experiment_id == "branch_continuation_transfer":
+        return validate_branch_continuation_transfer_certificate(
+            child.branch_continuation_transfer_certificate,
             child.report,
         )
     if experiment_id == "branch_pruning_transfer":
@@ -1296,6 +1321,15 @@ def _stage_fields(child: CertifiedExampleResult) -> tuple[str, str, str, str, bo
             f"active-subspace certificates {report.branch_active_subspace_certificate_count}",
             True,
             "active-direction projection certificates before low-rank proposal filtering",
+        )
+    if experiment_id == "branch_continuation_transfer":
+        return (
+            "receipt_bound_continuation_path",
+            f"direct-jump target commits {report.static_success_count}/{report.domain_count}",
+            f"continuation target finals commit {report.continuation_success_count}/{report.domain_count}",
+            f"continuation certificates {report.branch_continuation_certificate_count}",
+            True,
+            "continuation-path certificates before direct target jump filtering",
         )
     if experiment_id == "branch_composition_transfer":
         return (

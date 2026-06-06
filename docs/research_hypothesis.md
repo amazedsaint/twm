@@ -183,6 +183,10 @@ This repository currently targets `G1` evidence:
   receipts, source orthogonal rejects, static target rejects, active-subspace
   target commits, and same-budget verifier-call evidence before low-rank source
   directions can filter target proposals,
+- branch-continuation certificates that bind lambda schedules, max path steps,
+  source continuation receipts, source direct-jump rejects, static direct-jump
+  target rejects, continuation target commits, and same-budget verifier-call
+  evidence before path schedules can filter direct target jumps,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can
@@ -711,6 +715,8 @@ search.
   https://arxiv.org/abs/1604.04173
 - Constantine, Active Subspaces: Emerging Ideas for Dimension Reduction in
   Parameter Studies: https://doi.org/10.1137/1.9781611973860
+- Allgower and Georg, Introduction to Numerical Continuation Methods:
+  https://doi.org/10.1137/1.9780898719154
 - ISO/IEC/IEEE 15026-2 assurance case structure and terminology:
   https://standards.iteh.ai/catalog/standards/iso/4734d411-2bff-428f-8f4a-164859f171b8/iso-iec-ieee-15026-2-2022
 - OpenTelemetry Semantic Conventions:

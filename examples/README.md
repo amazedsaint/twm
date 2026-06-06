@@ -45,6 +45,7 @@ python3 -m examples.branch_robustness_transfer
 python3 -m examples.branch_calibration_transfer
 python3 -m examples.branch_conformal_transfer
 python3 -m examples.branch_active_subspace_transfer
+python3 -m examples.branch_continuation_transfer
 python3 -m examples.branch_pruning_transfer
 python3 -m examples.branch_diversity_transfer
 python3 -m examples.branch_budget_transfer
@@ -179,6 +180,10 @@ branch-active-subspace command adds
 orthogonal basis vectors, projection threshold, source active-direction
 commits, source orthogonal reject, failed orthogonal target replay, and
 same-budget active-direction target commit. The
+branch-continuation command adds
+`trwm.branch_continuation_certificate.v1` artifacts that bind lambda schedules,
+max path step, source continuation commits, source direct-jump reject, failed
+same-budget direct target jumps, and verified continuation target commits. The
 branch-pruning command adds `trwm.branch_pruning_certificate.v1` artifacts
 showing that rejected source branch receipts can prune known-dead target
 candidates before scarce verifier budget is spent. The
@@ -204,7 +209,7 @@ context-retention report also emits
 `trwm.context_retention_influence_ablation_certificate.v1` artifacts comparing
 the static sibling baseline with the influence-ranked sibling branch under the
 same one-call verifier budget. The branch-history frontier command aggregates
-the thirty-nine branch-memory stages into one bounded G1 report. The physical
+the forty branch-memory stages into one bounded G1 report. The physical
 frontier command aggregates the three physical certified examples into a
 cross-domain report and bounded G1 claim certificate.
 
@@ -798,6 +803,26 @@ here; this is not active-subspace discovery, dimensionality-reduction
 performance, optimization, or uncertainty quantification:
 https://doi.org/10.1137/1.9781611973860
 
+### Branch Continuation Transfer
+
+`examples.branch_continuation_transfer` tests receipt-bound continuation paths
+for source branch reuse. Each domain records three committed source
+continuation steps along a lambda schedule and one rejected source direct jump.
+The static target spends the same three verifier calls on direct jump proposals
+and commits nothing. The continuation target spends three verifier calls on the
+receipt-bound intermediate path and commits each step after fresh hard
+verification.
+
+Learning: branches of the past can improve exploration by shaping the path to a
+hard target, not only by selecting one proposal. `trwm.branch_continuation_certificate.v1`
+binds lambda values, max lambda step, source path receipts, source direct-jump
+reject, static direct-jump target rejects, continuation target commits,
+branch-selection certificates, and same-budget comparison before claiming
+continuation-guided exploration lift. Numerical continuation is only the
+path-following analogy here; this is not numerical continuation, homotopy
+continuation, nonlinear root finding, or path-following performance:
+https://doi.org/10.1137/1.9780898719154
+
 ### Branch Pruning Transfer
 
 `examples.branch_pruning_transfer` tests negative branch evidence. Each domain
@@ -899,7 +924,7 @@ rollback audit before commit.
 
 ### Branch History Frontier
 
-`examples.branch_history_frontier` runs the thirty-nine branch-history experiments and
+`examples.branch_history_frontier` runs the forty branch-history experiments and
 validates their evidence certificates, primary experiment certificates, and
 claim certificates. It emits `trwm.example.branch_history_frontier.v1`, a
 bounded aggregate report for the staged path from receipt-bound proposal
@@ -910,7 +935,7 @@ diagnostic probing, residual-template repair, boundary bracketing, source
 consensus, contrastive invariant transfer, trust-region radius transfer, analogical ancestor reuse, certified context selection,
 counterexample refinement,
 conflict-aware query-policy transfer,
-drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, confidence calibration, conformal transfer, active-subspace transfer, receipt-bound branch pruning, diversity-certified family
+drift quarantine, recency-weighted source freshness, restart-anchor backtracking, typed symmetry transfer, pairwise constraint transfer, confidence-bound support, Pareto-front transfer, outlier-filter transfer, provenance-guard transfer, credit-assignment transfer, propensity-match transfer, robustness transfer, confidence calibration, conformal transfer, active-subspace transfer, continuation transfer, receipt-bound branch pruning, diversity-certified family
 coverage, branch budget allocation, no-good stop-rule abstention, branch composition, and retained-memory
 influence.
 
@@ -930,7 +955,7 @@ receipts and fresh target verification, source consensus is admitted only
 through majority receipts plus fresh target verification, contrastive invariants
 are admitted only through positive/negative source receipts plus fresh target
 verification, context selection is certified, failed branches refine retrieval,
-conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, Pareto dominance is certificate-bound, outlier filtering is certificate-bound, source provenance is certificate-bound, source-fragment credit is certificate-bound, source-context matching is certificate-bound, uncertainty-set coverage is certificate-bound, confidence-bin calibration is certificate-bound, nonconformity quantiles are certificate-bound, active-subspace directions are certificate-bound, rejected branches prune
+conflicts are certificate-bound, drift is quarantined, recency is certificate-bound, restart anchors are certificate-bound, typed symmetry transforms are certificate-bound, pairwise constraints are certificate-bound, confidence support is certificate-bound, Pareto dominance is certificate-bound, outlier filtering is certificate-bound, source provenance is certificate-bound, source-fragment credit is certificate-bound, source-context matching is certificate-bound, uncertainty-set coverage is certificate-bound, confidence-bin calibration is certificate-bound, nonconformity quantiles are certificate-bound, active-subspace directions are certificate-bound, continuation paths are certificate-bound, rejected branches prune
 known-dead target candidates, same-family failures force coverage only through
 a certificate, verifier budget is allocated only through a cost-bound
 certificate, branch fragments compose
@@ -983,6 +1008,9 @@ certificates before claim promotion.
 - Active subspaces are the low-rank direction analogy for branch-active-subspace
   transfer, not an optimization or dimension-reduction guarantee:
   https://doi.org/10.1137/1.9781611973860
+- Numerical continuation is the path-following analogy for branch-continuation
+  transfer, not a continuation-method guarantee:
+  https://doi.org/10.1137/1.9780898719154
 - UCT/MCTS is the planning analogy for spending samples selectively:
   https://doi.org/10.1007/11871842_29
 - Case-based reasoning is the retrieval/reuse/revision analogy for solving a
