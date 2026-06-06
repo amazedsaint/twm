@@ -97,6 +97,10 @@ This repository currently targets `G1` evidence:
   receipts, static unprobed target rejects, guided probe commits, guided final
   commits, and same-budget verifier-call evidence before past branches can
   suggest what target diagnostic to run before acting,
+- branch-residual-template certificates that bind source reject/repair
+  receipts, static target rejects, templated target commits, template fields,
+  and same-budget verifier-call evidence before residual repair templates can
+  guide target proposals,
 - branch-pruning certificates that bind rejected source branch receipts,
   pruned target action ids, unpruned/pruned target receipt hashes, and
   same-budget verifier-call evidence before negative branch evidence can
@@ -579,6 +583,9 @@ search.
   https://doi.org/10.1109/TKDE.2009.191
 - Zhang et al., A Survey on Negative Transfer:
   https://arxiv.org/abs/2009.00909
+- Aamodt and Plaza, Case-Based Reasoning: Foundational Issues, Methodological
+  Variations, and System Approaches:
+  https://journals.sagepub.com/doi/10.3233/AIC-1994-7104
 - W3C PROV Overview:
   https://www.w3.org/TR/prov-overview/
 - ISO/IEC/IEEE 15026-2 assurance case structure and terminology:

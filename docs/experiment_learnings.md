@@ -194,6 +194,18 @@ comparison. The substrate implication is that branches of the past can propose
 what to measure before acting, but the measurement and action still require
 their own receipts.
 
+The branch-residual template transfer example adds repair-template evidence.
+Each domain records a source branch with a rejected proposal and a committed
+repair, then maps the residual kind to a named repair template for the target
+branch. The static target spends one verifier call on the unsafe proposal and
+fails; the template-guided target spends the same one verifier call on the
+template-produced proposal and commits only after fresh target hard
+verification. The new `trwm.branch_residual_template_certificate.v1` artifact
+binds the source reject/repair receipts, static target reject, templated target
+commit, branch-selection certificates, template fields, and same-budget
+comparison. The substrate implication is that residual repair templates can
+propose structured edits, but they cannot transfer commit authority.
+
 The analogical branch transfer example adds one more design constraint:
 cross-context reuse must name its ancestor contexts explicitly. For each toy
 domain, two positive ancestor contexts reorder the target budget-one search
@@ -339,14 +351,14 @@ snapshot it entered, which later proposal order was derived from that retained
 branch, and whether that proposal order beat a same-budget non-influenced
 baseline.
 
-The branch-history frontier report now aggregates the eighteen local branch-memory
+The branch-history frontier report now aggregates the nineteen local branch-memory
 stages in `trwm.example.branch_history_frontier.v1`. It checks evidence
 certificates, primary experiment certificates, and claim certificates for raw
 receipt-bound ordering, accepted-loser counterfactual reuse, option-family
 abstraction, stateful prerequisite ordering, regime-conditioned contingency
 reuse, hindsight goal relabeling, receipt-bound field intervention,
-receipt-bound diagnostic probing, analogical ancestor reuse, certified context
-selection, counterexample refinement,
+receipt-bound diagnostic probing, residual-template repair, analogical ancestor
+reuse, certified context selection, counterexample refinement,
 conflict-aware query-policy transfer,
 drift quarantine, receipt-bound branch pruning, diversity-certified family
 coverage, receipt-bound budget allocation, branch composition, and retained
@@ -361,9 +373,10 @@ sampling plus nogood-style pruning, diversity pressure, and recombinable
 building-block search plus successive resource allocation and temporal
 abstraction plus contextual bandits with side information and hindsight
 experience replay plus intervention notation as a variable-edit analogy and
-experimental-design information as a probe-selection analogy; it is not a
+experimental-design information as a probe-selection analogy plus case-based
+reuse/revise as a residual-template analogy; it is not a
 statistical exploration algorithm, regret guarantee, MCTS implementation,
 automatic similarity metric, CEGAR system, CDCL solver, novelty-search result,
 MAP-Elites implementation, Hyperband implementation, options-framework result,
-contextual-bandit result, Hindsight Experience Replay result, causal-inference result, do-calculus result, Bayesian experimental-design result, active-learning result, genetic algorithm, program synthesizer, or
+contextual-bandit result, Hindsight Experience Replay result, causal-inference result, do-calculus result, Bayesian experimental-design result, active-learning result, case-based reasoning system, genetic algorithm, program synthesizer, or
 cross-domain scientific discovery result.

@@ -50,6 +50,7 @@ python3 -m examples.branch_contingency_transfer
 python3 -m examples.branch_hindsight_relabel_transfer
 python3 -m examples.branch_intervention_transfer
 python3 -m examples.branch_diagnostic_probe_transfer
+python3 -m examples.branch_residual_template_transfer
 python3 -m examples.analogical_branch_transfer
 python3 -m examples.context_selection_transfer
 python3 -m examples.context_refinement_transfer
@@ -97,13 +98,15 @@ distinct candidate family under the same verifier budget; the
 branch-budget example uses past receipt costs to allocate a fixed verifier
 budget toward a higher-cost repair after a cheap reject probe; the
 branch-composition example combines two receipt-bound past branch fragments only
-as a verifier-gated target proposal; the
+as a verifier-gated target proposal; the residual-template example turns a
+source residual/repair pair into a named repair-template proposal without
+transferring commit authority; the
 context-retention example retains the successful target branch as certified
 future proposal evidence for a sibling target and
 certifies the memory query that ranks the sibling proposals against a
 same-budget static sibling baseline; the frontier example aggregates the three
 physical certified domains, while the branch-history frontier aggregates the
-eighteen branch-memory stages. See `examples/README.md` and
+nineteen branch-memory stages. See `examples/README.md` and
 `docs/experiment_learnings.md`.
 
 ## Package Layout

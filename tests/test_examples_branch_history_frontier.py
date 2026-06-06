@@ -15,6 +15,7 @@ from examples.branch_hindsight_relabel_transfer import run_branch_hindsight_rela
 from examples.branch_intervention_transfer import run_branch_intervention_transfer_certified_experiment
 from examples.branch_prerequisite_transfer import run_branch_prerequisite_transfer_certified_experiment
 from examples.branch_pruning_transfer import run_branch_pruning_transfer_certified_experiment
+from examples.branch_residual_template_transfer import run_branch_residual_template_transfer_certified_experiment
 from examples.branch_history_frontier import (
     build_branch_history_frontier_result,
     run_branch_history_frontier_experiment,
@@ -35,7 +36,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         claim = result.claim_certificate
 
         self.assertEqual(report.schema_version, "trwm.example.branch_history_frontier.v1")
-        self.assertEqual(report.stage_count, 18)
+        self.assertEqual(report.stage_count, 19)
         self.assertEqual(
             report.child_experiment_ids,
             (
@@ -47,6 +48,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
                 "branch_hindsight_relabel_transfer",
                 "branch_intervention_transfer",
                 "branch_diagnostic_probe_transfer",
+                "branch_residual_template_transfer",
                 "analogical_branch_transfer",
                 "context_selection_transfer",
                 "context_refinement_transfer",
@@ -70,6 +72,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
                 "hindsight_goal_relabeling",
                 "receipt_bound_field_intervention",
                 "receipt_bound_diagnostic_probe",
+                "receipt_bound_residual_template",
                 "explicit_ancestor_reuse",
                 "certified_context_selection",
                 "counterexample_refinement",
@@ -85,11 +88,11 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         self.assertTrue(report.all_evidence_valid)
         self.assertTrue(report.all_claims_supported)
         self.assertTrue(report.all_primary_certificates_valid)
-        self.assertEqual(report.total_receipt_count, 432)
-        self.assertEqual(report.total_committed_count, 165)
-        self.assertEqual(report.total_rejected_count, 168)
+        self.assertEqual(report.total_receipt_count, 444)
+        self.assertEqual(report.total_committed_count, 171)
+        self.assertEqual(report.total_rejected_count, 174)
         self.assertEqual(report.total_invalid_commit_count, 0)
-        self.assertEqual(report.same_budget_stage_count, 18)
+        self.assertEqual(report.same_budget_stage_count, 19)
         self.assertEqual(report.branch_abstraction_certificate_count, 3)
         self.assertEqual(report.branch_prerequisite_certificate_count, 3)
         self.assertEqual(report.branch_contingency_certificate_count, 3)
@@ -101,6 +104,8 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
         self.assertEqual(report.branch_diagnostic_probe_certificate_count, 3)
         self.assertEqual(report.guided_probe_success_count, 3)
         self.assertEqual(report.guided_final_success_count, 3)
+        self.assertEqual(report.branch_residual_template_certificate_count, 3)
+        self.assertEqual(report.template_success_count, 3)
         self.assertEqual(report.counterfactual_certificate_count, 3)
         self.assertEqual(report.rolled_back_counterfactual_count, 3)
         self.assertEqual(report.branch_conflict_certificate_count, 6)
@@ -130,6 +135,7 @@ class TestBranchHistoryFrontierExample(unittest.TestCase):
             run_branch_hindsight_relabel_transfer_certified_experiment(),
             run_branch_intervention_transfer_certified_experiment(),
             run_branch_diagnostic_probe_transfer_certified_experiment(),
+            run_branch_residual_template_transfer_certified_experiment(),
             run_analogical_branch_transfer_certified_experiment(),
             run_context_selection_transfer_certified_experiment(),
             run_context_refinement_transfer_certified_experiment(),
