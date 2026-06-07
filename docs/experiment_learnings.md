@@ -934,7 +934,8 @@ longer enough. The final claim is supported only if all four real backends are
 available, all child claims are supported, all learning certificates support
 call reduction, every adapter evidence certificate is report-consistent and
 manifest-covered, every child claim and learning certificate is
-report-consistent, every held-out arm comparison is isolated, every domain
+report-consistent, the suite certificate directly binds aggregate
+backend-availability and learning-support gates, every held-out arm comparison is isolated, every domain
 reduces hard-verifier calls while preserving held-out success, all receipt and
 execution-provenance counts bind exact hash lanes, all receipt artifact lanes
 bind exact receipt counts, aggregate training/baseline/learned receipt

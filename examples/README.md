@@ -1522,10 +1522,12 @@ mutations or ledger history from the other.
 The suite claim is intentionally stricter than adapter readiness. It is
 supported only when all four domains use real backends, all child claims are
 supported, every adapter evidence certificate and child claim matches its
-report and real-task manifest spec, all learning certificates support call
-reduction, every learning certificate matches its report, all held-out arms are
-isolated, held-out success is preserved, hard-verifier calls are reduced in
-every domain, replay/rollback and ledger audits pass, receipt and
+report and real-task manifest spec, and the suite certificate directly binds
+the aggregate backend-availability and learning-support gates. All learning
+certificates must support call reduction, every learning certificate must match
+its report, all held-out arms are isolated, held-out success is preserved,
+hard-verifier calls are reduced in every domain, replay/rollback and ledger
+audits pass, receipt and
 execution-provenance counts bind exact hash lanes, training/baseline/learned
 receipt partitions bind the flat receipt lane, receipt artifact counts bind
 exact receipt counts, adapter train/held-out task ids match the manifest split

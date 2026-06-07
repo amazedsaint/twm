@@ -973,9 +973,10 @@ learning certificate must match the report's learner snapshot, held-out metrics,
 hard-commit audit, and exact training/baseline/learned receipt partitions. The suite
 claim supports the objective only if every real backend supports its
 single-domain claim, every child certificate is report-consistent and
-manifest-covered, every adapter's reported train and held-out task ids exactly
-match the manifest split task ids, and every domain reduces hard-verifier calls
-while preserving held-out success under isolated evaluation arms, exact
+manifest-covered, the suite certificate directly binds aggregate
+backend-availability and learning-support gates, every adapter's reported train
+and held-out task ids exactly match the manifest split task ids, and every
+domain reduces hard-verifier calls while preserving held-out success under isolated evaluation arms, exact
 receipt/provenance hash-lane counts, exact training/baseline/learned partition
 hash lanes, exact receipt artifact hash-lane counts, exact backend execution
 evidence hash-lane counts, and zero invalid commits. It now also

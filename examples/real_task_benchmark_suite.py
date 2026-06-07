@@ -256,7 +256,9 @@ class RealTaskBenchmarkSuiteCertificate:
     all_adapter_evidence_matches_manifest: bool
     all_adapter_task_splits_match_manifest: bool
     all_learning_certificates_valid: bool
+    all_learning_certificates_support_claim: bool
     all_learning_certificates_match_reports: bool
+    all_backends_available: bool
     all_real_backends: bool
     all_runtime_requirements_match_preflight: bool
     all_receipt_counts_bound: bool
@@ -361,13 +363,23 @@ def build_real_task_benchmark_suite_result(
                 and report.all_adapter_evidence_certificates_match_reports
                 and report.all_adapter_evidence_matches_manifest
                 and report.all_adapter_task_splits_match_manifest
+                and report.all_learning_certificates_valid
+                and report.all_learning_certificates_support_claim
                 and report.all_learning_certificates_match_reports
+                and report.all_backends_available
                 and report.all_runtime_requirements_match_preflight
+                and report.all_receipt_counts_bound
                 and report.all_receipt_artifacts_bound
                 and report.all_receipt_artifacts_cover_manifest_assets
                 and report.all_backend_execution_evidence_bound
                 and report.heldout_arms_isolated
+                and report.hard_verifier_calls_reduced
+                and report.success_preserved
+                and report.replay_rollback_ledger_ok
+                and report.no_invalid_commits
                 and validate_real_task_preflight_report(preflight_report, manifest)
+                and validate_real_task_benchmark_suite_report(report)
+                and validate_real_task_benchmark_suite_certificate(suite_certificate, report)
             )
             else "G0"
         ),
@@ -483,7 +495,9 @@ def build_real_task_benchmark_suite_certificate(
         all_adapter_evidence_matches_manifest=report.all_adapter_evidence_matches_manifest,
         all_adapter_task_splits_match_manifest=report.all_adapter_task_splits_match_manifest,
         all_learning_certificates_valid=report.all_learning_certificates_valid,
+        all_learning_certificates_support_claim=report.all_learning_certificates_support_claim,
         all_learning_certificates_match_reports=report.all_learning_certificates_match_reports,
+        all_backends_available=report.all_backends_available,
         all_real_backends=report.all_real_backends,
         all_runtime_requirements_match_preflight=report.all_runtime_requirements_match_preflight,
         all_receipt_counts_bound=report.all_receipt_counts_bound,
@@ -827,7 +841,15 @@ def validate_real_task_benchmark_suite_certificate(
             return False
         if certificate.all_child_claims_supported and not certificate.all_child_claims_valid:
             return False
+        if certificate.all_child_claims_supported and not certificate.all_backends_available:
+            return False
+        if certificate.all_child_claims_supported and not certificate.all_learning_certificates_support_claim:
+            return False
         if not isinstance(certificate.heldout_arms_isolated, bool):
+            return False
+        if not isinstance(certificate.all_backends_available, bool):
+            return False
+        if not isinstance(certificate.all_learning_certificates_support_claim, bool):
             return False
         if not isinstance(certificate.all_backend_execution_evidence_bound, bool):
             return False
@@ -929,7 +951,9 @@ def validate_real_task_benchmark_suite_certificate(
                 "all_adapter_evidence_matches_manifest",
                 "all_adapter_task_splits_match_manifest",
                 "all_learning_certificates_valid",
+                "all_learning_certificates_support_claim",
                 "all_learning_certificates_match_reports",
+                "all_backends_available",
                 "all_real_backends",
                 "all_runtime_requirements_match_preflight",
                 "all_receipt_counts_bound",
