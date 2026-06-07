@@ -48,6 +48,7 @@ class RealTaskAdapterEvidenceCertificate:
     hard_metadata_hashes: tuple[str, ...]
     receipt_artifacts_bound: bool
     receipt_artifact_hashes: tuple[str, ...]
+    receipt_artifact_value_hashes: tuple[str, ...]
     backend_execution_evidence_ok: bool
     backend_execution_evidence_hashes: tuple[str, ...]
     training_receipt_hashes: tuple[str, ...]
@@ -87,6 +88,7 @@ class RealTaskAdapterEvidenceCertificate:
         object.__setattr__(self, "hard_result_hashes", tuple(self.hard_result_hashes))
         object.__setattr__(self, "hard_metadata_hashes", tuple(self.hard_metadata_hashes))
         object.__setattr__(self, "receipt_artifact_hashes", tuple(self.receipt_artifact_hashes))
+        object.__setattr__(self, "receipt_artifact_value_hashes", tuple(self.receipt_artifact_value_hashes))
         object.__setattr__(self, "backend_execution_evidence_hashes", tuple(self.backend_execution_evidence_hashes))
         object.__setattr__(self, "training_receipt_hashes", tuple(self.training_receipt_hashes))
         object.__setattr__(self, "baseline_receipt_hashes", tuple(self.baseline_receipt_hashes))
@@ -154,6 +156,7 @@ def build_real_task_adapter_evidence_certificate(
         hard_metadata_hashes=tuple(str(row) for row in report_data["hard_metadata_hashes"]),
         receipt_artifacts_bound=bool(report_data["receipt_artifacts_bound"]),
         receipt_artifact_hashes=tuple(str(row) for row in report_data["receipt_artifact_hashes"]),
+        receipt_artifact_value_hashes=tuple(str(row) for row in report_data["receipt_artifact_value_hashes"]),
         backend_execution_evidence_ok=bool(report_data["backend_execution_evidence_ok"]),
         backend_execution_evidence_hashes=tuple(str(row) for row in report_data["backend_execution_evidence_hashes"]),
         training_receipt_hashes=training_receipts,
@@ -297,6 +300,16 @@ def receipt_artifact_provenance_hashes(receipts: Any) -> tuple[str, ...]:
     return tuple(stable_hash(_artifact_hashes(receipt)) for receipt in tuple(receipts))
 
 
+def receipt_artifact_value_provenance_hashes(receipts: Any) -> tuple[str, ...]:
+    values = {
+        value
+        for receipt in tuple(receipts)
+        for value in _artifact_hashes(receipt).values()
+        if _is_hash(value)
+    }
+    return tuple(sorted(values))
+
+
 def receipt_artifacts_are_bound(receipts: Any) -> bool:
     rows = tuple(receipts)
     return bool(rows) and all(_artifact_hashes_valid(_artifact_hashes(receipt)) for receipt in rows)
@@ -368,9 +381,13 @@ def _counts_and_partitions_are_valid(certificate: RealTaskAdapterEvidenceCertifi
         return False
     if any(not _is_hash(row) for row in certificate.receipt_artifact_hashes):
         return False
+    if any(not _is_hash(row) for row in certificate.receipt_artifact_value_hashes):
+        return False
     if any(not _is_hash(row) for row in certificate.backend_execution_evidence_hashes):
         return False
     if certificate.receipt_artifacts_bound and certificate.receipt_count == 0:
+        return False
+    if certificate.receipt_artifacts_bound and not certificate.receipt_artifact_value_hashes:
         return False
     if len(set(certificate.receipt_hashes)) != len(certificate.receipt_hashes):
         return False
@@ -398,6 +415,7 @@ def _counts_and_partitions_are_valid(certificate: RealTaskAdapterEvidenceCertifi
             and certificate.learning_certificate_hash == ""
             and certificate.ledger_head == ""
             and not certificate.receipt_artifacts_bound
+            and certificate.receipt_artifact_value_hashes == ()
             and not certificate.backend_execution_evidence_ok
             and not certificate.learning_certificate_valid
             and not certificate.learning_certificate_supports_claim
@@ -450,6 +468,7 @@ def _report_matches(certificate: RealTaskAdapterEvidenceCertificate, report: Any
         "hard_metadata_hashes",
         "receipt_artifacts_bound",
         "receipt_artifact_hashes",
+        "receipt_artifact_value_hashes",
         "backend_execution_evidence_ok",
         "backend_execution_evidence_hashes",
         "training_receipt_count",

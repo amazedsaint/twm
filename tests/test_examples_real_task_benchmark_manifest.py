@@ -15,6 +15,7 @@ from examples.real_task_benchmark_manifest import (
     build_real_task_manifest_certificate,
     build_real_task_preflight_report,
     fake_probe,
+    preflight_task_asset_content_hashes,
     real_task_preflight_report_hash,
     run_real_task_benchmark_readiness,
     validate_real_task_manifest,
@@ -182,6 +183,27 @@ class RealTaskBenchmarkManifestTests(unittest.TestCase):
                 shaped_report = build_real_task_preflight_report(manifest, probe=probe)
             self.assertTrue(shaped_report.ready_to_run_all)
             self.assertEqual(shaped_report.missing_requirements, ())
+            expected_counts = {
+                spec.domain: len(spec.required_task_assets)
+                for spec in manifest.specs
+            }
+            for row in shaped_report.rows:
+                content_hashes = preflight_task_asset_content_hashes(row)
+                self.assertEqual(len(content_hashes), expected_counts[row.domain])
+                self.assertTrue(all(len(content_hash) == 64 for content_hash in content_hashes))
+
+            robotics_row = shaped_report.rows[0]
+            robotics_asset_index = next(
+                index for index, probe_row in enumerate(robotics_row.probes) if probe_row.kind == "task_asset"
+            )
+            bad_probe = replace(robotics_row.probes[robotics_asset_index], content_hash="not-a-hash")
+            bad_probes = tuple(
+                bad_probe if index == robotics_asset_index else probe_row
+                for index, probe_row in enumerate(robotics_row.probes)
+            )
+            bad_row = replace(robotics_row, probes=bad_probes)
+            bad_report = replace(shaped_report, rows=(bad_row, *shaped_report.rows[1:]))
+            self.assertFalse(validate_real_task_preflight_report(bad_report, manifest))
 
 
 if __name__ == "__main__":

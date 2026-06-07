@@ -14,6 +14,7 @@ from examples.real_task_adapter_evidence import (
     build_real_task_adapter_evidence_certificate,
     receipt_backend_execution_evidence,
     receipt_artifact_provenance_hashes,
+    receipt_artifact_value_provenance_hashes,
     receipt_artifacts_are_bound,
     receipt_execution_provenance_hashes,
 )
@@ -149,6 +150,7 @@ class ProgramDefects4JAdapterReport:
     hard_metadata_hashes: tuple[str, ...]
     receipt_artifacts_bound: bool
     receipt_artifact_hashes: tuple[str, ...]
+    receipt_artifact_value_hashes: tuple[str, ...]
     backend_execution_evidence_ok: bool
     backend_execution_evidence_hashes: tuple[str, ...]
     source_urls: tuple[str, ...]
@@ -473,6 +475,7 @@ def _run_available_backend(backend: ProgramRepairBackend) -> ProgramDefects4JAda
     all_receipts = (*tuple(training_receipts), *baseline_receipts, *learned_receipts)
     typed_candidate_hashes, hard_result_hashes, hard_metadata_hashes = receipt_execution_provenance_hashes(all_receipts)
     receipt_artifact_hashes = receipt_artifact_provenance_hashes(all_receipts)
+    receipt_artifact_value_hashes = receipt_artifact_value_provenance_hashes(all_receipts)
     receipt_artifacts_bound = receipt_artifacts_are_bound(all_receipts)
     backend_execution_evidence_ok, backend_execution_evidence_hashes = receipt_backend_execution_evidence("program", all_receipts)
     replay_ok, rollback_ok = _audit_replay_rollback_many(
@@ -563,6 +566,7 @@ def _run_available_backend(backend: ProgramRepairBackend) -> ProgramDefects4JAda
         hard_metadata_hashes=hard_metadata_hashes,
         receipt_artifacts_bound=receipt_artifacts_bound,
         receipt_artifact_hashes=receipt_artifact_hashes,
+        receipt_artifact_value_hashes=receipt_artifact_value_hashes,
         backend_execution_evidence_ok=backend_execution_evidence_ok,
         backend_execution_evidence_hashes=backend_execution_evidence_hashes,
         source_urls=PROGRAM_DEFECTS4J_SOURCES,
@@ -786,6 +790,7 @@ def _empty_report(backend: ProgramRepairBackend, *, backend_error: str = "") -> 
         hard_metadata_hashes=(),
         receipt_artifacts_bound=False,
         receipt_artifact_hashes=(),
+        receipt_artifact_value_hashes=(),
         backend_execution_evidence_ok=False,
         backend_execution_evidence_hashes=(),
         source_urls=PROGRAM_DEFECTS4J_SOURCES,

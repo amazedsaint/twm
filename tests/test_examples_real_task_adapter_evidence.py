@@ -30,6 +30,8 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
         self.assertEqual(certificate.hard_metadata_hashes, result.report.hard_metadata_hashes)
         self.assertEqual(certificate.receipt_artifacts_bound, result.report.receipt_artifacts_bound)
         self.assertEqual(certificate.receipt_artifact_hashes, result.report.receipt_artifact_hashes)
+        self.assertEqual(certificate.receipt_artifact_value_hashes, result.report.receipt_artifact_value_hashes)
+        self.assertTrue(certificate.receipt_artifact_value_hashes)
         self.assertEqual(certificate.backend_execution_evidence_ok, result.report.backend_execution_evidence_ok)
         self.assertEqual(certificate.backend_execution_evidence_hashes, result.report.backend_execution_evidence_hashes)
         self.assertEqual(len(certificate.typed_candidate_hashes), result.report.receipt_count)
@@ -63,6 +65,7 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
         self.assertEqual(certificate.hard_metadata_hashes, ())
         self.assertFalse(certificate.receipt_artifacts_bound)
         self.assertEqual(certificate.receipt_artifact_hashes, ())
+        self.assertEqual(certificate.receipt_artifact_value_hashes, ())
         self.assertFalse(certificate.backend_execution_evidence_ok)
         self.assertEqual(certificate.backend_execution_evidence_hashes, ())
         self.assertEqual(certificate.learning_certificate_hash, "")
@@ -124,6 +127,22 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
         bad_report = replace(
             result.report,
             receipt_artifact_hashes=("0" * 64, *result.report.receipt_artifact_hashes[1:]),
+        )
+
+        self.assertFalse(
+            validate_real_task_adapter_evidence_certificate(
+                result.evidence_certificate,
+                report=bad_report,
+                learning_certificate=result.learning_certificate,
+                claim_certificate=result.claim_certificate,
+            )
+        )
+
+    def test_tampered_report_receipt_artifact_value_hash_fails(self) -> None:
+        result = run_robotics_motion_benchmark_adapter_experiment(DeterministicMotionBenchmarkBackend())
+        bad_report = replace(
+            result.report,
+            receipt_artifact_value_hashes=("0" * 64, *result.report.receipt_artifact_value_hashes[1:]),
         )
 
         self.assertFalse(

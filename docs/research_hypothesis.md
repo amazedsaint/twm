@@ -895,9 +895,10 @@ four-domain external benchmark manifest to a preflight certificate:
 The preflight report now carries evidence hashes for those probes. Available
 tools bind their discovered path and version output, Python modules bind their
 origin, task-root environment variables bind their resolved directory, and
-required task assets bind deterministic file or directory fingerprints.
-Changing a task package or toolchain therefore changes the preflight report hash
-before any adapter evidence can be promoted.
+required task assets bind deterministic file or directory fingerprints plus
+task-asset `content_hash` values. Changing a task package or toolchain
+therefore changes the preflight report hash before any adapter evidence can be
+promoted.
 
 The gate fails closed when the environment cannot run the real benchmarks. A
 supported readiness claim would mean only that the adapters can execute; it is
@@ -972,6 +973,9 @@ single-domain claim, every child certificate is report-consistent and
 manifest-covered, and every domain reduces hard-verifier calls while preserving
 held-out success under isolated evaluation arms, exact receipt/provenance
 hash-lane counts, exact receipt artifact hash-lane counts, exact backend
-execution evidence hash-lane counts, and zero invalid commits. On machines
-without the external toolchains and task roots, the suite must reject with G0
-evidence.
+execution evidence hash-lane counts, and zero invalid commits. It now also
+requires receipt artifact value hashes to cover every preflighted manifest
+task-asset content hash, so a real robotics or hardware receipt cannot promote
+unless its candidate-directory, command-config, or `genchecks.py` artifact
+hashes match the assets the manifest preflight saw. On machines without the
+external toolchains and task roots, the suite must reject with G0 evidence.

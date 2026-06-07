@@ -84,6 +84,7 @@ class RequirementProbe:
     available: bool
     evidence: str
     evidence_hash: str = ""
+    content_hash: str = ""
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "kind", str(self.kind))
@@ -92,6 +93,7 @@ class RequirementProbe:
         object.__setattr__(self, "evidence", str(self.evidence))
         if not self.evidence_hash:
             object.__setattr__(self, "evidence_hash", _probe_evidence_hash(self.kind, self.name, self.available, self.evidence))
+        object.__setattr__(self, "content_hash", str(self.content_hash))
 
 
 @dataclass(frozen=True)
@@ -481,6 +483,9 @@ def validate_real_task_preflight_report(
                     return False
                 if not _is_hash(probe.evidence_hash) or probe.evidence_hash == "0" * 64:
                     return False
+                if probe.content_hash:
+                    if probe.kind != "task_asset" or not probe.available or not _is_hash(probe.content_hash):
+                        return False
         if report.missing_requirements != tuple(expected_missing):
             return False
         if manifest is not None:
@@ -586,6 +591,14 @@ def real_task_preflight_report_hash(report: RealTaskBenchmarkPreflightReport) ->
 
 def real_task_manifest_certificate_hash(certificate: RealTaskBenchmarkManifestCertificate) -> str:
     return stable_hash(certificate.without_hash())
+
+
+def preflight_task_asset_content_hashes(row: RealTaskPreflightRow) -> tuple[str, ...]:
+    return tuple(
+        probe.content_hash
+        for probe in row.probes
+        if probe.kind == "task_asset" and probe.available and _is_hash(probe.content_hash)
+    )
 
 
 def fake_probe(availability: Mapping[tuple[str, str], bool]) -> ProbeFn:
@@ -694,6 +707,7 @@ def _make_probe(
         available=available,
         evidence=evidence,
         evidence_hash=_probe_evidence_hash(kind, name, available, evidence, extra=extra),
+        content_hash=stable_hash(extra) if kind == "task_asset" and available and extra is not None else "",
     )
 
 
