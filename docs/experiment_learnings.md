@@ -812,9 +812,21 @@ The last category is still open.
 
 ## Optional Real Benchmark Adapters
 
-The optional MQT and Defects4J adapters are the first concrete steps from
-readiness evidence toward real benchmark receipt streams. They keep the
-repository dependency-free while exposing real adapter boundaries.
+The optional riscv-formal, Defects4J, and MQT adapters are the first concrete
+steps from readiness evidence toward real benchmark receipt streams. They keep
+the repository dependency-free while exposing real adapter boundaries.
+
+For hardware:
+
+- riscv-formal provides RVFI instruction/check-family tasks,
+- generated SymbiYosys checks own the hard decision,
+- missing `sby`, `yosys`, `make`, `python3`, or
+  `TRWM_RISCV_FORMAL_TASK_ROOT` produces a rejected claim with zero receipts,
+- deterministic test doubles can validate transaction mechanics but not
+  hardware-verification performance,
+- the current candidate surface compares RVFI-violating and RVFI-compliant
+  task directories, so it is adapter evidence rather than a RISC-V core
+  correctness proof.
 
 For quantum:
 
@@ -842,5 +854,6 @@ For program repair:
 
 This changes the substrate requirement from "name the external verifier" to
 "ship an adapter that can fail closed until the verifier is available." The
-same pattern should be used for robotics, hardware, and a deeper Defects4J
-patch-candidate adapter before the aggregate four-domain proof is attempted.
+same pattern should be used for robotics, broader hardware suites, and a
+deeper Defects4J patch-candidate adapter before the aggregate four-domain proof
+is attempted.

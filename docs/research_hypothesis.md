@@ -309,6 +309,10 @@ This repository currently targets `G1` evidence:
   verification certificates, replay packages, and replay verification
   certificates that package those attestations and validate the underlying
   trace/candidate/receipt/learner body evidence,
+- an optional riscv-formal hardware adapter that checks task-root-backed RVFI
+  candidate directories through generated SymbiYosys checks, fails closed when
+  required tools or `TRWM_RISCV_FORMAL_TASK_ROOT` are missing, and supports a
+  hardware call-reduction claim only on the real backend,
 - an optional Defects4J program adapter that checks buggy-version and
   fixed-version candidates through Defects4J checkout, compile, and relevant
   tests, fails closed when required CLI tools are missing, and supports a
@@ -897,3 +901,10 @@ candidates. This is real benchmark adapter plumbing, not a full APR result:
 the current candidate surface uses known fixed versions, and future work still
 needs patch-generation, patch-minimization, and held-out patch receipts before
 program-repair effectiveness can be claimed.
+
+`examples.hardware_riscv_formal_adapter` adds the hardware analogue. It uses
+task-root-backed candidate directories and runs generated riscv-formal checks
+through SymbiYosys/Yosys as the hard verifier. The readiness manifest now binds
+the required `TRWM_RISCV_FORMAL_TASK_ROOT` environment variable because tools
+alone are not enough to produce real RVFI receipts. This is adapter evidence,
+not a RISC-V core correctness claim.

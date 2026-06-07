@@ -25,6 +25,7 @@ class RealTaskBenchmarkManifestTests(unittest.TestCase):
         self.assertEqual(len(manifest.specs), 4)
         self.assertTrue(all(spec.source_urls for spec in manifest.specs))
         self.assertTrue(all(spec.command_templates for spec in manifest.specs))
+        self.assertIn("TRWM_RISCV_FORMAL_TASK_ROOT", manifest.specs[1].required_env_vars)
         self.assertTrue(set(spec.train_split_id for spec in manifest.specs).isdisjoint(spec.held_out_split_id for spec in manifest.specs))
 
     def test_readiness_fails_closed_when_external_requirements_are_missing(self) -> None:
@@ -52,6 +53,13 @@ class RealTaskBenchmarkManifestTests(unittest.TestCase):
                 ("python_module", module): True
                 for spec in manifest.specs
                 for module in spec.required_python_modules
+            }
+        )
+        availability.update(
+            {
+                ("env_var", env_var): True
+                for spec in manifest.specs
+                for env_var in spec.required_env_vars
             }
         )
         result = run_real_task_benchmark_readiness(probe=fake_probe(availability))

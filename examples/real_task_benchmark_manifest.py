@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 import importlib.util
 import json
+import os
 import shutil
 from typing import Callable, Mapping
 
@@ -25,6 +26,7 @@ class RealTaskBenchmarkSpec:
     hard_verifier: str
     required_tools: tuple[str, ...]
     required_python_modules: tuple[str, ...]
+    required_env_vars: tuple[str, ...]
     command_templates: tuple[str, ...]
     source_urls: tuple[str, ...]
     claim_boundary: str
@@ -32,6 +34,7 @@ class RealTaskBenchmarkSpec:
     def __post_init__(self) -> None:
         object.__setattr__(self, "required_tools", tuple(self.required_tools))
         object.__setattr__(self, "required_python_modules", tuple(self.required_python_modules))
+        object.__setattr__(self, "required_env_vars", tuple(self.required_env_vars))
         object.__setattr__(self, "command_templates", tuple(self.command_templates))
         object.__setattr__(self, "source_urls", tuple(self.source_urls))
 
@@ -162,6 +165,7 @@ def build_real_task_benchmark_manifest() -> RealTaskBenchmarkManifest:
                 hard_verifier="MoveIt/OMPL state-validity and collision-checking benchmark result",
                 required_tools=("roslaunch",),
                 required_python_modules=(),
+                required_env_vars=(),
                 command_templates=(
                     "cd motion_bench_maker/problems && ./download.sh all",
                     "roslaunch motion_bench_maker benchmark.launch dataset:=<heldout_dataset> planners:=RRTConnect,BiEST,BKPIECE",
@@ -180,17 +184,23 @@ def build_real_task_benchmark_manifest() -> RealTaskBenchmarkManifest:
                 train_split_id="riscv-formal.train.rv32i.instruction-checks",
                 held_out_split_id="riscv-formal.heldout.rv32i.branch-load-store-checks",
                 hard_verifier="riscv-formal generated checks executed through SymbiYosys/Yosys",
-                required_tools=("sby", "yosys"),
+                required_tools=("sby", "yosys", "make", "python3"),
                 required_python_modules=(),
+                required_env_vars=("TRWM_RISCV_FORMAL_TASK_ROOT",),
                 command_templates=(
+                    "cd $TRWM_RISCV_FORMAL_TASK_ROOT/<task>/<candidate>",
                     "python3 ../../checks/genchecks.py",
-                    "make -C checks j$(nproc)",
+                    "make -C checks j1",
                 ),
                 source_urls=(
                     "https://github.com/YosysHQ/riscv-formal",
+                    "https://yosyshq.readthedocs.io/projects/riscv-formal/en/latest/procedure.html",
                     "https://yosyshq.readthedocs.io/projects/riscv-formal/en/latest/rvfi.html",
                 ),
-                claim_boundary="Readiness only; not RISC-V core correctness evidence until formal-check receipts are produced.",
+                claim_boundary=(
+                    "Readiness only; not RISC-V core correctness evidence until task-root-backed "
+                    "formal-check receipts are produced."
+                ),
             ),
             RealTaskBenchmarkSpec(
                 domain="program",
@@ -201,6 +211,7 @@ def build_real_task_benchmark_manifest() -> RealTaskBenchmarkManifest:
                 hard_verifier="defects4j compile plus triggering/relevant test execution",
                 required_tools=("defects4j", "java", "git", "svn", "perl"),
                 required_python_modules=(),
+                required_env_vars=(),
                 command_templates=(
                     "defects4j checkout -p <project> -v <bug_id>b -w <buggy_workdir>",
                     "defects4j checkout -p <project> -v <bug_id>f -w <fixed_workdir>",
@@ -227,6 +238,7 @@ def build_real_task_benchmark_manifest() -> RealTaskBenchmarkManifest:
                 hard_verifier="MQT QCEC equivalence checking against original/generated circuit",
                 required_tools=(),
                 required_python_modules=("mqt.bench", "mqt.qcec"),
+                required_env_vars=(),
                 command_templates=(
                     "python -m mqt.bench --benchmark <name> --level alg --output-format qasm3",
                     "python -m mqt.qcec <original.qasm> <candidate.qasm>",
@@ -294,6 +306,8 @@ def build_real_task_preflight_report(
             probe_fn("tool", tool) for tool in spec.required_tools
         ) + tuple(
             probe_fn("python_module", module) for module in spec.required_python_modules
+        ) + tuple(
+            probe_fn("env_var", env_var) for env_var in spec.required_env_vars
         )
         row_missing = tuple(f"{spec.domain}:{probe.kind}:{probe.name}" for probe in probes if not probe.available)
         missing.extend(row_missing)
@@ -457,6 +471,9 @@ def _default_probe(kind: str, name: str) -> RequirementProbe:
         except ModuleNotFoundError:
             spec = None
         return RequirementProbe(kind=kind, name=name, available=spec is not None, evidence=getattr(spec, "origin", None) or "missing_module")
+    if kind == "env_var":
+        value = os.environ.get(name, "")
+        return RequirementProbe(kind=kind, name=name, available=bool(value), evidence="set" if value else "missing_env_var")
     raise ValueError(f"unknown probe kind: {kind}")
 
 

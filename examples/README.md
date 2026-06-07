@@ -60,6 +60,7 @@ python3 -m examples.branch_composition_transfer
 python3 -m examples.context_retention_transfer
 python3 -m examples.receipt_trained_reversible_proposer_benchmark
 python3 -m examples.real_task_benchmark_manifest
+python3 -m examples.hardware_riscv_formal_adapter
 python3 -m examples.program_defects4j_adapter
 python3 -m examples.quantum_mqt_bench_adapter
 python3 -m examples.branch_history_frontier
@@ -1320,15 +1321,42 @@ The readiness gate names the concrete external benchmark adapters needed before
 the local canary can become real-task evidence:
 
 - robotics: MotionBenchMaker/OMPL manipulation problem sets,
-- hardware: `riscv-formal` RVFI checks through SymbiYosys/Yosys,
+- hardware: task-root-backed `riscv-formal` RVFI checks through SymbiYosys/Yosys,
 - program: Defects4J active bug ids with triggering/relevant tests,
 - quantum: MQT Bench and RevLib circuits checked by MQT QCEC.
 
-The gate is intentionally fail-closed. If a required tool or Python module is
-missing, the readiness claim is `rejected`; this is not a performance result
-and cannot support the final receipt-trained proposer claim. A supported
-readiness claim only means the adapters are ready to run and produce benchmark
-receipts.
+The gate is intentionally fail-closed. If a required tool, Python module, or
+environment variable is missing, the readiness claim is `rejected`; this is not
+a performance result and cannot support the final receipt-trained proposer
+claim. A supported readiness claim only means the adapters are ready to run and
+produce benchmark receipts.
+
+## Hardware RISC-V Formal Adapter
+
+Run:
+
+```bash
+python3 -m examples.hardware_riscv_formal_adapter
+```
+
+This emits JSON with top-level `report`, `learning_certificate`, and
+`claim_certificate`. The adapter is dependency-free by default: if `sby`,
+`yosys`, `make`, `python3`, or `TRWM_RISCV_FORMAL_TASK_ROOT` are unavailable,
+it emits a rejected claim with zero receipts.
+
+When the toolchain and task root are available, the adapter expects candidate
+directories under `$TRWM_RISCV_FORMAL_TASK_ROOT/<task>/<candidate>/`. It runs
+`python3 ../../checks/genchecks.py` when checks have not already been generated,
+then runs `make -C checks j1` as the hard RVFI verifier. The baseline tries an
+RVFI-violating candidate before the compliant candidate. The receipt-trained
+reversible proposer can rank the compliant candidate first on held-out check
+families, but the claim is supported only if the real backend is available,
+held-out success is preserved, hard-verifier calls are reduced,
+replay/rollback audits pass, and invalid commits remain zero.
+
+This is not a RISC-V core correctness proof. It is a real-benchmark adapter
+surface for task-root-backed RVFI candidate directories; larger core suites,
+coverage strategy, and independent audit-verifier receipts remain future work.
 
 ## Program Defects4J Adapter
 
