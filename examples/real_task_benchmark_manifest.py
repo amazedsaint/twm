@@ -26,6 +26,8 @@ class RealTaskBenchmarkSpec:
     task_selector: str
     train_split_id: str
     held_out_split_id: str
+    train_task_ids: tuple[str, ...]
+    held_out_task_ids: tuple[str, ...]
     hard_verifier: str
     required_tools: tuple[str, ...]
     required_python_modules: tuple[str, ...]
@@ -42,6 +44,8 @@ class RealTaskBenchmarkSpec:
         object.__setattr__(self, "required_task_assets", tuple(self.required_task_assets))
         object.__setattr__(self, "command_templates", tuple(self.command_templates))
         object.__setattr__(self, "source_urls", tuple(self.source_urls))
+        object.__setattr__(self, "train_task_ids", tuple(self.train_task_ids))
+        object.__setattr__(self, "held_out_task_ids", tuple(self.held_out_task_ids))
 
     @property
     def spec_hash(self) -> str:
@@ -103,6 +107,8 @@ class RealTaskPreflightRow:
     task_selector: str
     train_split_id: str
     held_out_split_id: str
+    train_task_ids: tuple[str, ...]
+    held_out_task_ids: tuple[str, ...]
     hard_verifier: str
     probes: tuple[RequirementProbe, ...]
     ready: bool
@@ -179,6 +185,8 @@ def build_real_task_benchmark_manifest() -> RealTaskBenchmarkManifest:
                 task_selector="prefabricated manipulation datasets; train on generated source scenes, hold out distinct problem sets",
                 train_split_id="motion-benchmark.train.motionbenchmaker-scenes",
                 held_out_split_id="motion-benchmark.heldout.motionbenchmaker-scenes",
+                train_task_ids=("train-kitchen-pick",),
+                held_out_task_ids=("heldout-shelf-place", "heldout-cabinet-reach"),
                 hard_verifier="MoveIt/OMPL benchmark solved/correct-solution/clearance result",
                 required_tools=("roslaunch",),
                 required_python_modules=(),
@@ -214,6 +222,8 @@ def build_real_task_benchmark_manifest() -> RealTaskBenchmarkManifest:
                 task_selector="RVFI instruction checks for open RISC-V cores; train and hold out by instruction/check family",
                 train_split_id="riscv-formal.train.rv32i.instruction-checks",
                 held_out_split_id="riscv-formal.heldout.rv32i.branch-load-store-checks",
+                train_task_ids=("train-rv32i-add",),
+                held_out_task_ids=("heldout-rv32i-branch", "heldout-rv32i-load-store"),
                 hard_verifier="riscv-formal generated checks executed through SymbiYosys/Yosys",
                 required_tools=("sby", "yosys", "make", "python3"),
                 required_python_modules=(),
@@ -248,6 +258,8 @@ def build_real_task_benchmark_manifest() -> RealTaskBenchmarkManifest:
                 task_selector="Defects4J active bugs; train and hold out by project/bug id with triggering and relevant tests",
                 train_split_id="defects4j.train.active-bug-ids",
                 held_out_split_id="defects4j.heldout.active-bug-ids",
+                train_task_ids=("train-lang-1",),
+                held_out_task_ids=("heldout-math-5", "heldout-chart-1"),
                 hard_verifier="defects4j compile plus triggering/relevant test execution",
                 required_tools=("defects4j", "java", "git", "svn", "perl"),
                 required_python_modules=(),
@@ -277,6 +289,8 @@ def build_real_task_benchmark_manifest() -> RealTaskBenchmarkManifest:
                 task_selector="MQT Bench generated circuits and RevLib reversible circuits; hold out by algorithm/circuit family",
                 train_split_id="mqt-bench.train.algorithms-and-revlib-families",
                 held_out_split_id="mqt-bench.heldout.qft-ghz-revlib-families",
+                train_task_ids=("train-ghz-3",),
+                held_out_task_ids=("heldout-qft-3", "heldout-ghz-4"),
                 hard_verifier="MQT QCEC equivalence checking against original/generated circuit",
                 required_tools=(),
                 required_python_modules=("mqt.bench", "mqt.qcec"),
@@ -366,6 +380,8 @@ def build_real_task_preflight_report(
                 task_selector=spec.task_selector,
                 train_split_id=spec.train_split_id,
                 held_out_split_id=spec.held_out_split_id,
+                train_task_ids=spec.train_task_ids,
+                held_out_task_ids=spec.held_out_task_ids,
                 hard_verifier=spec.hard_verifier,
                 probes=probes,
                 ready=not row_missing,
@@ -432,6 +448,14 @@ def validate_real_task_manifest(manifest: RealTaskBenchmarkManifest) -> bool:
                 return False
             if spec.train_split_id == spec.held_out_split_id:
                 return False
+            if not spec.train_task_ids or not spec.held_out_task_ids:
+                return False
+            if len(set(spec.train_task_ids)) != len(spec.train_task_ids):
+                return False
+            if len(set(spec.held_out_task_ids)) != len(spec.held_out_task_ids):
+                return False
+            if set(spec.train_task_ids).intersection(spec.held_out_task_ids):
+                return False
             if not spec.command_templates or not spec.source_urls:
                 return False
             if spec.required_env_vars and not spec.required_task_assets:
@@ -466,6 +490,14 @@ def validate_real_task_preflight_report(
             if not row.domain or not row.benchmark_id or not row.task_selector:
                 return False
             if not row.train_split_id or not row.held_out_split_id or row.train_split_id == row.held_out_split_id:
+                return False
+            if not row.train_task_ids or not row.held_out_task_ids:
+                return False
+            if len(set(row.train_task_ids)) != len(row.train_task_ids):
+                return False
+            if len(set(row.held_out_task_ids)) != len(row.held_out_task_ids):
+                return False
+            if set(row.train_task_ids).intersection(row.held_out_task_ids):
                 return False
             if not row.hard_verifier or not row.source_urls:
                 return False
@@ -508,6 +540,10 @@ def validate_real_task_preflight_report(
                 if row.train_split_id != spec.train_split_id:
                     return False
                 if row.held_out_split_id != spec.held_out_split_id:
+                    return False
+                if row.train_task_ids != spec.train_task_ids:
+                    return False
+                if row.held_out_task_ids != spec.held_out_task_ids:
                     return False
                 if row.hard_verifier != spec.hard_verifier:
                     return False
@@ -612,6 +648,19 @@ def preflight_runtime_requirement_evidence_hashes(row: RealTaskPreflightRow) -> 
 
 def runtime_requirement_count(spec: RealTaskBenchmarkSpec) -> int:
     return len(spec.required_tools) + len(spec.required_python_modules) + len(spec.required_env_vars)
+
+
+def manifest_split_task_hash(spec: RealTaskBenchmarkSpec) -> str:
+    return stable_hash(
+        {
+            "domain": spec.domain,
+            "benchmark_id": spec.benchmark_id,
+            "train_split_id": spec.train_split_id,
+            "held_out_split_id": spec.held_out_split_id,
+            "train_task_ids": spec.train_task_ids,
+            "held_out_task_ids": spec.held_out_task_ids,
+        }
+    )
 
 
 def build_runtime_requirement_evidence_hashes(

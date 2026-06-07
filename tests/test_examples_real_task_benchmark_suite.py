@@ -82,6 +82,8 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertTrue(all(row.adapter_evidence_certificate_valid for row in report.rows))
         self.assertTrue(all(row.adapter_evidence_certificate_matches_report for row in report.rows))
         self.assertTrue(all(row.adapter_evidence_matches_manifest for row in report.rows))
+        self.assertTrue(report.all_adapter_task_splits_match_manifest)
+        self.assertTrue(all(row.adapter_task_splits_match_manifest for row in report.rows))
         self.assertTrue(all(len(row.manifest_spec_hash) == 64 for row in report.rows))
         self.assertTrue(report.all_learning_certificates_valid)
         self.assertTrue(report.all_learning_certificates_support_claim)
@@ -113,7 +115,20 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertEqual(report.learned_success_count, 8)
         expected_asset_counts = {"robotics": 6, "hardware": 7, "program": 0, "quantum": 0}
         expected_runtime_counts = {"robotics": 2, "hardware": 5, "program": 5, "quantum": 2}
+        expected_task_ids = {
+            "robotics": (("train-kitchen-pick",), ("heldout-shelf-place", "heldout-cabinet-reach")),
+            "hardware": (("train-rv32i-add",), ("heldout-rv32i-branch", "heldout-rv32i-load-store")),
+            "program": (("train-lang-1",), ("heldout-math-5", "heldout-chart-1")),
+            "quantum": (("train-ghz-3",), ("heldout-qft-3", "heldout-ghz-4")),
+        }
         for row in report.rows:
+            train_ids, held_out_ids = expected_task_ids[row.domain]
+            self.assertEqual(row.manifest_train_task_ids, train_ids)
+            self.assertEqual(row.manifest_held_out_task_ids, held_out_ids)
+            self.assertEqual(row.train_task_ids, train_ids)
+            self.assertEqual(row.held_out_task_ids, held_out_ids)
+            self.assertEqual(len(row.manifest_split_task_hash), 64)
+            self.assertTrue(row.adapter_task_splits_match_manifest)
             self.assertTrue(row.heldout_arm_isolated)
             self.assertEqual(row.manifest_runtime_requirement_count, expected_runtime_counts[row.domain])
             self.assertEqual(row.adapter_runtime_requirement_evidence_hashes, ())
@@ -147,6 +162,26 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertEqual(
             result.suite_certificate.manifest_spec_hashes,
             tuple(row.manifest_spec_hash for row in report.rows),
+        )
+        self.assertEqual(
+            result.suite_certificate.manifest_split_task_hashes,
+            tuple(row.manifest_split_task_hash for row in report.rows),
+        )
+        self.assertEqual(
+            result.suite_certificate.manifest_train_task_ids,
+            tuple(task_id for row in report.rows for task_id in row.manifest_train_task_ids),
+        )
+        self.assertEqual(
+            result.suite_certificate.manifest_held_out_task_ids,
+            tuple(task_id for row in report.rows for task_id in row.manifest_held_out_task_ids),
+        )
+        self.assertEqual(
+            result.suite_certificate.adapter_train_task_ids,
+            tuple(task_id for row in report.rows for task_id in row.train_task_ids),
+        )
+        self.assertEqual(
+            result.suite_certificate.adapter_held_out_task_ids,
+            tuple(task_id for row in report.rows for task_id in row.held_out_task_ids),
         )
         self.assertEqual(
             result.suite_certificate.manifest_runtime_requirement_evidence_hashes,
@@ -192,6 +227,7 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertTrue(result.suite_certificate.all_adapter_evidence_certificates_valid)
         self.assertTrue(result.suite_certificate.all_adapter_evidence_certificates_match_reports)
         self.assertTrue(result.suite_certificate.all_adapter_evidence_matches_manifest)
+        self.assertTrue(result.suite_certificate.all_adapter_task_splits_match_manifest)
         self.assertTrue(result.suite_certificate.all_learning_certificates_match_reports)
         self.assertFalse(result.suite_certificate.all_runtime_requirements_match_preflight)
         self.assertTrue(result.suite_certificate.all_receipt_artifacts_bound)
@@ -226,12 +262,14 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertEqual(result.suite_certificate.receipt_artifact_value_hashes, ())
         self.assertEqual(result.suite_certificate.backend_execution_evidence_hashes, ())
         self.assertFalse(result.report.all_backends_available)
+        self.assertFalse(result.report.all_adapter_task_splits_match_manifest)
         self.assertFalse(result.report.all_runtime_requirements_match_preflight)
         self.assertFalse(result.report.all_receipt_artifacts_bound)
         self.assertFalse(result.report.all_receipt_artifacts_cover_manifest_assets)
         self.assertFalse(result.report.all_backend_execution_evidence_bound)
         self.assertFalse(result.report.heldout_arms_isolated)
         self.assertFalse(result.suite_certificate.all_receipt_artifacts_bound)
+        self.assertFalse(result.suite_certificate.all_adapter_task_splits_match_manifest)
         self.assertFalse(result.suite_certificate.all_runtime_requirements_match_preflight)
         self.assertFalse(result.suite_certificate.all_receipt_artifacts_cover_manifest_assets)
         self.assertFalse(result.suite_certificate.all_backend_execution_evidence_bound)
@@ -246,6 +284,7 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, result.report))
         self.assertEqual(result.claim_certificate.status, "rejected")
         self.assertIn("all_backends_available", result.claim_certificate.failed_keys)
+        self.assertIn("all_adapter_task_splits_match_manifest", result.claim_certificate.failed_keys)
         self.assertIn("heldout_arms_isolated", result.claim_certificate.failed_keys)
         self.assertIn("hard_verifier_calls_reduced", result.claim_certificate.failed_keys)
 
@@ -444,6 +483,15 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertFalse(validate_real_task_benchmark_suite_report(bad_report))
         self.assertFalse(validate_real_task_benchmark_suite_certificate(result.suite_certificate, bad_report))
 
+    def test_suite_report_validation_rejects_unbound_task_split_match(self) -> None:
+        result = run_real_task_benchmark_suite(_deterministic_adapter_results())
+        first = result.report.rows[0]
+        bad_first = replace(first, held_out_task_ids=("heldout-wrong-task",), adapter_task_splits_match_manifest=True)
+        bad_report = replace(result.report, rows=(bad_first, *result.report.rows[1:]))
+
+        self.assertFalse(validate_real_task_benchmark_suite_report(bad_report))
+        self.assertFalse(validate_real_task_benchmark_suite_certificate(result.suite_certificate, bad_report))
+
     def test_suite_report_validation_rejects_missing_receipt_artifact_hash(self) -> None:
         result = run_real_task_benchmark_suite(_deterministic_adapter_results())
         first = result.report.rows[0]
@@ -545,6 +593,28 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
 
         self.assertFalse(validate_real_task_benchmark_suite_certificate(bad_manifest_certificate, result.report))
         self.assertFalse(validate_real_task_benchmark_suite_certificate(bad_adapter_certificate, result.report))
+
+    def test_suite_certificate_binds_manifest_and_adapter_task_splits(self) -> None:
+        result = run_real_task_benchmark_suite(_deterministic_adapter_results())
+        bad_manifest_hashes = replace(
+            result.suite_certificate,
+            manifest_split_task_hashes=("f" * 64,),
+            certificate_hash="",
+        )
+        bad_manifest_train = replace(
+            result.suite_certificate,
+            manifest_train_task_ids=("wrong-train-task",),
+            certificate_hash="",
+        )
+        bad_adapter_heldout = replace(
+            result.suite_certificate,
+            adapter_held_out_task_ids=("wrong-heldout-task",),
+            certificate_hash="",
+        )
+
+        self.assertFalse(validate_real_task_benchmark_suite_certificate(bad_manifest_hashes, result.report))
+        self.assertFalse(validate_real_task_benchmark_suite_certificate(bad_manifest_train, result.report))
+        self.assertFalse(validate_real_task_benchmark_suite_certificate(bad_adapter_heldout, result.report))
 
     def test_suite_certificate_binds_receipt_artifact_value_hashes(self) -> None:
         result = run_real_task_benchmark_suite(_deterministic_adapter_results())

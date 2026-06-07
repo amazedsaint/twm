@@ -1483,7 +1483,8 @@ adapter evidence certificates, child claim certificates, and learning
 certificates, cross-checks each certificate against its child report and
 manifest spec, and aggregates the preflight report hash,
 manifest spec hashes, adapter evidence certificate hashes, child report hashes,
-exact receipt counts, typed-candidate hashes, hard-result hashes,
+manifest split task hashes, exact manifest and adapter train/held-out task
+ids, exact receipt counts, typed-candidate hashes, hard-result hashes,
 hard-metadata hashes, receipt artifact hashes, receipt artifact value hashes,
 manifest runtime requirement evidence hashes, adapter runtime requirement
 evidence hashes, manifest task-asset content hashes, backend execution evidence
@@ -1501,7 +1502,10 @@ task/candidate inputs: candidate directories and command configs for robotics,
 candidate directories and `genchecks.py` for hardware, project/bug/version and
 verifier scope for Defects4J, and original/candidate circuit programs for MQT.
 The runtime requirement lane binds the adapter's tool, Python-module, and
-task-root environment evidence hashes to the same manifest preflight row.
+task-root environment evidence hashes to the same manifest preflight row. The
+split coverage lane binds each adapter's reported train and held-out task ids
+to the exact task ids declared by the manifest, so an adapter cannot promote
+receipts from a different held-out set.
 For robotics and hardware, the suite also requires receipt artifact value
 hashes to cover the manifest preflight's task-asset content hashes before the
 aggregate claim can promote. The adapter evidence cross-check binds exact
@@ -1522,7 +1526,8 @@ reduction, every learning certificate matches its report, all held-out arms are
 isolated, held-out success is preserved, hard-verifier calls are reduced in
 every domain, replay/rollback and ledger audits pass, receipt and
 execution-provenance counts bind exact hash lanes, receipt artifact counts bind
-exact receipt counts, adapter runtime requirement evidence hashes match the
+exact receipt counts, adapter train/held-out task ids match the manifest split
+task ids, adapter runtime requirement evidence hashes match the
 manifest preflight requirement hashes, receipt artifact value hashes cover every
 preflighted manifest task-asset content hash, backend execution evidence counts
 bind exact receipt counts, and invalid commits remain zero. Missing external tools or

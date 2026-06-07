@@ -890,6 +890,7 @@ four-domain external benchmark manifest to a preflight certificate:
   `command.json` files and hardware candidate directories plus `genchecks.py`,
 - command templates for generating or running each external benchmark,
 - train/held-out split ids for each domain,
+- exact manifest train and held-out task ids for each domain,
 - source URLs for every benchmark family.
 
 The preflight report now carries evidence hashes for those probes. Available
@@ -971,13 +972,14 @@ learning certificate must match the report's learner snapshot, held-out metrics,
 hard-commit audit, and exact training/learned receipt partitions. The suite
 claim supports the objective only if every real backend supports its
 single-domain claim, every child certificate is report-consistent and
-manifest-covered, and every domain reduces hard-verifier calls while preserving
-held-out success under isolated evaluation arms, exact receipt/provenance
-hash-lane counts, exact receipt artifact hash-lane counts, exact backend
+manifest-covered, every adapter's reported train and held-out task ids exactly
+match the manifest split task ids, and every domain reduces hard-verifier calls
+while preserving held-out success under isolated evaluation arms, exact
+receipt/provenance hash-lane counts, exact receipt artifact hash-lane counts, exact backend
 execution evidence hash-lane counts, and zero invalid commits. It now also
 requires adapter runtime requirement hashes to match the manifest preflight
 tool/module/env hashes and receipt artifact value hashes to cover every
 preflighted manifest task-asset content hash, so a real receipt cannot promote
-unless its runtime and task artifacts match the assets the manifest preflight
-saw. On machines without the external toolchains and task roots, the suite must
+unless its task ids, runtime, and task artifacts match the assets the manifest
+preflight saw. On machines without the external toolchains and task roots, the suite must
 reject with G0 evidence.

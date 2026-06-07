@@ -911,9 +911,10 @@ reports into one `trwm.real_task_benchmark_suite_report.v1` report plus a
 the readiness manifest, preflight report hash, manifest spec hashes, child
 adapter report hashes, adapter evidence certificate hashes, child claim hashes,
 learning certificate hashes, receipt hashes, typed-candidate hashes,
-hard-result hashes, hard-metadata hashes, receipt artifact hashes, receipt
-artifact value hashes, manifest runtime requirement evidence hashes, adapter
-runtime requirement evidence hashes, manifest task-asset content hashes,
+hard-result hashes, hard-metadata hashes, manifest split task hashes, manifest
+and adapter train/held-out task ids, receipt artifact hashes, receipt artifact
+value hashes, manifest runtime requirement evidence hashes, adapter runtime
+requirement evidence hashes, manifest task-asset content hashes,
 missing requirements, backend errors, backend execution evidence hashes,
 verifier-call totals, held-out success totals, replay/rollback/ledger status,
 and invalid-commit totals. It also binds the aggregate `heldout_arms_isolated`
@@ -935,9 +936,10 @@ manifest-covered, every child claim and learning certificate is
 report-consistent, every held-out arm comparison is isolated, every domain
 reduces hard-verifier calls while preserving held-out success, all receipt and
 execution-provenance counts bind exact hash lanes, all receipt artifact lanes
-bind exact receipt counts, adapter runtime requirement evidence hashes match
-the manifest preflight requirement hashes, receipt artifact value hashes cover
-every preflighted manifest task-asset content hash, all backend execution
-evidence lanes bind exact receipt counts, and invalid commits remain zero. On
+bind exact receipt counts, adapter train/held-out task ids exactly match the
+manifest split task ids, adapter runtime requirement evidence hashes match the
+manifest preflight requirement hashes, receipt artifact value hashes cover every
+preflighted manifest task-asset content hash, all backend execution evidence
+lanes bind exact receipt counts, and invalid commits remain zero. On
 the current local machine the suite correctly rejects with G0 because the
 external toolchains and task roots are missing.

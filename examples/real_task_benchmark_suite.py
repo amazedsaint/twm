@@ -16,6 +16,7 @@ from examples.real_task_benchmark_manifest import (
     build_real_task_benchmark_manifest,
     build_real_task_manifest_certificate,
     build_real_task_preflight_report,
+    manifest_split_task_hash,
     preflight_runtime_requirement_evidence_hashes,
     preflight_task_asset_content_hashes,
     real_task_preflight_report_hash,
@@ -78,6 +79,10 @@ class RealTaskBenchmarkSuiteRow:
     manifest_benchmark_id: str
     manifest_train_split_id: str
     manifest_held_out_split_id: str
+    manifest_train_task_ids: tuple[str, ...]
+    manifest_held_out_task_ids: tuple[str, ...]
+    manifest_split_task_hash: str
+    adapter_task_splits_match_manifest: bool
     manifest_runtime_requirement_count: int
     manifest_runtime_requirement_evidence_hashes: tuple[str, ...]
     manifest_required_task_asset_count: int
@@ -132,6 +137,8 @@ class RealTaskBenchmarkSuiteRow:
         object.__setattr__(self, "backend_error", str(self.backend_error))
         object.__setattr__(self, "adapter_runtime_requirement_evidence_hashes", tuple(self.adapter_runtime_requirement_evidence_hashes))
         object.__setattr__(self, "manifest_runtime_requirement_evidence_hashes", tuple(self.manifest_runtime_requirement_evidence_hashes))
+        object.__setattr__(self, "manifest_train_task_ids", tuple(self.manifest_train_task_ids))
+        object.__setattr__(self, "manifest_held_out_task_ids", tuple(self.manifest_held_out_task_ids))
         object.__setattr__(self, "manifest_task_asset_content_hashes", tuple(self.manifest_task_asset_content_hashes))
         object.__setattr__(self, "train_task_ids", tuple(self.train_task_ids))
         object.__setattr__(self, "held_out_task_ids", tuple(self.held_out_task_ids))
@@ -161,6 +168,7 @@ class RealTaskBenchmarkSuiteReport:
     all_adapter_evidence_certificates_valid: bool
     all_adapter_evidence_certificates_match_reports: bool
     all_adapter_evidence_matches_manifest: bool
+    all_adapter_task_splits_match_manifest: bool
     all_learning_certificates_valid: bool
     all_learning_certificates_support_claim: bool
     all_learning_certificates_match_reports: bool
@@ -212,8 +220,13 @@ class RealTaskBenchmarkSuiteCertificate:
     domain_count: int
     domains: tuple[str, ...]
     manifest_spec_hashes: tuple[str, ...]
+    manifest_split_task_hashes: tuple[str, ...]
+    manifest_train_task_ids: tuple[str, ...]
+    manifest_held_out_task_ids: tuple[str, ...]
     manifest_runtime_requirement_evidence_hashes: tuple[str, ...]
     manifest_task_asset_content_hashes: tuple[str, ...]
+    adapter_train_task_ids: tuple[str, ...]
+    adapter_held_out_task_ids: tuple[str, ...]
     adapter_runtime_requirement_evidence_hashes: tuple[str, ...]
     child_report_hashes: tuple[str, ...]
     adapter_evidence_certificate_hashes: tuple[str, ...]
@@ -232,6 +245,7 @@ class RealTaskBenchmarkSuiteCertificate:
     all_adapter_evidence_certificates_valid: bool
     all_adapter_evidence_certificates_match_reports: bool
     all_adapter_evidence_matches_manifest: bool
+    all_adapter_task_splits_match_manifest: bool
     all_learning_certificates_valid: bool
     all_learning_certificates_match_reports: bool
     all_real_backends: bool
@@ -252,8 +266,13 @@ class RealTaskBenchmarkSuiteCertificate:
             raise ValueError(f"invalid real-task suite certificate schema: {self.schema_version}")
         object.__setattr__(self, "domains", tuple(self.domains))
         object.__setattr__(self, "manifest_spec_hashes", tuple(self.manifest_spec_hashes))
+        object.__setattr__(self, "manifest_split_task_hashes", tuple(self.manifest_split_task_hashes))
+        object.__setattr__(self, "manifest_train_task_ids", tuple(self.manifest_train_task_ids))
+        object.__setattr__(self, "manifest_held_out_task_ids", tuple(self.manifest_held_out_task_ids))
         object.__setattr__(self, "manifest_runtime_requirement_evidence_hashes", tuple(self.manifest_runtime_requirement_evidence_hashes))
         object.__setattr__(self, "manifest_task_asset_content_hashes", tuple(self.manifest_task_asset_content_hashes))
+        object.__setattr__(self, "adapter_train_task_ids", tuple(self.adapter_train_task_ids))
+        object.__setattr__(self, "adapter_held_out_task_ids", tuple(self.adapter_held_out_task_ids))
         object.__setattr__(self, "adapter_runtime_requirement_evidence_hashes", tuple(self.adapter_runtime_requirement_evidence_hashes))
         object.__setattr__(self, "child_report_hashes", tuple(self.child_report_hashes))
         object.__setattr__(self, "adapter_evidence_certificate_hashes", tuple(self.adapter_evidence_certificate_hashes))
@@ -329,6 +348,7 @@ def build_real_task_benchmark_suite_result(
                 and report.all_adapter_evidence_certificates_valid
                 and report.all_adapter_evidence_certificates_match_reports
                 and report.all_adapter_evidence_matches_manifest
+                and report.all_adapter_task_splits_match_manifest
                 and report.all_learning_certificates_match_reports
                 and report.all_runtime_requirements_match_preflight
                 and report.all_receipt_artifacts_bound
@@ -354,6 +374,7 @@ def build_real_task_benchmark_suite_result(
             requirement("all_adapter_evidence_certificates_valid", report.all_adapter_evidence_certificates_valid),
             requirement("all_adapter_evidence_certificates_match_reports", report.all_adapter_evidence_certificates_match_reports),
             requirement("all_adapter_evidence_matches_manifest", report.all_adapter_evidence_matches_manifest),
+            requirement("all_adapter_task_splits_match_manifest", report.all_adapter_task_splits_match_manifest),
             requirement("all_learning_certificates_valid", report.all_learning_certificates_valid),
             requirement("all_learning_certificates_support_claim", report.all_learning_certificates_support_claim),
             requirement("all_learning_certificates_match_reports", report.all_learning_certificates_match_reports),
@@ -380,6 +401,7 @@ def build_real_task_benchmark_suite_result(
             "total_invalid_commit_count": report.total_invalid_commit_count,
             "total_receipt_count": report.total_receipt_count,
             "heldout_arms_isolated": report.heldout_arms_isolated,
+            "task_splits_match_manifest": report.all_adapter_task_splits_match_manifest,
             "runtime_requirements_match_preflight": report.all_runtime_requirements_match_preflight,
             "receipt_artifacts_cover_manifest_assets": report.all_receipt_artifacts_cover_manifest_assets,
         },
@@ -411,12 +433,17 @@ def build_real_task_benchmark_suite_certificate(
         domain_count=report.domain_count,
         domains=report.domains,
         manifest_spec_hashes=tuple(row.manifest_spec_hash for row in report.rows),
+        manifest_split_task_hashes=tuple(row.manifest_split_task_hash for row in report.rows),
+        manifest_train_task_ids=tuple(task_id for row in report.rows for task_id in row.manifest_train_task_ids),
+        manifest_held_out_task_ids=tuple(task_id for row in report.rows for task_id in row.manifest_held_out_task_ids),
         manifest_runtime_requirement_evidence_hashes=tuple(
             evidence_hash for row in report.rows for evidence_hash in row.manifest_runtime_requirement_evidence_hashes
         ),
         manifest_task_asset_content_hashes=tuple(
             content_hash for row in report.rows for content_hash in row.manifest_task_asset_content_hashes
         ),
+        adapter_train_task_ids=tuple(task_id for row in report.rows for task_id in row.train_task_ids),
+        adapter_held_out_task_ids=tuple(task_id for row in report.rows for task_id in row.held_out_task_ids),
         adapter_runtime_requirement_evidence_hashes=tuple(
             evidence_hash for row in report.rows for evidence_hash in row.adapter_runtime_requirement_evidence_hashes
         ),
@@ -439,6 +466,7 @@ def build_real_task_benchmark_suite_certificate(
         all_adapter_evidence_certificates_valid=report.all_adapter_evidence_certificates_valid,
         all_adapter_evidence_certificates_match_reports=report.all_adapter_evidence_certificates_match_reports,
         all_adapter_evidence_matches_manifest=report.all_adapter_evidence_matches_manifest,
+        all_adapter_task_splits_match_manifest=report.all_adapter_task_splits_match_manifest,
         all_learning_certificates_valid=report.all_learning_certificates_valid,
         all_learning_certificates_match_reports=report.all_learning_certificates_match_reports,
         all_real_backends=report.all_real_backends,
@@ -473,7 +501,19 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
             return False
         if any(not _is_hash(row.manifest_spec_hash) for row in report.rows):
             return False
+        if any(not _is_hash(row.manifest_split_task_hash) for row in report.rows):
+            return False
         if any(not row.manifest_benchmark_id or not row.manifest_train_split_id or not row.manifest_held_out_split_id for row in report.rows):
+            return False
+        if any(not row.manifest_train_task_ids or not row.manifest_held_out_task_ids for row in report.rows):
+            return False
+        if any(set(row.manifest_train_task_ids).intersection(row.manifest_held_out_task_ids) for row in report.rows):
+            return False
+        if any(not row.train_task_ids or not row.held_out_task_ids for row in report.rows if row.receipt_count > 0):
+            return False
+        if any(set(row.train_task_ids).intersection(row.held_out_task_ids) for row in report.rows):
+            return False
+        if any(not isinstance(row.adapter_task_splits_match_manifest, bool) for row in report.rows):
             return False
         if any(isinstance(row.manifest_runtime_requirement_count, bool) or row.manifest_runtime_requirement_count < 0 for row in report.rows):
             return False
@@ -502,6 +542,8 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
         if any(not isinstance(row.adapter_evidence_certificate_matches_report, bool) for row in report.rows):
             return False
         if any(not isinstance(row.adapter_evidence_matches_manifest, bool) for row in report.rows):
+            return False
+        if not isinstance(report.all_adapter_task_splits_match_manifest, bool):
             return False
         if any(not isinstance(row.adapter_runtime_requirements_match_preflight, bool) for row in report.rows):
             return False
@@ -534,6 +576,8 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
         if report.all_adapter_evidence_certificates_match_reports != all(row.adapter_evidence_certificate_matches_report for row in report.rows):
             return False
         if report.all_adapter_evidence_matches_manifest != all(row.adapter_evidence_matches_manifest for row in report.rows):
+            return False
+        if report.all_adapter_task_splits_match_manifest != all(row.adapter_task_splits_match_manifest for row in report.rows):
             return False
         if report.all_learning_certificates_match_reports != all(row.learning_certificate_matches_report for row in report.rows):
             return False
@@ -603,6 +647,8 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
             if any(isinstance(value, bool) or not isinstance(value, int) or value < 0 for value in int_fields):
                 return False
             if row.verifier_call_reduction != row.baseline_verifier_calls - row.learned_verifier_calls:
+                return False
+            if not _row_task_split_coverage_bound(row):
                 return False
         if report.total_receipt_count != sum(row.receipt_count for row in report.rows):
             return False
@@ -688,6 +734,14 @@ def validate_real_task_benchmark_suite_certificate(
             return False
         if len(certificate.manifest_spec_hashes) != 4 or any(not _is_hash(row) for row in certificate.manifest_spec_hashes):
             return False
+        if len(certificate.manifest_split_task_hashes) != 4 or any(not _is_hash(row) for row in certificate.manifest_split_task_hashes):
+            return False
+        if not certificate.manifest_train_task_ids or not certificate.manifest_held_out_task_ids:
+            return False
+        if any(not value for value in (*certificate.manifest_train_task_ids, *certificate.manifest_held_out_task_ids)):
+            return False
+        if any(not value for value in (*certificate.adapter_train_task_ids, *certificate.adapter_held_out_task_ids)):
+            return False
         if any(not _is_hash(row) for row in certificate.manifest_runtime_requirement_evidence_hashes):
             return False
         if any(not _is_hash(row) for row in certificate.adapter_runtime_requirement_evidence_hashes):
@@ -743,6 +797,10 @@ def validate_real_task_benchmark_suite_certificate(
             return False
         if not isinstance(certificate.all_receipt_artifacts_cover_manifest_assets, bool):
             return False
+        if not isinstance(certificate.all_adapter_task_splits_match_manifest, bool):
+            return False
+        if certificate.all_child_claims_supported and not certificate.all_adapter_task_splits_match_manifest:
+            return False
         if certificate.all_child_claims_supported and not certificate.all_receipt_artifacts_bound:
             return False
         if certificate.all_child_claims_supported and not certificate.all_runtime_requirements_match_preflight:
@@ -768,6 +826,12 @@ def validate_real_task_benchmark_suite_certificate(
                 return False
             if certificate.manifest_spec_hashes != tuple(row.manifest_spec_hash for row in report.rows):
                 return False
+            if certificate.manifest_split_task_hashes != tuple(row.manifest_split_task_hash for row in report.rows):
+                return False
+            if certificate.manifest_train_task_ids != tuple(task_id for row in report.rows for task_id in row.manifest_train_task_ids):
+                return False
+            if certificate.manifest_held_out_task_ids != tuple(task_id for row in report.rows for task_id in row.manifest_held_out_task_ids):
+                return False
             if certificate.manifest_runtime_requirement_evidence_hashes != tuple(
                 evidence_hash for row in report.rows for evidence_hash in row.manifest_runtime_requirement_evidence_hashes
             ):
@@ -775,6 +839,10 @@ def validate_real_task_benchmark_suite_certificate(
             if certificate.manifest_task_asset_content_hashes != tuple(
                 content_hash for row in report.rows for content_hash in row.manifest_task_asset_content_hashes
             ):
+                return False
+            if certificate.adapter_train_task_ids != tuple(task_id for row in report.rows for task_id in row.train_task_ids):
+                return False
+            if certificate.adapter_held_out_task_ids != tuple(task_id for row in report.rows for task_id in row.held_out_task_ids):
                 return False
             if certificate.adapter_runtime_requirement_evidence_hashes != tuple(
                 evidence_hash for row in report.rows for evidence_hash in row.adapter_runtime_requirement_evidence_hashes
@@ -811,6 +879,7 @@ def validate_real_task_benchmark_suite_certificate(
                 "all_adapter_evidence_certificates_valid",
                 "all_adapter_evidence_certificates_match_reports",
                 "all_adapter_evidence_matches_manifest",
+                "all_adapter_task_splits_match_manifest",
                 "all_learning_certificates_valid",
                 "all_learning_certificates_match_reports",
                 "all_real_backends",
@@ -855,6 +924,7 @@ def _build_report(
         all_adapter_evidence_certificates_valid=all(row.adapter_evidence_certificate_valid for row in rows),
         all_adapter_evidence_certificates_match_reports=all(row.adapter_evidence_certificate_matches_report for row in rows),
         all_adapter_evidence_matches_manifest=all(row.adapter_evidence_matches_manifest for row in rows),
+        all_adapter_task_splits_match_manifest=all(row.adapter_task_splits_match_manifest for row in rows),
         all_learning_certificates_valid=all(row.learning_certificate_valid for row in rows),
         all_learning_certificates_support_claim=all(row.learning_certificate_supports_claim for row in rows),
         all_learning_certificates_match_reports=all(row.learning_certificate_matches_report for row in rows),
@@ -915,6 +985,14 @@ def _suite_row(
     manifest_runtime_requirement_count = runtime_requirement_count(manifest_spec)
     manifest_runtime_requirement_evidence_hashes = preflight_runtime_requirement_evidence_hashes(preflight_row)
     adapter_runtime_requirement_evidence_hashes = tuple(str(row) for row in report.runtime_requirement_evidence_hashes)
+    train_task_ids = tuple(str(row) for row in report.train_task_ids)
+    held_out_task_ids = tuple(str(row) for row in report.held_out_task_ids)
+    adapter_task_splits_match_manifest = _adapter_task_splits_match_manifest(
+        manifest_train_task_ids=manifest_spec.train_task_ids,
+        manifest_held_out_task_ids=manifest_spec.held_out_task_ids,
+        adapter_train_task_ids=train_task_ids,
+        adapter_held_out_task_ids=held_out_task_ids,
+    )
     adapter_runtime_requirements_match_preflight = _adapter_runtime_requirements_match_preflight(
         backend_available=bool(report.backend_available),
         real_backend=bool(report.real_backend),
@@ -945,6 +1023,10 @@ def _suite_row(
         manifest_benchmark_id=manifest_spec.benchmark_id,
         manifest_train_split_id=manifest_spec.train_split_id,
         manifest_held_out_split_id=manifest_spec.held_out_split_id,
+        manifest_train_task_ids=manifest_spec.train_task_ids,
+        manifest_held_out_task_ids=manifest_spec.held_out_task_ids,
+        manifest_split_task_hash=manifest_split_task_hash(manifest_spec),
+        adapter_task_splits_match_manifest=adapter_task_splits_match_manifest,
         manifest_runtime_requirement_count=manifest_runtime_requirement_count,
         manifest_runtime_requirement_evidence_hashes=manifest_runtime_requirement_evidence_hashes,
         manifest_required_task_asset_count=len(manifest_spec.required_task_assets),
@@ -972,8 +1054,8 @@ def _suite_row(
         learning_certificate_valid=learning_valid,
         learning_certificate_supports_claim=learning_supports,
         learning_certificate_matches_report=_learning_certificate_matches_report(report, learning_certificate),
-        train_task_ids=tuple(str(row) for row in report.train_task_ids),
-        held_out_task_ids=tuple(str(row) for row in report.held_out_task_ids),
+        train_task_ids=train_task_ids,
+        held_out_task_ids=held_out_task_ids,
         receipt_count=int(report.receipt_count),
         training_receipt_count=int(report.training_receipt_count),
         baseline_receipt_count=int(report.baseline_receipt_count),
@@ -1187,6 +1269,47 @@ def _row_receipt_counts_bound(row: RealTaskBenchmarkSuiteRow) -> bool:
         == len(row.receipt_artifact_hashes)
         == len(row.backend_execution_evidence_hashes)
     )
+
+
+def _adapter_task_splits_match_manifest(
+    *,
+    manifest_train_task_ids: tuple[str, ...],
+    manifest_held_out_task_ids: tuple[str, ...],
+    adapter_train_task_ids: tuple[str, ...],
+    adapter_held_out_task_ids: tuple[str, ...],
+) -> bool:
+    if not manifest_train_task_ids or not manifest_held_out_task_ids:
+        return False
+    if not adapter_train_task_ids or not adapter_held_out_task_ids:
+        return False
+    if set(manifest_train_task_ids).intersection(manifest_held_out_task_ids):
+        return False
+    if set(adapter_train_task_ids).intersection(adapter_held_out_task_ids):
+        return False
+    return adapter_train_task_ids == manifest_train_task_ids and adapter_held_out_task_ids == manifest_held_out_task_ids
+
+
+def _row_task_split_coverage_bound(row: RealTaskBenchmarkSuiteRow) -> bool:
+    expected = _adapter_task_splits_match_manifest(
+        manifest_train_task_ids=row.manifest_train_task_ids,
+        manifest_held_out_task_ids=row.manifest_held_out_task_ids,
+        adapter_train_task_ids=row.train_task_ids,
+        adapter_held_out_task_ids=row.held_out_task_ids,
+    )
+    if row.adapter_task_splits_match_manifest != expected:
+        return False
+    if row.manifest_split_task_hash != stable_hash(
+        {
+            "domain": row.domain,
+            "benchmark_id": row.manifest_benchmark_id,
+            "train_split_id": row.manifest_train_split_id,
+            "held_out_split_id": row.manifest_held_out_split_id,
+            "train_task_ids": row.manifest_train_task_ids,
+            "held_out_task_ids": row.manifest_held_out_task_ids,
+        }
+    ):
+        return False
+    return True
 
 
 def _receipt_artifacts_cover_manifest_assets(

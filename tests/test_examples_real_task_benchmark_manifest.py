@@ -41,6 +41,17 @@ class RealTaskBenchmarkManifestTests(unittest.TestCase):
         self.assertIn("TRWM_MOTION_BENCHMARK_TASK_ROOT", manifest.specs[0].required_env_vars)
         self.assertIn("TRWM_RISCV_FORMAL_TASK_ROOT", manifest.specs[1].required_env_vars)
         self.assertTrue(set(spec.train_split_id for spec in manifest.specs).isdisjoint(spec.held_out_split_id for spec in manifest.specs))
+        expected_task_ids = {
+            "robotics": (("train-kitchen-pick",), ("heldout-shelf-place", "heldout-cabinet-reach")),
+            "hardware": (("train-rv32i-add",), ("heldout-rv32i-branch", "heldout-rv32i-load-store")),
+            "program": (("train-lang-1",), ("heldout-math-5", "heldout-chart-1")),
+            "quantum": (("train-ghz-3",), ("heldout-qft-3", "heldout-ghz-4")),
+        }
+        for spec in manifest.specs:
+            train_ids, held_out_ids = expected_task_ids[spec.domain]
+            self.assertEqual(spec.train_task_ids, train_ids)
+            self.assertEqual(spec.held_out_task_ids, held_out_ids)
+            self.assertTrue(set(spec.train_task_ids).isdisjoint(spec.held_out_task_ids))
 
     def test_readiness_fails_closed_when_external_requirements_are_missing(self) -> None:
         result = run_real_task_benchmark_readiness(probe=fake_probe({}))
@@ -106,6 +117,19 @@ class RealTaskBenchmarkManifestTests(unittest.TestCase):
             runtime_hashes = preflight_runtime_requirement_evidence_hashes(row)
             self.assertEqual(len(runtime_hashes), expected_runtime_counts[row.domain])
             self.assertTrue(all(len(runtime_hash) == 64 for runtime_hash in runtime_hashes))
+
+    def test_preflight_report_binds_manifest_train_and_heldout_task_ids(self) -> None:
+        manifest = build_real_task_benchmark_manifest()
+        report = build_real_task_preflight_report(manifest, probe=fake_probe({}))
+
+        self.assertTrue(validate_real_task_preflight_report(report, manifest))
+        for row, spec in zip(report.rows, manifest.specs):
+            self.assertEqual(row.train_task_ids, spec.train_task_ids)
+            self.assertEqual(row.held_out_task_ids, spec.held_out_task_ids)
+
+        bad_first = replace(report.rows[0], held_out_task_ids=("wrong-heldout-task",))
+        bad_report = replace(report, rows=(bad_first, *report.rows[1:]))
+        self.assertFalse(validate_real_task_preflight_report(bad_report, manifest))
 
     def test_manifest_certificate_detects_tampering(self) -> None:
         manifest = build_real_task_benchmark_manifest()
