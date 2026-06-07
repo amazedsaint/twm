@@ -16,8 +16,10 @@ from examples.real_task_benchmark_manifest import (
     build_real_task_benchmark_manifest,
     build_real_task_manifest_certificate,
     build_real_task_preflight_report,
+    preflight_runtime_requirement_evidence_hashes,
     preflight_task_asset_content_hashes,
     real_task_preflight_report_hash,
+    runtime_requirement_count,
     validate_real_task_manifest,
     validate_real_task_manifest_certificate,
     validate_real_task_preflight_report,
@@ -70,10 +72,14 @@ class RealTaskBenchmarkSuiteRow:
     real_backend: bool
     missing_requirements: tuple[str, ...]
     backend_error: str
+    adapter_runtime_requirement_evidence_hashes: tuple[str, ...]
+    adapter_runtime_requirements_match_preflight: bool
     manifest_spec_hash: str
     manifest_benchmark_id: str
     manifest_train_split_id: str
     manifest_held_out_split_id: str
+    manifest_runtime_requirement_count: int
+    manifest_runtime_requirement_evidence_hashes: tuple[str, ...]
     manifest_required_task_asset_count: int
     manifest_task_asset_content_hashes: tuple[str, ...]
     child_report_hash: str
@@ -124,6 +130,8 @@ class RealTaskBenchmarkSuiteRow:
     def __post_init__(self) -> None:
         object.__setattr__(self, "missing_requirements", tuple(self.missing_requirements))
         object.__setattr__(self, "backend_error", str(self.backend_error))
+        object.__setattr__(self, "adapter_runtime_requirement_evidence_hashes", tuple(self.adapter_runtime_requirement_evidence_hashes))
+        object.__setattr__(self, "manifest_runtime_requirement_evidence_hashes", tuple(self.manifest_runtime_requirement_evidence_hashes))
         object.__setattr__(self, "manifest_task_asset_content_hashes", tuple(self.manifest_task_asset_content_hashes))
         object.__setattr__(self, "train_task_ids", tuple(self.train_task_ids))
         object.__setattr__(self, "held_out_task_ids", tuple(self.held_out_task_ids))
@@ -158,6 +166,7 @@ class RealTaskBenchmarkSuiteReport:
     all_learning_certificates_match_reports: bool
     all_backends_available: bool
     all_real_backends: bool
+    all_runtime_requirements_match_preflight: bool
     all_receipt_counts_bound: bool
     all_receipt_artifacts_bound: bool
     all_receipt_artifacts_cover_manifest_assets: bool
@@ -203,7 +212,9 @@ class RealTaskBenchmarkSuiteCertificate:
     domain_count: int
     domains: tuple[str, ...]
     manifest_spec_hashes: tuple[str, ...]
+    manifest_runtime_requirement_evidence_hashes: tuple[str, ...]
     manifest_task_asset_content_hashes: tuple[str, ...]
+    adapter_runtime_requirement_evidence_hashes: tuple[str, ...]
     child_report_hashes: tuple[str, ...]
     adapter_evidence_certificate_hashes: tuple[str, ...]
     child_claim_hashes: tuple[str, ...]
@@ -224,6 +235,7 @@ class RealTaskBenchmarkSuiteCertificate:
     all_learning_certificates_valid: bool
     all_learning_certificates_match_reports: bool
     all_real_backends: bool
+    all_runtime_requirements_match_preflight: bool
     all_receipt_counts_bound: bool
     all_receipt_artifacts_bound: bool
     all_receipt_artifacts_cover_manifest_assets: bool
@@ -240,7 +252,9 @@ class RealTaskBenchmarkSuiteCertificate:
             raise ValueError(f"invalid real-task suite certificate schema: {self.schema_version}")
         object.__setattr__(self, "domains", tuple(self.domains))
         object.__setattr__(self, "manifest_spec_hashes", tuple(self.manifest_spec_hashes))
+        object.__setattr__(self, "manifest_runtime_requirement_evidence_hashes", tuple(self.manifest_runtime_requirement_evidence_hashes))
         object.__setattr__(self, "manifest_task_asset_content_hashes", tuple(self.manifest_task_asset_content_hashes))
+        object.__setattr__(self, "adapter_runtime_requirement_evidence_hashes", tuple(self.adapter_runtime_requirement_evidence_hashes))
         object.__setattr__(self, "child_report_hashes", tuple(self.child_report_hashes))
         object.__setattr__(self, "adapter_evidence_certificate_hashes", tuple(self.adapter_evidence_certificate_hashes))
         object.__setattr__(self, "child_claim_hashes", tuple(self.child_claim_hashes))
@@ -316,6 +330,7 @@ def build_real_task_benchmark_suite_result(
                 and report.all_adapter_evidence_certificates_match_reports
                 and report.all_adapter_evidence_matches_manifest
                 and report.all_learning_certificates_match_reports
+                and report.all_runtime_requirements_match_preflight
                 and report.all_receipt_artifacts_bound
                 and report.all_receipt_artifacts_cover_manifest_assets
                 and report.all_backend_execution_evidence_bound
@@ -344,6 +359,7 @@ def build_real_task_benchmark_suite_result(
             requirement("all_learning_certificates_match_reports", report.all_learning_certificates_match_reports),
             requirement("all_backends_available", report.all_backends_available, missing=report.missing_requirements),
             requirement("all_real_backends", report.all_real_backends),
+            requirement("all_runtime_requirements_match_preflight", report.all_runtime_requirements_match_preflight),
             requirement("all_receipt_counts_bound", report.all_receipt_counts_bound),
             requirement("all_receipt_artifacts_bound", report.all_receipt_artifacts_bound),
             requirement("all_receipt_artifacts_cover_manifest_assets", report.all_receipt_artifacts_cover_manifest_assets),
@@ -364,6 +380,7 @@ def build_real_task_benchmark_suite_result(
             "total_invalid_commit_count": report.total_invalid_commit_count,
             "total_receipt_count": report.total_receipt_count,
             "heldout_arms_isolated": report.heldout_arms_isolated,
+            "runtime_requirements_match_preflight": report.all_runtime_requirements_match_preflight,
             "receipt_artifacts_cover_manifest_assets": report.all_receipt_artifacts_cover_manifest_assets,
         },
         boundary=REAL_TASK_BENCHMARK_SUITE_CLAIM_BOUNDARY,
@@ -394,8 +411,14 @@ def build_real_task_benchmark_suite_certificate(
         domain_count=report.domain_count,
         domains=report.domains,
         manifest_spec_hashes=tuple(row.manifest_spec_hash for row in report.rows),
+        manifest_runtime_requirement_evidence_hashes=tuple(
+            evidence_hash for row in report.rows for evidence_hash in row.manifest_runtime_requirement_evidence_hashes
+        ),
         manifest_task_asset_content_hashes=tuple(
             content_hash for row in report.rows for content_hash in row.manifest_task_asset_content_hashes
+        ),
+        adapter_runtime_requirement_evidence_hashes=tuple(
+            evidence_hash for row in report.rows for evidence_hash in row.adapter_runtime_requirement_evidence_hashes
         ),
         child_report_hashes=tuple(row.child_report_hash for row in report.rows),
         adapter_evidence_certificate_hashes=tuple(row.adapter_evidence_certificate_hash for row in report.rows),
@@ -419,6 +442,7 @@ def build_real_task_benchmark_suite_certificate(
         all_learning_certificates_valid=report.all_learning_certificates_valid,
         all_learning_certificates_match_reports=report.all_learning_certificates_match_reports,
         all_real_backends=report.all_real_backends,
+        all_runtime_requirements_match_preflight=report.all_runtime_requirements_match_preflight,
         all_receipt_counts_bound=report.all_receipt_counts_bound,
         all_receipt_artifacts_bound=report.all_receipt_artifacts_bound,
         all_receipt_artifacts_cover_manifest_assets=report.all_receipt_artifacts_cover_manifest_assets,
@@ -451,7 +475,13 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
             return False
         if any(not row.manifest_benchmark_id or not row.manifest_train_split_id or not row.manifest_held_out_split_id for row in report.rows):
             return False
+        if any(isinstance(row.manifest_runtime_requirement_count, bool) or row.manifest_runtime_requirement_count < 0 for row in report.rows):
+            return False
         if any(isinstance(row.manifest_required_task_asset_count, bool) or row.manifest_required_task_asset_count < 0 for row in report.rows):
+            return False
+        if any(not _is_hash(evidence_hash) for row in report.rows for evidence_hash in row.manifest_runtime_requirement_evidence_hashes):
+            return False
+        if any(not _is_hash(evidence_hash) for row in report.rows for evidence_hash in row.adapter_runtime_requirement_evidence_hashes):
             return False
         if any(not _is_hash(content_hash) for row in report.rows for content_hash in row.manifest_task_asset_content_hashes):
             return False
@@ -473,6 +503,8 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
             return False
         if any(not isinstance(row.adapter_evidence_matches_manifest, bool) for row in report.rows):
             return False
+        if any(not isinstance(row.adapter_runtime_requirements_match_preflight, bool) for row in report.rows):
+            return False
         if any(not isinstance(row.learning_certificate_matches_report, bool) for row in report.rows):
             return False
         if any(not isinstance(row.heldout_arm_isolated, bool) for row in report.rows):
@@ -486,6 +518,8 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
         if not isinstance(report.heldout_arms_isolated, bool):
             return False
         if not isinstance(report.all_receipt_artifacts_bound, bool):
+            return False
+        if not isinstance(report.all_runtime_requirements_match_preflight, bool):
             return False
         if not isinstance(report.all_receipt_artifacts_cover_manifest_assets, bool):
             return False
@@ -502,6 +536,8 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
         if report.all_adapter_evidence_matches_manifest != all(row.adapter_evidence_matches_manifest for row in report.rows):
             return False
         if report.all_learning_certificates_match_reports != all(row.learning_certificate_matches_report for row in report.rows):
+            return False
+        if report.all_runtime_requirements_match_preflight != all(row.adapter_runtime_requirements_match_preflight for row in report.rows):
             return False
         if any(row.adapter_evidence_matches_manifest and not row.adapter_evidence_certificate_matches_report for row in report.rows):
             return False
@@ -539,6 +575,8 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
             if row.receipt_artifacts_bound and row.receipt_count == 0:
                 return False
             if row.receipt_artifacts_bound and not row.receipt_artifact_value_hashes:
+                return False
+            if not _row_runtime_requirement_coverage_bound(row):
                 return False
             if not _row_manifest_asset_coverage_bound(row):
                 return False
@@ -650,6 +688,10 @@ def validate_real_task_benchmark_suite_certificate(
             return False
         if len(certificate.manifest_spec_hashes) != 4 or any(not _is_hash(row) for row in certificate.manifest_spec_hashes):
             return False
+        if any(not _is_hash(row) for row in certificate.manifest_runtime_requirement_evidence_hashes):
+            return False
+        if any(not _is_hash(row) for row in certificate.adapter_runtime_requirement_evidence_hashes):
+            return False
         if any(not _is_hash(row) for row in certificate.manifest_task_asset_content_hashes):
             return False
         if len(certificate.child_report_hashes) != 4 or any(not _is_hash(row) for row in certificate.child_report_hashes):
@@ -693,6 +735,8 @@ def validate_real_task_benchmark_suite_certificate(
             return False
         if not isinstance(certificate.all_backend_execution_evidence_bound, bool):
             return False
+        if not isinstance(certificate.all_runtime_requirements_match_preflight, bool):
+            return False
         if not isinstance(certificate.all_receipt_artifacts_bound, bool):
             return False
         if certificate.all_receipt_artifacts_bound and not certificate.receipt_artifact_value_hashes:
@@ -700,6 +744,8 @@ def validate_real_task_benchmark_suite_certificate(
         if not isinstance(certificate.all_receipt_artifacts_cover_manifest_assets, bool):
             return False
         if certificate.all_child_claims_supported and not certificate.all_receipt_artifacts_bound:
+            return False
+        if certificate.all_child_claims_supported and not certificate.all_runtime_requirements_match_preflight:
             return False
         if certificate.all_child_claims_supported and not certificate.all_receipt_artifacts_cover_manifest_assets:
             return False
@@ -722,8 +768,16 @@ def validate_real_task_benchmark_suite_certificate(
                 return False
             if certificate.manifest_spec_hashes != tuple(row.manifest_spec_hash for row in report.rows):
                 return False
+            if certificate.manifest_runtime_requirement_evidence_hashes != tuple(
+                evidence_hash for row in report.rows for evidence_hash in row.manifest_runtime_requirement_evidence_hashes
+            ):
+                return False
             if certificate.manifest_task_asset_content_hashes != tuple(
                 content_hash for row in report.rows for content_hash in row.manifest_task_asset_content_hashes
+            ):
+                return False
+            if certificate.adapter_runtime_requirement_evidence_hashes != tuple(
+                evidence_hash for row in report.rows for evidence_hash in row.adapter_runtime_requirement_evidence_hashes
             ):
                 return False
             if certificate.child_report_hashes != tuple(row.child_report_hash for row in report.rows):
@@ -760,6 +814,7 @@ def validate_real_task_benchmark_suite_certificate(
                 "all_learning_certificates_valid",
                 "all_learning_certificates_match_reports",
                 "all_real_backends",
+                "all_runtime_requirements_match_preflight",
                 "all_receipt_counts_bound",
                 "all_receipt_artifacts_bound",
                 "all_receipt_artifacts_cover_manifest_assets",
@@ -805,6 +860,7 @@ def _build_report(
         all_learning_certificates_match_reports=all(row.learning_certificate_matches_report for row in rows),
         all_backends_available=all(row.backend_available for row in rows),
         all_real_backends=all(row.real_backend for row in rows),
+        all_runtime_requirements_match_preflight=all(row.adapter_runtime_requirements_match_preflight for row in rows),
         all_receipt_counts_bound=all(_row_receipt_counts_bound(row) for row in rows),
         all_receipt_artifacts_bound=all(row.receipt_artifacts_bound for row in rows),
         all_receipt_artifacts_cover_manifest_assets=all(row.receipt_artifacts_cover_manifest_assets for row in rows),
@@ -856,6 +912,16 @@ def _suite_row(
         learning_certificate=learning_certificate,
         claim_certificate=child_claim,
     )
+    manifest_runtime_requirement_count = runtime_requirement_count(manifest_spec)
+    manifest_runtime_requirement_evidence_hashes = preflight_runtime_requirement_evidence_hashes(preflight_row)
+    adapter_runtime_requirement_evidence_hashes = tuple(str(row) for row in report.runtime_requirement_evidence_hashes)
+    adapter_runtime_requirements_match_preflight = _adapter_runtime_requirements_match_preflight(
+        backend_available=bool(report.backend_available),
+        real_backend=bool(report.real_backend),
+        manifest_runtime_requirement_count=manifest_runtime_requirement_count,
+        manifest_runtime_requirement_evidence_hashes=manifest_runtime_requirement_evidence_hashes,
+        adapter_runtime_requirement_evidence_hashes=adapter_runtime_requirement_evidence_hashes,
+    )
     manifest_task_asset_content_hashes = preflight_task_asset_content_hashes(preflight_row)
     receipt_artifact_value_hashes = tuple(str(row) for row in report.receipt_artifact_value_hashes)
     receipt_artifacts_cover_manifest_assets = _receipt_artifacts_cover_manifest_assets(
@@ -873,10 +939,14 @@ def _suite_row(
         real_backend=bool(report.real_backend),
         missing_requirements=tuple(str(row) for row in report.missing_requirements),
         backend_error=str(getattr(report, "backend_error", "")),
+        adapter_runtime_requirement_evidence_hashes=adapter_runtime_requirement_evidence_hashes,
+        adapter_runtime_requirements_match_preflight=adapter_runtime_requirements_match_preflight,
         manifest_spec_hash=manifest_spec.spec_hash,
         manifest_benchmark_id=manifest_spec.benchmark_id,
         manifest_train_split_id=manifest_spec.train_split_id,
         manifest_held_out_split_id=manifest_spec.held_out_split_id,
+        manifest_runtime_requirement_count=manifest_runtime_requirement_count,
+        manifest_runtime_requirement_evidence_hashes=manifest_runtime_requirement_evidence_hashes,
         manifest_required_task_asset_count=len(manifest_spec.required_task_assets),
         manifest_task_asset_content_hashes=manifest_task_asset_content_hashes,
         child_report_hash=stable_hash(asdict(report)),
@@ -976,6 +1046,7 @@ def _child_claim_matches_report(domain: str, report: Any, claim: ClaimCertificat
     expected_requirement_keys = (
         "backend_available",
         real_backend_requirement,
+        "runtime_requirements_bound",
         "receipt_artifacts_bound",
         "backend_execution_evidence_bound",
         "learning_certificate_valid",
@@ -994,6 +1065,9 @@ def _child_claim_matches_report(domain: str, report: Any, claim: ClaimCertificat
         return False
     if str(backend_requirement.evidence.get("error", "")) != str(getattr(report, "backend_error", "")):
         return False
+    runtime_requirement = requirements["runtime_requirements_bound"]
+    if tuple(runtime_requirement.evidence.get("evidence_hashes", ())) != tuple(report.runtime_requirement_evidence_hashes):
+        return False
     execution_requirement = requirements["backend_execution_evidence_bound"]
     if tuple(execution_requirement.evidence.get("evidence_hashes", ())) != tuple(report.backend_execution_evidence_hashes):
         return False
@@ -1003,6 +1077,7 @@ def _child_claim_matches_report(domain: str, report: Any, claim: ClaimCertificat
     expected_passes = {
         "backend_available": bool(report.backend_available),
         real_backend_requirement: bool(report.real_backend),
+        "runtime_requirements_bound": (not bool(report.real_backend)) or bool(report.runtime_requirement_evidence_hashes),
         "receipt_artifacts_bound": bool(report.receipt_artifacts_bound),
         "backend_execution_evidence_bound": bool(report.backend_execution_evidence_ok),
         "learning_certificate_valid": bool(report.learning_certificate_valid),
@@ -1027,7 +1102,17 @@ def _child_claim_matches_report(domain: str, report: Any, claim: ClaimCertificat
         claim.claim_id == _CHILD_CLAIM_ID_BY_DOMAIN[domain]
         and claim.scope == _CHILD_CLAIM_SCOPE_BY_DOMAIN[domain]
         and claim.evidence_grade
-        == ("G1" if report.backend_available and report.real_backend and report.receipt_artifacts_bound and report.backend_execution_evidence_ok else "G0")
+        == (
+            "G1"
+            if (
+                report.backend_available
+                and report.real_backend
+                and bool(report.runtime_requirement_evidence_hashes)
+                and report.receipt_artifacts_bound
+                and report.backend_execution_evidence_ok
+            )
+            else "G0"
+        )
         and claim.status == ("supported" if all(expected_passes.values()) else "rejected")
         and claim.boundary == report.claim_boundary
         and claim.sources == tuple(report.source_urls)
@@ -1115,6 +1200,32 @@ def _receipt_artifacts_cover_manifest_assets(
     if len(manifest_task_asset_content_hashes) != manifest_required_task_asset_count:
         return False
     return set(manifest_task_asset_content_hashes).issubset(set(receipt_artifact_value_hashes))
+
+
+def _adapter_runtime_requirements_match_preflight(
+    *,
+    backend_available: bool,
+    real_backend: bool,
+    manifest_runtime_requirement_count: int,
+    manifest_runtime_requirement_evidence_hashes: tuple[str, ...],
+    adapter_runtime_requirement_evidence_hashes: tuple[str, ...],
+) -> bool:
+    if not backend_available or not real_backend:
+        return False
+    if len(manifest_runtime_requirement_evidence_hashes) != manifest_runtime_requirement_count:
+        return False
+    return adapter_runtime_requirement_evidence_hashes == manifest_runtime_requirement_evidence_hashes
+
+
+def _row_runtime_requirement_coverage_bound(row: RealTaskBenchmarkSuiteRow) -> bool:
+    expected = _adapter_runtime_requirements_match_preflight(
+        backend_available=row.backend_available,
+        real_backend=row.real_backend,
+        manifest_runtime_requirement_count=row.manifest_runtime_requirement_count,
+        manifest_runtime_requirement_evidence_hashes=row.manifest_runtime_requirement_evidence_hashes,
+        adapter_runtime_requirement_evidence_hashes=row.adapter_runtime_requirement_evidence_hashes,
+    )
+    return row.adapter_runtime_requirements_match_preflight == expected
 
 
 def _row_manifest_asset_coverage_bound(row: RealTaskBenchmarkSuiteRow) -> bool:

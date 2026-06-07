@@ -161,6 +161,7 @@ class RealTaskBenchmarkReadinessResult:
 
 
 ProbeFn = Callable[[str, str], RequirementProbe]
+RUNTIME_REQUIREMENT_KINDS = ("tool", "python_module", "env_var")
 
 
 def build_real_task_benchmark_manifest() -> RealTaskBenchmarkManifest:
@@ -599,6 +600,32 @@ def preflight_task_asset_content_hashes(row: RealTaskPreflightRow) -> tuple[str,
         for probe in row.probes
         if probe.kind == "task_asset" and probe.available and _is_hash(probe.content_hash)
     )
+
+
+def preflight_runtime_requirement_evidence_hashes(row: RealTaskPreflightRow) -> tuple[str, ...]:
+    return tuple(
+        probe.evidence_hash
+        for probe in row.probes
+        if probe.kind in RUNTIME_REQUIREMENT_KINDS and probe.available and _is_hash(probe.evidence_hash)
+    )
+
+
+def runtime_requirement_count(spec: RealTaskBenchmarkSpec) -> int:
+    return len(spec.required_tools) + len(spec.required_python_modules) + len(spec.required_env_vars)
+
+
+def build_runtime_requirement_evidence_hashes(
+    *,
+    required_tools: tuple[str, ...] = (),
+    required_python_modules: tuple[str, ...] = (),
+    required_env_vars: tuple[str, ...] = (),
+) -> tuple[str, ...]:
+    probes = (
+        *(tuple(_default_probe("tool", tool) for tool in required_tools)),
+        *(tuple(_default_probe("python_module", module) for module in required_python_modules)),
+        *(tuple(_default_probe("env_var", env_var) for env_var in required_env_vars)),
+    )
+    return tuple(probe.evidence_hash for probe in probes if probe.available and _is_hash(probe.evidence_hash))
 
 
 def fake_probe(availability: Mapping[tuple[str, str], bool]) -> ProbeFn:

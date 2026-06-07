@@ -18,6 +18,7 @@ from examples.real_task_adapter_evidence import (
     receipt_artifacts_are_bound,
     receipt_execution_provenance_hashes,
 )
+from examples.real_task_benchmark_manifest import build_runtime_requirement_evidence_hashes
 from trwm.claims import ClaimCertificate, certify_claim, requirement
 from trwm.core import HardVerifierResult, ProposalTrace, Receipt, StateSnapshot, TransactionEngine, TypedCandidate, stable_hash
 from trwm.evaluation import (
@@ -123,6 +124,7 @@ class RoboticsMotionBenchmarkAdapterReport:
     real_backend: bool
     missing_requirements: tuple[str, ...]
     backend_error: str
+    runtime_requirement_evidence_hashes: tuple[str, ...]
     task_count: int
     train_task_ids: tuple[str, ...]
     held_out_task_ids: tuple[str, ...]
@@ -482,6 +484,7 @@ def _run_available_backend(backend: RoboticsBenchmarkBackend) -> RoboticsMotionB
     receipt_artifact_value_hashes = receipt_artifact_value_provenance_hashes(all_receipts)
     receipt_artifacts_bound = receipt_artifacts_are_bound(all_receipts)
     backend_execution_evidence_ok, backend_execution_evidence_hashes = receipt_backend_execution_evidence("robotics", all_receipts)
+    runtime_requirement_evidence_hashes = _runtime_requirement_evidence_hashes(backend)
     replay_ok, rollback_ok = _audit_replay_rollback_many(
         (training_engine, seed_state),
         (baseline_engine, training_state),
@@ -536,6 +539,7 @@ def _run_available_backend(backend: RoboticsBenchmarkBackend) -> RoboticsMotionB
         real_backend=backend.real_backend,
         missing_requirements=(),
         backend_error="",
+        runtime_requirement_evidence_hashes=runtime_requirement_evidence_hashes,
         task_count=len(specs),
         train_task_ids=tuple(spec.task_id for spec in train_specs),
         held_out_task_ids=tuple(spec.task_id for spec in heldout_specs),
@@ -682,6 +686,15 @@ def _candidate_artifact_hashes(payload: Mapping[str, Any], bundle: RoboticsCandi
     return hashes
 
 
+def _runtime_requirement_evidence_hashes(backend: RoboticsBenchmarkBackend) -> tuple[str, ...]:
+    if not backend.real_backend:
+        return ()
+    return build_runtime_requirement_evidence_hashes(
+        required_tools=ROBOTICS_MOTION_BENCHMARK_REQUIRED_TOOLS,
+        required_env_vars=ROBOTICS_MOTION_BENCHMARK_REQUIRED_ENV_VARS,
+    )
+
+
 def _task_specs() -> tuple[RoboticsTaskSpec, ...]:
     return (
         RoboticsTaskSpec("train-kitchen-pick", "train", "fanuc_m10ia", "kitchen", "pick1"),
@@ -719,13 +732,24 @@ def _claim_for_report(report: RoboticsMotionBenchmarkAdapterReport) -> ClaimCert
         ),
         evidence_grade=(
             "G1"
-            if report.backend_available and report.real_backend and report.receipt_artifacts_bound and report.backend_execution_evidence_ok
+            if (
+                report.backend_available
+                and report.real_backend
+                and bool(report.runtime_requirement_evidence_hashes)
+                and report.receipt_artifacts_bound
+                and report.backend_execution_evidence_ok
+            )
             else "G0"
         ),
         scope="robotics_motion_benchmark_adapter",
         requirements=(
             requirement("backend_available", report.backend_available, missing=report.missing_requirements, error=report.backend_error),
             requirement("real_motion_benchmark_backend", report.real_backend),
+            requirement(
+                "runtime_requirements_bound",
+                (not report.real_backend) or bool(report.runtime_requirement_evidence_hashes),
+                evidence_hashes=report.runtime_requirement_evidence_hashes,
+            ),
             requirement(
                 "receipt_artifacts_bound",
                 report.receipt_artifacts_bound,
@@ -765,6 +789,7 @@ def _empty_report(backend: RoboticsBenchmarkBackend, *, backend_error: str = "")
         real_backend=backend.real_backend,
         missing_requirements=backend.missing_requirements(),
         backend_error=backend_error,
+        runtime_requirement_evidence_hashes=(),
         task_count=0,
         train_task_ids=(),
         held_out_task_ids=(),

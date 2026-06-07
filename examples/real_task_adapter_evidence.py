@@ -33,6 +33,7 @@ class RealTaskAdapterEvidenceCertificate:
     real_backend: bool
     missing_requirements: tuple[str, ...]
     backend_error: str
+    runtime_requirement_evidence_hashes: tuple[str, ...]
     train_task_ids: tuple[str, ...]
     held_out_task_ids: tuple[str, ...]
     learner_snapshot_hash: str
@@ -81,6 +82,7 @@ class RealTaskAdapterEvidenceCertificate:
         if self.schema_version != REAL_TASK_ADAPTER_EVIDENCE_CERTIFICATE_SCHEMA:
             raise ValueError(f"invalid real-task adapter evidence certificate schema: {self.schema_version}")
         object.__setattr__(self, "missing_requirements", tuple(self.missing_requirements))
+        object.__setattr__(self, "runtime_requirement_evidence_hashes", tuple(self.runtime_requirement_evidence_hashes))
         object.__setattr__(self, "train_task_ids", tuple(self.train_task_ids))
         object.__setattr__(self, "held_out_task_ids", tuple(self.held_out_task_ids))
         object.__setattr__(self, "receipt_hashes", tuple(self.receipt_hashes))
@@ -141,6 +143,7 @@ def build_real_task_adapter_evidence_certificate(
         real_backend=bool(report_data["real_backend"]),
         missing_requirements=tuple(str(row) for row in report_data["missing_requirements"]),
         backend_error=str(report_data.get("backend_error", "")),
+        runtime_requirement_evidence_hashes=tuple(str(row) for row in report_data["runtime_requirement_evidence_hashes"]),
         train_task_ids=tuple(str(row) for row in report_data["train_task_ids"]),
         held_out_task_ids=tuple(str(row) for row in report_data["held_out_task_ids"]),
         learner_snapshot_hash=str(report_data["learner_snapshot_hash"]),
@@ -210,6 +213,8 @@ def validate_real_task_adapter_evidence_certificate(
             if not _nonempty_string(value):
                 return False
         if not isinstance(certificate.backend_error, str):
+            return False
+        if any(not _is_hash(row) for row in certificate.runtime_requirement_evidence_hashes):
             return False
         for hash_value in (certificate.report_hash, certificate.claim_certificate_hash, certificate.certificate_hash):
             if not _is_hash(hash_value):
@@ -411,6 +416,7 @@ def _counts_and_partitions_are_valid(certificate: RealTaskAdapterEvidenceCertifi
             and certificate.invalid_commit_count == 0
             and certificate.baseline_verifier_calls == 0
             and certificate.learned_verifier_calls == 0
+            and certificate.runtime_requirement_evidence_hashes == ()
             and certificate.learner_snapshot_hash == ""
             and certificate.learning_certificate_hash == ""
             and certificate.ledger_head == ""
@@ -431,6 +437,7 @@ def _g1_supported(certificate: RealTaskAdapterEvidenceCertificate) -> bool:
         and certificate.claim_certificate_status == "supported"
         and certificate.learning_certificate_valid
         and certificate.learning_certificate_supports_claim
+        and bool(certificate.runtime_requirement_evidence_hashes)
         and certificate.receipt_artifacts_bound
         and certificate.backend_execution_evidence_ok
         and certificate.learned_verifier_calls < certificate.baseline_verifier_calls
@@ -456,6 +463,7 @@ def _report_matches(certificate: RealTaskAdapterEvidenceCertificate, report: Any
         "real_backend",
         "missing_requirements",
         "backend_error",
+        "runtime_requirement_evidence_hashes",
         "train_task_ids",
         "held_out_task_ids",
         "learner_snapshot_hash",
@@ -521,6 +529,11 @@ def _claim_matches_report(claim: ClaimCertificate, report_data: Mapping[str, Any
     if tuple(backend_requirement.evidence.get("missing", ())) != tuple(report_data["missing_requirements"]):
         return False
     if str(backend_requirement.evidence.get("error", "")) != str(report_data.get("backend_error", "")):
+        return False
+    runtime_requirement = requirements.get("runtime_requirements_bound")
+    if runtime_requirement is None:
+        return False
+    if tuple(runtime_requirement.evidence.get("evidence_hashes", ())) != tuple(report_data["runtime_requirement_evidence_hashes"]):
         return False
     execution_requirement = requirements.get("backend_execution_evidence_bound")
     if execution_requirement is None:

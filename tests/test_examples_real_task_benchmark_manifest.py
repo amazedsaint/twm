@@ -15,9 +15,11 @@ from examples.real_task_benchmark_manifest import (
     build_real_task_manifest_certificate,
     build_real_task_preflight_report,
     fake_probe,
+    preflight_runtime_requirement_evidence_hashes,
     preflight_task_asset_content_hashes,
     real_task_preflight_report_hash,
     run_real_task_benchmark_readiness,
+    runtime_requirement_count,
     validate_real_task_manifest,
     validate_real_task_manifest_certificate,
     validate_real_task_preflight_report,
@@ -96,6 +98,14 @@ class RealTaskBenchmarkManifestTests(unittest.TestCase):
         self.assertTrue(validate_real_task_preflight_report(result.preflight_report, result.manifest))
         self.assertEqual(result.manifest_certificate.preflight_report_hash, real_task_preflight_report_hash(result.preflight_report))
         self.assertIn("Readiness gate only", result.claim_certificate.boundary)
+        expected_runtime_counts = {
+            spec.domain: runtime_requirement_count(spec)
+            for spec in manifest.specs
+        }
+        for row in result.preflight_report.rows:
+            runtime_hashes = preflight_runtime_requirement_evidence_hashes(row)
+            self.assertEqual(len(runtime_hashes), expected_runtime_counts[row.domain])
+            self.assertTrue(all(len(runtime_hash) == 64 for runtime_hash in runtime_hashes))
 
     def test_manifest_certificate_detects_tampering(self) -> None:
         manifest = build_real_task_benchmark_manifest()

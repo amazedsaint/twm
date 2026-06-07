@@ -1336,6 +1336,8 @@ supported readiness claim also requires the expected robotics candidate
 `genchecks.py` file. Each probe carries an `evidence_hash` over its tool,
 module, environment, or task-asset evidence; available task assets are
 fingerprinted so task-package drift changes the preflight report hash.
+The suite later compares adapter runtime tool/module/environment evidence
+hashes against these preflight hashes before aggregate claim promotion.
 Available task assets also carry `content_hash` values that the suite compares
 against receipt artifact value hashes before aggregate claim promotion. A
 supported readiness claim only means the adapters are ready to run and produce
@@ -1483,8 +1485,9 @@ manifest spec, and aggregates the preflight report hash,
 manifest spec hashes, adapter evidence certificate hashes, child report hashes,
 exact receipt counts, typed-candidate hashes, hard-result hashes,
 hard-metadata hashes, receipt artifact hashes, receipt artifact value hashes,
-manifest task-asset content hashes, backend execution evidence hashes,
-baseline calls, learned calls, held-out successes,
+manifest runtime requirement evidence hashes, adapter runtime requirement
+evidence hashes, manifest task-asset content hashes, backend execution evidence
+hashes, baseline calls, learned calls, held-out successes,
 replay/rollback/ledger status, missing requirements, backend errors, and
 invalid-commit counts. Those compact hash lanes keep external
 command/QCEC/test metadata, task/candidate artifact inputs, and readiness probes
@@ -1497,6 +1500,8 @@ quantum binds QCEC equivalence metadata. The receipt artifact lane binds the
 task/candidate inputs: candidate directories and command configs for robotics,
 candidate directories and `genchecks.py` for hardware, project/bug/version and
 verifier scope for Defects4J, and original/candidate circuit programs for MQT.
+The runtime requirement lane binds the adapter's tool, Python-module, and
+task-root environment evidence hashes to the same manifest preflight row.
 For robotics and hardware, the suite also requires receipt artifact value
 hashes to cover the manifest preflight's task-asset content hashes before the
 aggregate claim can promote. The adapter evidence cross-check binds exact
@@ -1517,8 +1522,9 @@ reduction, every learning certificate matches its report, all held-out arms are
 isolated, held-out success is preserved, hard-verifier calls are reduced in
 every domain, replay/rollback and ledger audits pass, receipt and
 execution-provenance counts bind exact hash lanes, receipt artifact counts bind
-exact receipt counts, receipt artifact value hashes cover every preflighted
-manifest task-asset content hash, backend execution evidence counts bind exact
-receipt counts, and invalid commits remain zero. Missing external tools or
+exact receipt counts, adapter runtime requirement evidence hashes match the
+manifest preflight requirement hashes, receipt artifact value hashes cover every
+preflighted manifest task-asset content hash, backend execution evidence counts
+bind exact receipt counts, and invalid commits remain zero. Missing external tools or
 deterministic test doubles produce a rejected G0 claim rather than weakening the
 final objective.

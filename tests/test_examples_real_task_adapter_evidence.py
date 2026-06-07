@@ -19,6 +19,8 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
         self.assertEqual(certificate.domain, "robotics")
         self.assertEqual(certificate.evidence_grade, "G0")
         self.assertEqual(certificate.backend_error, result.report.backend_error)
+        self.assertEqual(certificate.runtime_requirement_evidence_hashes, result.report.runtime_requirement_evidence_hashes)
+        self.assertEqual(certificate.runtime_requirement_evidence_hashes, ())
         self.assertEqual(certificate.receipt_count, result.report.receipt_count)
         self.assertEqual(certificate.training_receipt_count, result.report.training_receipt_count)
         self.assertEqual(certificate.baseline_receipt_count, result.report.baseline_receipt_count)
@@ -63,6 +65,7 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
         self.assertEqual(certificate.typed_candidate_hashes, ())
         self.assertEqual(certificate.hard_result_hashes, ())
         self.assertEqual(certificate.hard_metadata_hashes, ())
+        self.assertEqual(certificate.runtime_requirement_evidence_hashes, ())
         self.assertFalse(certificate.receipt_artifacts_bound)
         self.assertEqual(certificate.receipt_artifact_hashes, ())
         self.assertEqual(certificate.receipt_artifact_value_hashes, ())
@@ -112,6 +115,19 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
             result.report,
             backend_execution_evidence_hashes=("0" * 64, *result.report.backend_execution_evidence_hashes[1:]),
         )
+
+        self.assertFalse(
+            validate_real_task_adapter_evidence_certificate(
+                result.evidence_certificate,
+                report=bad_report,
+                learning_certificate=result.learning_certificate,
+                claim_certificate=result.claim_certificate,
+            )
+        )
+
+    def test_tampered_report_runtime_requirement_evidence_hash_fails(self) -> None:
+        result = run_robotics_motion_benchmark_adapter_experiment(DeterministicMotionBenchmarkBackend())
+        bad_report = replace(result.report, runtime_requirement_evidence_hashes=("f" * 64,))
 
         self.assertFalse(
             validate_real_task_adapter_evidence_certificate(

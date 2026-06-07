@@ -18,6 +18,7 @@ from examples.real_task_adapter_evidence import (
     receipt_artifacts_are_bound,
     receipt_execution_provenance_hashes,
 )
+from examples.real_task_benchmark_manifest import build_runtime_requirement_evidence_hashes
 from trwm.claims import ClaimCertificate, certify_claim, requirement
 from trwm.core import HardVerifierResult, ProposalTrace, Receipt, StateSnapshot, TransactionEngine, TypedCandidate, stable_hash
 from trwm.evaluation import (
@@ -117,6 +118,7 @@ class HardwareRiscVFormalAdapterReport:
     real_backend: bool
     missing_requirements: tuple[str, ...]
     backend_error: str
+    runtime_requirement_evidence_hashes: tuple[str, ...]
     task_count: int
     train_task_ids: tuple[str, ...]
     held_out_task_ids: tuple[str, ...]
@@ -466,6 +468,7 @@ def _run_available_backend(backend: HardwareFormalBackend) -> HardwareRiscVForma
     receipt_artifact_value_hashes = receipt_artifact_value_provenance_hashes(all_receipts)
     receipt_artifacts_bound = receipt_artifacts_are_bound(all_receipts)
     backend_execution_evidence_ok, backend_execution_evidence_hashes = receipt_backend_execution_evidence("hardware", all_receipts)
+    runtime_requirement_evidence_hashes = _runtime_requirement_evidence_hashes(backend)
     replay_ok, rollback_ok = _audit_replay_rollback_many(
         (training_engine, seed_state),
         (baseline_engine, training_state),
@@ -520,6 +523,7 @@ def _run_available_backend(backend: HardwareFormalBackend) -> HardwareRiscVForma
         real_backend=backend.real_backend,
         missing_requirements=(),
         backend_error="",
+        runtime_requirement_evidence_hashes=runtime_requirement_evidence_hashes,
         task_count=len(specs),
         train_task_ids=tuple(spec.task_id for spec in train_specs),
         held_out_task_ids=tuple(spec.task_id for spec in heldout_specs),
@@ -668,6 +672,15 @@ def _candidate_artifact_hashes(payload: Mapping[str, Any], bundle: HardwareCandi
     return hashes
 
 
+def _runtime_requirement_evidence_hashes(backend: HardwareFormalBackend) -> tuple[str, ...]:
+    if not backend.real_backend:
+        return ()
+    return build_runtime_requirement_evidence_hashes(
+        required_tools=HARDWARE_RISCV_FORMAL_REQUIRED_TOOLS,
+        required_env_vars=HARDWARE_RISCV_FORMAL_REQUIRED_ENV_VARS,
+    )
+
+
 def _task_specs() -> tuple[HardwareTaskSpec, ...]:
     return (
         HardwareTaskSpec("train-rv32i-add", "train", "picorv32", "rv32i_add", "j1"),
@@ -700,13 +713,24 @@ def _claim_for_report(report: HardwareRiscVFormalAdapterReport) -> ClaimCertific
         ),
         evidence_grade=(
             "G1"
-            if report.backend_available and report.real_backend and report.receipt_artifacts_bound and report.backend_execution_evidence_ok
+            if (
+                report.backend_available
+                and report.real_backend
+                and bool(report.runtime_requirement_evidence_hashes)
+                and report.receipt_artifacts_bound
+                and report.backend_execution_evidence_ok
+            )
             else "G0"
         ),
         scope="hardware_riscv_formal_adapter",
         requirements=(
             requirement("backend_available", report.backend_available, missing=report.missing_requirements, error=report.backend_error),
             requirement("real_riscv_formal_backend", report.real_backend),
+            requirement(
+                "runtime_requirements_bound",
+                (not report.real_backend) or bool(report.runtime_requirement_evidence_hashes),
+                evidence_hashes=report.runtime_requirement_evidence_hashes,
+            ),
             requirement(
                 "receipt_artifacts_bound",
                 report.receipt_artifacts_bound,
@@ -746,6 +770,7 @@ def _empty_report(backend: HardwareFormalBackend, *, backend_error: str = "") ->
         real_backend=backend.real_backend,
         missing_requirements=backend.missing_requirements(),
         backend_error=backend_error,
+        runtime_requirement_evidence_hashes=(),
         task_count=0,
         train_task_ids=(),
         held_out_task_ids=(),

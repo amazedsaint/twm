@@ -24,6 +24,7 @@ class ProgramDefects4JAdapterTests(unittest.TestCase):
         self.assertEqual(report.typed_candidate_hashes, ())
         self.assertEqual(report.hard_result_hashes, ())
         self.assertEqual(report.hard_metadata_hashes, ())
+        self.assertEqual(report.runtime_requirement_evidence_hashes, ())
         self.assertFalse(report.receipt_artifacts_bound)
         self.assertEqual(report.receipt_artifact_hashes, ())
         self.assertEqual(report.receipt_artifact_value_hashes, ())
@@ -72,6 +73,7 @@ class ProgramDefects4JAdapterTests(unittest.TestCase):
         self.assertTrue(report.replay_audit_ok)
         self.assertTrue(report.rollback_audit_ok)
         self.assertTrue(report.ledger_audit_ok)
+        self.assertEqual(report.runtime_requirement_evidence_hashes, ())
         self.assertTrue(report.receipt_artifacts_bound)
         self.assertTrue(report.receipt_artifact_value_hashes)
         self.assertTrue(report.backend_execution_evidence_ok)
@@ -93,6 +95,7 @@ class ProgramDefects4JAdapterTests(unittest.TestCase):
         self.assertEqual(result.evidence_certificate.typed_candidate_hashes, report.typed_candidate_hashes)
         self.assertEqual(result.evidence_certificate.hard_result_hashes, report.hard_result_hashes)
         self.assertEqual(result.evidence_certificate.hard_metadata_hashes, report.hard_metadata_hashes)
+        self.assertEqual(result.evidence_certificate.runtime_requirement_evidence_hashes, report.runtime_requirement_evidence_hashes)
         self.assertEqual(result.evidence_certificate.receipt_artifact_hashes, report.receipt_artifact_hashes)
         self.assertEqual(result.evidence_certificate.receipt_artifact_value_hashes, report.receipt_artifact_value_hashes)
         self.assertEqual(result.evidence_certificate.backend_execution_evidence_hashes, report.backend_execution_evidence_hashes)
@@ -137,7 +140,7 @@ class ProgramDefects4JAdapterTests(unittest.TestCase):
             self.assertTrue(result.report.real_backend)
             self.assertEqual(
                 result.claim_certificate.evidence_grade,
-                "G1" if result.report.receipt_artifacts_bound and result.report.backend_execution_evidence_ok else "G0",
+                "G1" if result.report.runtime_requirement_evidence_hashes and result.report.receipt_artifacts_bound and result.report.backend_execution_evidence_ok else "G0",
             )
         else:
             self.assertEqual(result.claim_certificate.status, "rejected")

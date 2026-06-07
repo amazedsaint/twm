@@ -16,6 +16,7 @@ from examples.real_task_adapter_evidence import (
     receipt_artifacts_are_bound,
     receipt_execution_provenance_hashes,
 )
+from examples.real_task_benchmark_manifest import build_runtime_requirement_evidence_hashes
 from trwm.claims import ClaimCertificate, certify_claim, requirement
 from trwm.core import HardVerifierResult, ProposalTrace, Receipt, StateSnapshot, TransactionEngine, TypedCandidate, stable_hash
 from trwm.evaluation import (
@@ -30,6 +31,7 @@ from trwm.learning import ReceiptTrainedReversibleProposer
 QUANTUM_MQT_ADAPTER_REPORT_SCHEMA = "trwm.example.quantum_mqt_bench_adapter.v1"
 QUANTUM_MQT_VERIFIER_ID = "mqt_qcec_equivalence_oracle"
 QUANTUM_MQT_VERIFIER_VERSION = "1.0"
+QUANTUM_MQT_REQUIRED_PYTHON_MODULES = ("mqt.bench", "mqt.qcec")
 QUANTUM_MQT_SOURCES = (
     "https://github.com/munich-quantum-toolkit/bench",
     "https://mqt.readthedocs.io/projects/bench/en/latest/usage.html",
@@ -111,6 +113,7 @@ class QuantumMqtBenchAdapterReport:
     real_backend: bool
     missing_requirements: tuple[str, ...]
     backend_error: str
+    runtime_requirement_evidence_hashes: tuple[str, ...]
     task_count: int
     train_task_ids: tuple[str, ...]
     held_out_task_ids: tuple[str, ...]
@@ -170,7 +173,7 @@ class MqtQuantumEquivalenceBackend:
 
     def missing_requirements(self) -> tuple[str, ...]:
         missing = []
-        for module in ("mqt.bench", "mqt.qcec"):
+        for module in QUANTUM_MQT_REQUIRED_PYTHON_MODULES:
             try:
                 found = importlib.util.find_spec(module) is not None
             except ModuleNotFoundError:
@@ -382,6 +385,7 @@ def _run_available_backend(backend: QuantumEquivalenceBackend) -> QuantumMqtBenc
     receipt_artifact_value_hashes = receipt_artifact_value_provenance_hashes(all_receipts)
     receipt_artifacts_bound = receipt_artifacts_are_bound(all_receipts)
     backend_execution_evidence_ok, backend_execution_evidence_hashes = receipt_backend_execution_evidence("quantum", all_receipts)
+    runtime_requirement_evidence_hashes = _runtime_requirement_evidence_hashes(backend)
     replay_ok, rollback_ok = _audit_replay_rollback_many(
         (training_engine, seed_state),
         (baseline_engine, training_state),
@@ -436,6 +440,7 @@ def _run_available_backend(backend: QuantumEquivalenceBackend) -> QuantumMqtBenc
         real_backend=backend.real_backend,
         missing_requirements=(),
         backend_error="",
+        runtime_requirement_evidence_hashes=runtime_requirement_evidence_hashes,
         task_count=len(specs),
         train_task_ids=tuple(spec.task_id for spec in train_specs),
         held_out_task_ids=tuple(spec.task_id for spec in heldout_specs),
@@ -582,6 +587,12 @@ def _candidate_artifact_hashes(bundle: QuantumProgramBundle, candidate_program: 
     }
 
 
+def _runtime_requirement_evidence_hashes(backend: QuantumEquivalenceBackend) -> tuple[str, ...]:
+    if not backend.real_backend:
+        return ()
+    return build_runtime_requirement_evidence_hashes(required_python_modules=QUANTUM_MQT_REQUIRED_PYTHON_MODULES)
+
+
 def _task_specs() -> tuple[QuantumTaskSpec, ...]:
     return (
         QuantumTaskSpec("train-ghz-3", "train", "ghz", 3, "dj"),
@@ -614,13 +625,24 @@ def _claim_for_report(report: QuantumMqtBenchAdapterReport) -> ClaimCertificate:
         ),
         evidence_grade=(
             "G1"
-            if report.backend_available and report.real_backend and report.receipt_artifacts_bound and report.backend_execution_evidence_ok
+            if (
+                report.backend_available
+                and report.real_backend
+                and bool(report.runtime_requirement_evidence_hashes)
+                and report.receipt_artifacts_bound
+                and report.backend_execution_evidence_ok
+            )
             else "G0"
         ),
         scope="quantum_mqt_bench_adapter",
         requirements=(
             requirement("backend_available", report.backend_available, missing=report.missing_requirements, error=report.backend_error),
             requirement("real_mqt_backend", report.real_backend),
+            requirement(
+                "runtime_requirements_bound",
+                (not report.real_backend) or bool(report.runtime_requirement_evidence_hashes),
+                evidence_hashes=report.runtime_requirement_evidence_hashes,
+            ),
             requirement(
                 "receipt_artifacts_bound",
                 report.receipt_artifacts_bound,
@@ -661,6 +683,7 @@ def _empty_report(backend: QuantumEquivalenceBackend, *, backend_error: str = ""
         real_backend=backend.real_backend,
         missing_requirements=missing,
         backend_error=backend_error,
+        runtime_requirement_evidence_hashes=(),
         task_count=0,
         train_task_ids=(),
         held_out_task_ids=(),
