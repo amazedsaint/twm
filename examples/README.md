@@ -1512,11 +1512,11 @@ aggregate claim can promote. The adapter evidence cross-check binds exact
 training, baseline, and learned receipt partitions plus any backend execution error
 before the manifest cross-check proves the adapter evidence sources are covered
 by the domain's real-task manifest spec. The learning cross-check then binds
-the learned receipt partition into the learning certificate. Each child report
-also binds `heldout_arm_isolated`: after training, the baseline and learned
-held-out arms must start from the same frozen post-training state but run on
-separate ledgers, so neither arm inherits state mutations or ledger history from
-the other.
+the baseline and learned receipt partitions into the learning certificate.
+Each child report also binds `heldout_arm_isolated`: after training, the
+baseline and learned held-out arms must start from the same frozen
+post-training state but run on separate ledgers, so neither arm inherits state
+mutations or ledger history from the other.
 
 The suite claim is intentionally stricter than adapter readiness. It is
 supported only when all four domains use real backends, all child claims are

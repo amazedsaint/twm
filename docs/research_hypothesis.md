@@ -969,7 +969,7 @@ That evidence must be covered by the
 manifest spec sources for the same domain; each child claim must match
 its report's requirement passes, metrics, boundary, and sources; and each
 learning certificate must match the report's learner snapshot, held-out metrics,
-hard-commit audit, and exact training/learned receipt partitions. The suite
+hard-commit audit, and exact training/baseline/learned receipt partitions. The suite
 claim supports the objective only if every real backend supports its
 single-domain claim, every child certificate is report-consistent and
 manifest-covered, every adapter's reported train and held-out task ids exactly

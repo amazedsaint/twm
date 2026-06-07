@@ -16,6 +16,7 @@ class LearningEvaluationCertificate:
     learner_id: str
     learner_snapshot_hash: str
     training_receipt_hashes: tuple[str, ...]
+    baseline_receipt_hashes: tuple[str, ...]
     evaluation_receipt_hashes: tuple[str, ...]
     baseline_name: str
     learned_name: str
@@ -40,6 +41,7 @@ class LearningEvaluationCertificate:
         if self.schema_version != LEARNING_EVALUATION_CERTIFICATE_SCHEMA:
             raise ValueError(f"invalid learning evaluation certificate schema: {self.schema_version}")
         object.__setattr__(self, "training_receipt_hashes", tuple(self.training_receipt_hashes))
+        object.__setattr__(self, "baseline_receipt_hashes", tuple(self.baseline_receipt_hashes))
         object.__setattr__(self, "evaluation_receipt_hashes", tuple(self.evaluation_receipt_hashes))
         object.__setattr__(self, "metrics", dict(self.metrics))
         if not self.certificate_hash:
@@ -68,6 +70,7 @@ def build_learning_evaluation_certificate(
     learner_snapshot_hash: str,
     training_receipt_hashes: tuple[str, ...],
     evaluation_receipt_hashes: tuple[str, ...],
+    baseline_receipt_hashes: tuple[str, ...] = (),
     baseline_name: str,
     learned_name: str,
     baseline_verifier_calls: int,
@@ -84,6 +87,7 @@ def build_learning_evaluation_certificate(
     metrics: Mapping[str, Any] | None = None,
 ) -> LearningEvaluationCertificate:
     train = tuple(training_receipt_hashes)
+    baseline = tuple(baseline_receipt_hashes)
     eval_rows = tuple(evaluation_receipt_hashes)
     return LearningEvaluationCertificate(
         schema_version=LEARNING_EVALUATION_CERTIFICATE_SCHEMA,
@@ -91,6 +95,7 @@ def build_learning_evaluation_certificate(
         learner_id=learner_id,
         learner_snapshot_hash=learner_snapshot_hash,
         training_receipt_hashes=train,
+        baseline_receipt_hashes=baseline,
         evaluation_receipt_hashes=eval_rows,
         baseline_name=baseline_name,
         learned_name=learned_name,
@@ -132,11 +137,19 @@ def validate_learning_evaluation_certificate(certificate: LearningEvaluationCert
             return False
         if not certificate.training_receipt_hashes or not certificate.evaluation_receipt_hashes:
             return False
-        if any(not _is_hash(row) for row in certificate.training_receipt_hashes + certificate.evaluation_receipt_hashes):
+        if any(not _is_hash(row) for row in certificate.training_receipt_hashes + certificate.baseline_receipt_hashes + certificate.evaluation_receipt_hashes):
             return False
         if len(set(certificate.training_receipt_hashes)) != len(certificate.training_receipt_hashes):
             return False
+        if len(set(certificate.baseline_receipt_hashes)) != len(certificate.baseline_receipt_hashes):
+            return False
         if len(set(certificate.evaluation_receipt_hashes)) != len(certificate.evaluation_receipt_hashes):
+            return False
+        if certificate.baseline_receipt_hashes and len(certificate.baseline_receipt_hashes) != certificate.baseline_verifier_calls:
+            return False
+        if set(certificate.baseline_receipt_hashes).intersection(certificate.training_receipt_hashes):
+            return False
+        if set(certificate.baseline_receipt_hashes).intersection(certificate.evaluation_receipt_hashes):
             return False
         disjoint = not set(certificate.training_receipt_hashes).intersection(certificate.evaluation_receipt_hashes)
         if certificate.train_eval_disjoint != disjoint or not disjoint:

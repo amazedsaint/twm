@@ -410,6 +410,7 @@ def _run_available_backend(backend: QuantumEquivalenceBackend) -> QuantumMqtBenc
         learner_id=snapshot.learner_id,
         learner_snapshot_hash=snapshot.snapshot_hash,
         training_receipt_hashes=tuple(receipt.receipt_hash for receipt in training_receipts),
+        baseline_receipt_hashes=tuple(receipt.receipt_hash for receipt in baseline_receipts),
         evaluation_receipt_hashes=tuple(receipt.receipt_hash for receipt in learned_receipts),
         baseline_name="static_non_equivalent_first",
         learned_name=snapshot.learner_id,

@@ -565,6 +565,7 @@ def _learning_certificate_matches(
         and learning_certificate.certificate_hash == certificate.learning_certificate_hash
         and learning_evaluation_supports_claim(learning_certificate) == certificate.learning_certificate_supports_claim
         and learning_certificate.training_receipt_hashes == certificate.training_receipt_hashes
+        and learning_certificate.baseline_receipt_hashes == certificate.baseline_receipt_hashes
         and learning_certificate.evaluation_receipt_hashes == certificate.learned_receipt_hashes
         and learning_certificate.learner_snapshot_hash == certificate.learner_snapshot_hash
     )
@@ -574,9 +575,14 @@ def _learning_certificate_matches_report(
     learning_certificate: LearningEvaluationCertificate,
     report_data: Mapping[str, Any],
 ) -> bool:
+    receipt_hashes = tuple(report_data["receipt_hashes"])
+    training_count = int(report_data["training_receipt_count"])
+    baseline_count = int(report_data["baseline_receipt_count"])
+    expected_baseline_hashes = receipt_hashes[training_count : training_count + baseline_count]
     return (
         learning_certificate.baseline_verifier_calls == int(report_data["baseline_verifier_calls"])
         and learning_certificate.learned_verifier_calls == int(report_data["learned_verifier_calls"])
+        and learning_certificate.baseline_receipt_hashes == expected_baseline_hashes
         and learning_certificate.baseline_success_count == int(report_data["baseline_success_count"])
         and learning_certificate.learned_success_count == int(report_data["learned_success_count"])
         and learning_certificate.verifier_budget == int(report_data["baseline_verifier_calls"])

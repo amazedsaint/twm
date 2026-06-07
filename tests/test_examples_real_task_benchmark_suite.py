@@ -406,13 +406,12 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         robotics = results["robotics"]
         learning_certificate = robotics.learning_certificate
         self.assertIsNotNone(learning_certificate)
-        bad_baseline_calls = learning_certificate.baseline_verifier_calls + 1
+        bad_baseline_hashes = tuple(f"{index}" * 64 for index in ("1", "2", "3", "4"))
         results["robotics"] = replace(
             robotics,
             learning_certificate=replace(
                 learning_certificate,
-                baseline_verifier_calls=bad_baseline_calls,
-                verifier_call_gain_numerator=bad_baseline_calls,
+                baseline_receipt_hashes=bad_baseline_hashes,
                 certificate_hash="",
             ),
         )

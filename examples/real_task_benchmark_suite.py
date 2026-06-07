@@ -1219,6 +1219,7 @@ def _learning_certificate_matches_report(report: Any, learning_certificate: Any 
     training_end = int(report.training_receipt_count)
     learned_start = int(report.training_receipt_count) + int(report.baseline_receipt_count)
     training_hashes = receipt_hashes[:training_end]
+    baseline_hashes = receipt_hashes[training_end:learned_start]
     learned_hashes = receipt_hashes[learned_start:]
     expected_metrics = {
         "backend_id": str(report.backend_id),
@@ -1230,8 +1231,10 @@ def _learning_certificate_matches_report(report: Any, learning_certificate: Any 
         learning_certificate.certificate_hash == report.learning_certificate_hash
         and learning_certificate.learner_snapshot_hash == report.learner_snapshot_hash
         and learning_certificate.training_receipt_hashes == training_hashes
+        and learning_certificate.baseline_receipt_hashes == baseline_hashes
         and learning_certificate.evaluation_receipt_hashes == learned_hashes
         and len(learning_certificate.training_receipt_hashes) == report.training_receipt_count
+        and len(learning_certificate.baseline_receipt_hashes) == report.baseline_receipt_count
         and len(learning_certificate.evaluation_receipt_hashes) == report.learned_receipt_count
         and learning_certificate.baseline_verifier_calls == report.baseline_verifier_calls
         and learning_certificate.learned_verifier_calls == report.learned_verifier_calls

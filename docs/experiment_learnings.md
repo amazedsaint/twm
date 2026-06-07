@@ -925,8 +925,8 @@ certificate and child claim
 certificate matches the report it accompanies, that adapter evidence is covered
 by the manifest spec sources for that domain, and that each learning
 certificate matches the report's learner snapshot, verifier-call metrics,
-success metrics, hard-commit flag, ledger audit, and exact training/learned
-receipt partitions.
+success metrics, hard-commit flag, ledger audit, and exact
+training/baseline/learned receipt partitions.
 
 That changes the proof boundary again: single-domain adapter success is no
 longer enough. The final claim is supported only if all four real backends are

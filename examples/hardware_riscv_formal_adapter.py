@@ -493,6 +493,7 @@ def _run_available_backend(backend: HardwareFormalBackend) -> HardwareRiscVForma
         learner_id=snapshot.learner_id,
         learner_snapshot_hash=snapshot.snapshot_hash,
         training_receipt_hashes=tuple(receipt.receipt_hash for receipt in training_receipts),
+        baseline_receipt_hashes=tuple(receipt.receipt_hash for receipt in baseline_receipts),
         evaluation_receipt_hashes=tuple(receipt.receipt_hash for receipt in learned_receipts),
         baseline_name="static_rvfi_violating_candidate_first",
         learned_name=snapshot.learner_id,

@@ -54,6 +54,7 @@ class ReceiptTrainedReversibleProposerBenchmarkTests(unittest.TestCase):
         self.assertEqual(result.evidence_certificate.committed_count, report.committed_count)
         self.assertEqual(result.evidence_certificate.rejected_count, report.rejected_count)
         self.assertEqual(len(result.learning_certificate.training_receipt_hashes), report.training_receipt_count)
+        self.assertEqual(len(result.learning_certificate.baseline_receipt_hashes), report.baseline_receipt_count)
         self.assertEqual(len(result.learning_certificate.evaluation_receipt_hashes), report.learned_receipt_count)
         self.assertTrue(set(report.train_task_ids).isdisjoint(report.held_out_task_ids))
 

@@ -235,6 +235,7 @@ def run_receipt_trained_reversible_proposer_benchmark() -> ReceiptTrainedReversi
         learner_id=snapshot.learner_id,
         learner_snapshot_hash=snapshot.snapshot_hash,
         training_receipt_hashes=tuple(receipt.receipt_hash for receipt in training_receipts),
+        baseline_receipt_hashes=tuple(receipt.receipt_hash for receipt in baseline_receipts),
         evaluation_receipt_hashes=tuple(receipt.receipt_hash for receipt in learned_receipts),
         baseline_name="static_rejected_first_same_heldout_tasks",
         learned_name=snapshot.learner_id,
@@ -250,7 +251,6 @@ def run_receipt_trained_reversible_proposer_benchmark() -> ReceiptTrainedReversi
         ledger_audit=engine.ledger.audit(),
         replay_rollback_rate=1.0 if replay_ok and rollback_ok else 0.0,
         metrics={
-            "baseline_receipt_hashes": tuple(receipt.receipt_hash for receipt in baseline_receipts),
             "baseline_submitted_actions": tuple(_receipt_action(receipt) for receipt in baseline_receipts),
             "learned_submitted_actions": tuple(_receipt_action(receipt) for receipt in learned_receipts),
             "domains": tuple(task.domain for task in tasks),

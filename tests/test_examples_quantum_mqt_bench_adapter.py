@@ -141,6 +141,7 @@ class QuantumMqtBenchAdapterTests(unittest.TestCase):
         self.assertEqual(result.evidence_certificate.evidence_grade, "G0")
         self.assertTrue(result.evidence_certificate.heldout_arm_isolated)
         self.assertEqual(result.evidence_certificate.receipt_count, report.receipt_count)
+        self.assertEqual(result.evidence_certificate.baseline_receipt_hashes, result.learning_certificate.baseline_receipt_hashes)
         self.assertEqual(result.evidence_certificate.learned_receipt_hashes, result.learning_certificate.evaluation_receipt_hashes)
         self.assertEqual(result.evidence_certificate.typed_candidate_hashes, report.typed_candidate_hashes)
         self.assertEqual(result.evidence_certificate.hard_result_hashes, report.hard_result_hashes)

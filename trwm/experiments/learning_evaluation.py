@@ -79,6 +79,7 @@ def run_learning_evaluation_benchmark() -> LearningEvaluationReport:
         learner_id="receipt_budget_policy",
         learner_snapshot_hash=snapshot.snapshot_hash,
         training_receipt_hashes=tuple(receipt.receipt_hash for receipt in training_receipts),
+        baseline_receipt_hashes=tuple(receipt.receipt_hash for receipt in baseline.receipts),
         evaluation_receipt_hashes=tuple(receipt.receipt_hash for receipt in learned.receipts),
         baseline_name="cheap_first_same_budget",
         learned_name="receipt_budget_policy",

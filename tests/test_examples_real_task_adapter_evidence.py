@@ -225,10 +225,10 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
     def test_mismatched_learning_certificate_fails(self) -> None:
         result = run_robotics_motion_benchmark_adapter_experiment(DeterministicMotionBenchmarkBackend())
         assert result.learning_certificate is not None
+        self.assertEqual(result.learning_certificate.baseline_receipt_hashes, result.evidence_certificate.baseline_receipt_hashes)
         bad_learning = replace(
             result.learning_certificate,
-            baseline_verifier_calls=result.learning_certificate.baseline_verifier_calls + 1,
-            verifier_call_gain_numerator=result.learning_certificate.verifier_call_gain_numerator + 1,
+            baseline_receipt_hashes=tuple(f"{index}" * 64 for index in ("1", "2", "3", "4")),
             certificate_hash="",
         )
 
