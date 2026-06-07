@@ -3,9 +3,13 @@ from __future__ import annotations
 from dataclasses import replace
 import unittest
 
-from examples.real_task_adapter_evidence import validate_real_task_adapter_evidence_certificate
+from examples.real_task_adapter_evidence import (
+    real_task_adapter_claim_evidence_grade,
+    validate_real_task_adapter_evidence_certificate,
+)
 from examples.robotics_motion_benchmark_adapter import (
     DeterministicMotionBenchmarkBackend,
+    _claim_for_report as robotics_claim_for_report,
     run_robotics_motion_benchmark_adapter_experiment,
 )
 
@@ -255,6 +259,48 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
                 claim_certificate=bad_claim,
             )
         )
+
+    def test_adapter_claim_grade_requires_all_objective_gates(self) -> None:
+        result = run_robotics_motion_benchmark_adapter_experiment(DeterministicMotionBenchmarkBackend())
+        report = replace(
+            result.report,
+            backend_available=True,
+            real_backend=True,
+            runtime_requirement_evidence_hashes=("f" * 64,),
+        )
+
+        self.assertEqual(real_task_adapter_claim_evidence_grade(report), "G1")
+        claim = robotics_claim_for_report(report)
+        self.assertEqual(claim.status, "supported")
+        self.assertEqual(claim.evidence_grade, "G1")
+
+        cases = (
+            ("learning_certificate_valid", replace(report, learning_certificate_valid=False), "learning_certificate_valid"),
+            (
+                "learning_certificate_supports_claim",
+                replace(report, learning_certificate_supports_claim=False),
+                "learning_certificate_supports_claim",
+            ),
+            (
+                "hard_verifier_calls_reduced",
+                replace(report, learned_verifier_calls=report.baseline_verifier_calls, verifier_call_reduction=0),
+                "hard_verifier_calls_reduced",
+            ),
+            ("success_preserved", replace(report, learned_success_count=0), "success_preserved"),
+            ("zero_invalid_commits", replace(report, invalid_commit_count=1), "zero_invalid_commits"),
+            ("hard_commit_only", replace(report, hard_commit_only=False), "hard_commit_only"),
+            ("train_eval_disjoint", replace(report, train_eval_disjoint=False), "train_eval_disjoint"),
+            ("heldout_arm_isolated", replace(report, heldout_arm_isolated=False), "heldout_arm_isolated"),
+            ("replay_rollback_ok", replace(report, replay_audit_ok=False), "replay_rollback_ok"),
+            ("backend_execution_evidence_bound", replace(report, backend_execution_evidence_ok=False), "backend_execution_evidence_bound"),
+        )
+        for case_name, bad_report, failed_key in cases:
+            with self.subTest(case=case_name):
+                self.assertEqual(real_task_adapter_claim_evidence_grade(bad_report), "G0")
+                bad_claim = robotics_claim_for_report(bad_report)
+                self.assertEqual(bad_claim.status, "rejected")
+                self.assertEqual(bad_claim.evidence_grade, "G0")
+                self.assertIn(failed_key, bad_claim.failed_keys)
 
 
 if __name__ == "__main__":

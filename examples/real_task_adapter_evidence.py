@@ -189,6 +189,33 @@ def build_real_task_adapter_evidence_certificate(
     )
 
 
+def real_task_adapter_claim_evidence_grade(report: Any) -> str:
+    data = _report_as_dict(report)
+    return (
+        "G1"
+        if (
+            bool(data["backend_available"])
+            and bool(data["real_backend"])
+            and bool(data["runtime_requirement_evidence_hashes"])
+            and bool(data["receipt_artifacts_bound"])
+            and bool(data["backend_execution_evidence_ok"])
+            and bool(data["learning_certificate_valid"])
+            and bool(data["learning_certificate_supports_claim"])
+            and int(data["learned_verifier_calls"]) < int(data["baseline_verifier_calls"])
+            and int(data["learned_success_count"]) == int(data["baseline_success_count"])
+            and int(data["learned_success_count"]) > 0
+            and int(data["invalid_commit_count"]) == 0
+            and bool(data["hard_commit_only"])
+            and bool(data["train_eval_disjoint"])
+            and bool(data["heldout_arm_isolated"])
+            and bool(data["replay_audit_ok"])
+            and bool(data["rollback_audit_ok"])
+            and bool(data["ledger_audit_ok"])
+        )
+        else "G0"
+    )
+
+
 def validate_real_task_adapter_evidence_certificate(
     certificate: RealTaskAdapterEvidenceCertificate,
     *,
@@ -549,6 +576,31 @@ def _claim_matches_report(claim: ClaimCertificate, report_data: Mapping[str, Any
         return False
     if tuple(artifact_requirement.evidence.get("artifact_hashes", ())) != tuple(report_data["receipt_artifact_hashes"]):
         return False
+    real_backend_requirements = tuple(key for key in requirements if key.startswith("real_"))
+    if len(real_backend_requirements) != 1:
+        return False
+    expected_requirement_statuses = {
+        real_backend_requirements[0]: bool(report_data["real_backend"]),
+        "backend_available": bool(report_data["backend_available"]),
+        "runtime_requirements_bound": (not bool(report_data["real_backend"])) or bool(report_data["runtime_requirement_evidence_hashes"]),
+        "receipt_artifacts_bound": bool(report_data["receipt_artifacts_bound"]),
+        "backend_execution_evidence_bound": bool(report_data["backend_execution_evidence_ok"]),
+        "learning_certificate_valid": bool(report_data["learning_certificate_valid"]),
+        "learning_certificate_supports_claim": bool(report_data["learning_certificate_supports_claim"]),
+        "hard_verifier_calls_reduced": int(report_data["learned_verifier_calls"]) < int(report_data["baseline_verifier_calls"]),
+        "success_preserved": int(report_data["learned_success_count"]) == int(report_data["baseline_success_count"])
+        and int(report_data["learned_success_count"]) > 0,
+        "zero_invalid_commits": int(report_data["invalid_commit_count"]) == 0,
+        "hard_commit_only": bool(report_data["hard_commit_only"]),
+        "train_eval_disjoint": bool(report_data["train_eval_disjoint"]),
+        "heldout_arm_isolated": bool(report_data["heldout_arm_isolated"]),
+        "replay_rollback_ok": bool(report_data["replay_audit_ok"])
+        and bool(report_data["rollback_audit_ok"])
+        and bool(report_data["ledger_audit_ok"]),
+    }
+    for key, passed in expected_requirement_statuses.items():
+        if key not in requirements or requirements[key].passed != passed:
+            return False
     return (
         claim.metrics == expected_metrics
         and claim.boundary == str(report_data["claim_boundary"])

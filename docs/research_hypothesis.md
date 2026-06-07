@@ -970,7 +970,13 @@ That evidence must be covered by the
 manifest spec sources for the same domain; each child claim must match
 its report's requirement passes, metrics, boundary, and sources; and each
 learning certificate must match the report's learner snapshot, held-out metrics,
-hard-commit audit, and exact training/baseline/learned receipt partitions. The suite
+hard-commit audit, and exact training/baseline/learned receipt partitions. Each
+child claim's G1 grade now requires the full single-domain objective predicate:
+real backend, runtime hashes, receipt artifacts, backend execution evidence,
+valid learning support, reduced hard-verifier calls, held-out success
+preservation, zero invalid commits, hard-commit-only receipts,
+train/evaluation disjointness, held-out arm isolation, and replay, rollback,
+and ledger audits. The suite
 claim supports the objective only if every real backend supports its
 single-domain claim, every child certificate is report-consistent and
 manifest-covered, the suite certificate directly binds aggregate

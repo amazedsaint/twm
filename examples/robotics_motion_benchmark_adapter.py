@@ -12,6 +12,7 @@ from examples.real_task_adapter_evidence import (
     RealTaskAdapterEvidenceCertificate,
     build_real_task_adapter_evidence_certificate,
     path_fingerprint_hash,
+    real_task_adapter_claim_evidence_grade,
     receipt_backend_execution_evidence,
     receipt_artifact_provenance_hashes,
     receipt_artifact_value_provenance_hashes,
@@ -731,17 +732,7 @@ def _claim_for_report(report: RoboticsMotionBenchmarkAdapterReport) -> ClaimCert
             "On held-out MotionBenchMaker/MoveIt/OMPL robotics tasks, a receipt-trained reversible "
             "proposer reduces hard-verifier calls while preserving zero invalid commits."
         ),
-        evidence_grade=(
-            "G1"
-            if (
-                report.backend_available
-                and report.real_backend
-                and bool(report.runtime_requirement_evidence_hashes)
-                and report.receipt_artifacts_bound
-                and report.backend_execution_evidence_ok
-            )
-            else "G0"
-        ),
+        evidence_grade=real_task_adapter_claim_evidence_grade(report),
         scope="robotics_motion_benchmark_adapter",
         requirements=(
             requirement("backend_available", report.backend_available, missing=report.missing_requirements, error=report.backend_error),
@@ -766,6 +757,8 @@ def _claim_for_report(report: RoboticsMotionBenchmarkAdapterReport) -> ClaimCert
             requirement("hard_verifier_calls_reduced", report.learned_verifier_calls < report.baseline_verifier_calls),
             requirement("success_preserved", report.learned_success_count == report.baseline_success_count and report.learned_success_count > 0),
             requirement("zero_invalid_commits", report.invalid_commit_count == 0),
+            requirement("hard_commit_only", report.hard_commit_only),
+            requirement("train_eval_disjoint", report.train_eval_disjoint),
             requirement("heldout_arm_isolated", report.heldout_arm_isolated),
             requirement("replay_rollback_ok", report.replay_audit_ok and report.rollback_audit_ok and report.ledger_audit_ok),
         ),

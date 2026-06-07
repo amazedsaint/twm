@@ -25,7 +25,10 @@ from examples.real_task_benchmark_manifest import (
     validate_real_task_manifest_certificate,
     validate_real_task_preflight_report,
 )
-from examples.real_task_adapter_evidence import validate_real_task_adapter_evidence_certificate
+from examples.real_task_adapter_evidence import (
+    real_task_adapter_claim_evidence_grade,
+    validate_real_task_adapter_evidence_certificate,
+)
 from examples.robotics_motion_benchmark_adapter import run_robotics_motion_benchmark_adapter_experiment
 from trwm.claims import ClaimCertificate, certify_claim, requirement, validate_claim_certificate
 from trwm.core import stable_hash
@@ -1218,6 +1221,8 @@ def _child_claim_matches_report(domain: str, report: Any, claim: ClaimCertificat
         "hard_verifier_calls_reduced",
         "success_preserved",
         "zero_invalid_commits",
+        "hard_commit_only",
+        "train_eval_disjoint",
         "heldout_arm_isolated",
         "replay_rollback_ok",
     )
@@ -1249,6 +1254,8 @@ def _child_claim_matches_report(domain: str, report: Any, claim: ClaimCertificat
         "hard_verifier_calls_reduced": report.learned_verifier_calls < report.baseline_verifier_calls,
         "success_preserved": report.learned_success_count == report.baseline_success_count and report.learned_success_count > 0,
         "zero_invalid_commits": report.invalid_commit_count == 0,
+        "hard_commit_only": bool(report.hard_commit_only),
+        "train_eval_disjoint": bool(report.train_eval_disjoint),
         "heldout_arm_isolated": bool(report.heldout_arm_isolated),
         "replay_rollback_ok": bool(report.replay_audit_ok and report.rollback_audit_ok and report.ledger_audit_ok),
     }
@@ -1265,18 +1272,7 @@ def _child_claim_matches_report(domain: str, report: Any, claim: ClaimCertificat
     return (
         claim.claim_id == _CHILD_CLAIM_ID_BY_DOMAIN[domain]
         and claim.scope == _CHILD_CLAIM_SCOPE_BY_DOMAIN[domain]
-        and claim.evidence_grade
-        == (
-            "G1"
-            if (
-                report.backend_available
-                and report.real_backend
-                and bool(report.runtime_requirement_evidence_hashes)
-                and report.receipt_artifacts_bound
-                and report.backend_execution_evidence_ok
-            )
-            else "G0"
-        )
+        and claim.evidence_grade == real_task_adapter_claim_evidence_grade(report)
         and claim.status == ("supported" if all(expected_passes.values()) else "rejected")
         and claim.boundary == report.claim_boundary
         and claim.sources == tuple(report.source_urls)

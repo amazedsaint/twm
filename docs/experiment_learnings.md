@@ -838,7 +838,13 @@ normalized backend execution evidence hashes for every receipt, so a supported
 real-backend claim must expose both the task/candidate inputs and the expected
 domain-specific execution shape rather than only a raw metadata hash. Missing
 real backends can still produce a valid G0 zero-receipt evidence certificate;
-only real-backend supported claims can produce G1 adapter evidence.
+only real-backend supported claims can produce G1 adapter evidence. The
+single-domain claim grade now uses the same full objective predicate across all
+four adapters: real backend, runtime hashes, receipt artifacts, backend
+execution evidence, valid learning support, verifier-call reduction, held-out
+success preservation, zero invalid commits, hard-commit-only receipts,
+train/evaluation disjointness, held-out arm isolation, and replay, rollback,
+and ledger audits must all pass before a child claim can be labeled G1.
 The aggregate suite now additionally binds each adapter evidence certificate to
 the domain's `trwm.real_task_benchmark_manifest.v1` spec hash and source URL
 envelope, so an otherwise valid adapter report cannot satisfy a different

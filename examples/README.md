@@ -1518,6 +1518,12 @@ Each child report also binds `heldout_arm_isolated`: after training, the
 baseline and learned held-out arms must start from the same frozen
 post-training state but run on separate ledgers, so neither arm inherits state
 mutations or ledger history from the other.
+Each single-domain child claim uses the same strict G1 predicate: real backend,
+runtime hashes, receipt artifacts, backend execution evidence, valid learning
+support, reduced hard-verifier calls, held-out success preservation, zero
+invalid commits, hard-commit-only receipts, train/evaluation disjointness,
+held-out arm isolation, and replay, rollback, and ledger audits. Provenance alone can
+therefore produce reviewable evidence, but not a G1 child claim.
 
 The suite claim is intentionally stricter than adapter readiness. It is
 supported only when all four domains use real backends, all child claims are
