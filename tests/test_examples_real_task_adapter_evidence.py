@@ -23,6 +23,8 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
         self.assertEqual(certificate.training_receipt_count, result.report.training_receipt_count)
         self.assertEqual(certificate.baseline_receipt_count, result.report.baseline_receipt_count)
         self.assertEqual(certificate.learned_receipt_count, result.report.learned_receipt_count)
+        self.assertTrue(certificate.heldout_arm_isolated)
+        self.assertEqual(certificate.heldout_arm_isolated, result.report.heldout_arm_isolated)
         self.assertEqual(certificate.typed_candidate_hashes, result.report.typed_candidate_hashes)
         self.assertEqual(certificate.hard_result_hashes, result.report.hard_result_hashes)
         self.assertEqual(certificate.hard_metadata_hashes, result.report.hard_metadata_hashes)
@@ -54,6 +56,8 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
         self.assertEqual(certificate.hard_result_hashes, ())
         self.assertEqual(certificate.hard_metadata_hashes, ())
         self.assertEqual(certificate.learning_certificate_hash, "")
+        self.assertFalse(certificate.heldout_arm_isolated)
+        self.assertEqual(certificate.heldout_arm_isolated, result.report.heldout_arm_isolated)
         self.assertTrue(
             validate_real_task_adapter_evidence_certificate(
                 certificate,
@@ -92,6 +96,19 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
     def test_tampered_report_backend_error_fails(self) -> None:
         result = run_robotics_motion_benchmark_adapter_experiment(DeterministicMotionBenchmarkBackend())
         bad_report = replace(result.report, backend_error="hidden backend failure")
+
+        self.assertFalse(
+            validate_real_task_adapter_evidence_certificate(
+                result.evidence_certificate,
+                report=bad_report,
+                learning_certificate=result.learning_certificate,
+                claim_certificate=result.claim_certificate,
+            )
+        )
+
+    def test_tampered_report_heldout_arm_isolation_fails(self) -> None:
+        result = run_robotics_motion_benchmark_adapter_experiment(DeterministicMotionBenchmarkBackend())
+        bad_report = replace(result.report, heldout_arm_isolated=False)
 
         self.assertFalse(
             validate_real_task_adapter_evidence_certificate(

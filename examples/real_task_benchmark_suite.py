@@ -97,6 +97,7 @@ class RealTaskBenchmarkSuiteRow:
     learned_success_count: int
     verifier_call_reduction: int
     hard_commit_only: bool
+    heldout_arm_isolated: bool
     replay_audit_ok: bool
     rollback_audit_ok: bool
     ledger_audit_ok: bool
@@ -140,6 +141,7 @@ class RealTaskBenchmarkSuiteReport:
     all_backends_available: bool
     all_real_backends: bool
     all_receipt_counts_bound: bool
+    heldout_arms_isolated: bool
     hard_verifier_calls_reduced: bool
     success_preserved: bool
     replay_rollback_ledger_ok: bool
@@ -197,6 +199,7 @@ class RealTaskBenchmarkSuiteCertificate:
     all_learning_certificates_match_reports: bool
     all_real_backends: bool
     all_receipt_counts_bound: bool
+    heldout_arms_isolated: bool
     hard_verifier_calls_reduced: bool
     success_preserved: bool
     replay_rollback_ledger_ok: bool
@@ -278,6 +281,7 @@ def build_real_task_benchmark_suite_result(
                 and report.all_adapter_evidence_certificates_match_reports
                 and report.all_adapter_evidence_matches_manifest
                 and report.all_learning_certificates_match_reports
+                and report.heldout_arms_isolated
             )
             else "G0"
         ),
@@ -300,6 +304,7 @@ def build_real_task_benchmark_suite_result(
             requirement("all_backends_available", report.all_backends_available, missing=report.missing_requirements),
             requirement("all_real_backends", report.all_real_backends),
             requirement("all_receipt_counts_bound", report.all_receipt_counts_bound),
+            requirement("heldout_arms_isolated", report.heldout_arms_isolated),
             requirement("hard_verifier_calls_reduced", report.hard_verifier_calls_reduced),
             requirement("success_preserved", report.success_preserved),
             requirement("replay_rollback_ledger_ok", report.replay_rollback_ledger_ok),
@@ -314,6 +319,7 @@ def build_real_task_benchmark_suite_result(
             "learned_success_count": report.learned_success_count,
             "total_invalid_commit_count": report.total_invalid_commit_count,
             "total_receipt_count": report.total_receipt_count,
+            "heldout_arms_isolated": report.heldout_arms_isolated,
         },
         boundary=REAL_TASK_BENCHMARK_SUITE_CLAIM_BOUNDARY,
         sources=report.aggregate_sources,
@@ -359,6 +365,7 @@ def build_real_task_benchmark_suite_certificate(
         all_learning_certificates_match_reports=report.all_learning_certificates_match_reports,
         all_real_backends=report.all_real_backends,
         all_receipt_counts_bound=report.all_receipt_counts_bound,
+        heldout_arms_isolated=report.heldout_arms_isolated,
         hard_verifier_calls_reduced=report.hard_verifier_calls_reduced,
         success_preserved=report.success_preserved,
         replay_rollback_ledger_ok=report.replay_rollback_ledger_ok,
@@ -403,6 +410,10 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
         if any(not isinstance(row.adapter_evidence_matches_manifest, bool) for row in report.rows):
             return False
         if any(not isinstance(row.learning_certificate_matches_report, bool) for row in report.rows):
+            return False
+        if any(not isinstance(row.heldout_arm_isolated, bool) for row in report.rows):
+            return False
+        if not isinstance(report.heldout_arms_isolated, bool):
             return False
         if report.all_child_claims_valid != all(row.child_claim_valid for row in report.rows):
             return False
@@ -497,6 +508,8 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
             return False
         if report.all_receipt_counts_bound != all(_row_receipt_counts_bound(row) for row in report.rows):
             return False
+        if report.heldout_arms_isolated != all(row.heldout_arm_isolated for row in report.rows):
+            return False
         if report.hard_verifier_calls_reduced != all(row.learned_verifier_calls < row.baseline_verifier_calls for row in report.rows):
             return False
         if report.success_preserved != all(row.learned_success_count == row.baseline_success_count and row.learned_success_count > 0 for row in report.rows):
@@ -563,6 +576,10 @@ def validate_real_task_benchmark_suite_certificate(
             return False
         if certificate.all_child_claims_supported and not certificate.all_child_claims_valid:
             return False
+        if not isinstance(certificate.heldout_arms_isolated, bool):
+            return False
+        if certificate.all_child_claims_supported and not certificate.heldout_arms_isolated:
+            return False
         if report is not None:
             if not validate_real_task_benchmark_suite_report(report):
                 return False
@@ -603,6 +620,7 @@ def validate_real_task_benchmark_suite_certificate(
                 "all_learning_certificates_match_reports",
                 "all_real_backends",
                 "all_receipt_counts_bound",
+                "heldout_arms_isolated",
                 "hard_verifier_calls_reduced",
                 "success_preserved",
                 "replay_rollback_ledger_ok",
@@ -642,6 +660,7 @@ def _build_report(
         all_backends_available=all(row.backend_available for row in rows),
         all_real_backends=all(row.real_backend for row in rows),
         all_receipt_counts_bound=all(_row_receipt_counts_bound(row) for row in rows),
+        heldout_arms_isolated=all(row.heldout_arm_isolated for row in rows),
         hard_verifier_calls_reduced=all(row.learned_verifier_calls < row.baseline_verifier_calls for row in rows),
         success_preserved=all(row.learned_success_count == row.baseline_success_count and row.learned_success_count > 0 for row in rows),
         replay_rollback_ledger_ok=all(row.replay_audit_ok and row.rollback_audit_ok and row.ledger_audit_ok for row in rows),
@@ -735,6 +754,7 @@ def _suite_row(domain: str, result: Any, manifest_spec: RealTaskBenchmarkSpec) -
         learned_success_count=int(report.learned_success_count),
         verifier_call_reduction=int(report.verifier_call_reduction),
         hard_commit_only=bool(report.hard_commit_only),
+        heldout_arm_isolated=bool(report.heldout_arm_isolated),
         replay_audit_ok=bool(report.replay_audit_ok),
         rollback_audit_ok=bool(report.rollback_audit_ok),
         ledger_audit_ok=bool(report.ledger_audit_ok),
@@ -792,6 +812,7 @@ def _child_claim_matches_report(domain: str, report: Any, claim: ClaimCertificat
         "hard_verifier_calls_reduced",
         "success_preserved",
         "zero_invalid_commits",
+        "heldout_arm_isolated",
         "replay_rollback_ok",
     )
     if tuple(row.key for row in claim.requirements) != expected_requirement_keys:
@@ -810,6 +831,7 @@ def _child_claim_matches_report(domain: str, report: Any, claim: ClaimCertificat
         "hard_verifier_calls_reduced": report.learned_verifier_calls < report.baseline_verifier_calls,
         "success_preserved": report.learned_success_count == report.baseline_success_count and report.learned_success_count > 0,
         "zero_invalid_commits": report.invalid_commit_count == 0,
+        "heldout_arm_isolated": bool(report.heldout_arm_isolated),
         "replay_rollback_ok": bool(report.replay_audit_ok and report.rollback_audit_ok and report.ledger_audit_ok),
     }
     if any(requirements[key].passed != expected_passes[key] for key in expected_requirement_keys):
@@ -855,6 +877,7 @@ def _learning_certificate_matches_report(report: Any, learning_certificate: Any 
         "backend_id": str(report.backend_id),
         "real_backend": bool(report.real_backend),
         "held_out_task_ids": tuple(report.held_out_task_ids),
+        "heldout_arm_isolated": bool(report.heldout_arm_isolated),
     }
     return (
         learning_certificate.certificate_hash == report.learning_certificate_hash

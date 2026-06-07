@@ -60,6 +60,7 @@ class RealTaskAdapterEvidenceCertificate:
     verifier_call_reduction: int
     hard_commit_only: bool
     train_eval_disjoint: bool
+    heldout_arm_isolated: bool
     replay_audit_ok: bool
     rollback_audit_ok: bool
     ledger_audit_ok: bool
@@ -159,6 +160,7 @@ def build_real_task_adapter_evidence_certificate(
         verifier_call_reduction=int(report_data["verifier_call_reduction"]),
         hard_commit_only=bool(report_data["hard_commit_only"]),
         train_eval_disjoint=bool(report_data["train_eval_disjoint"]),
+        heldout_arm_isolated=bool(report_data["heldout_arm_isolated"]),
         replay_audit_ok=bool(report_data["replay_audit_ok"]),
         rollback_audit_ok=bool(report_data["rollback_audit_ok"]),
         ledger_audit_ok=bool(report_data["ledger_audit_ok"]),
@@ -211,6 +213,8 @@ def validate_real_task_adapter_evidence_certificate(
         if not isinstance(certificate.learning_certificate_valid, bool):
             return False
         if not isinstance(certificate.learning_certificate_supports_claim, bool):
+            return False
+        if not isinstance(certificate.heldout_arm_isolated, bool):
             return False
         if certificate.claim_certificate_status == "supported" and not certificate.claim_certificate_valid:
             return False
@@ -358,6 +362,7 @@ def _g1_supported(certificate: RealTaskAdapterEvidenceCertificate) -> bool:
         and certificate.invalid_commit_count == 0
         and certificate.hard_commit_only
         and certificate.train_eval_disjoint
+        and certificate.heldout_arm_isolated
         and certificate.replay_audit_ok
         and certificate.rollback_audit_ok
         and certificate.ledger_audit_ok
@@ -397,6 +402,7 @@ def _report_matches(certificate: RealTaskAdapterEvidenceCertificate, report: Any
         "verifier_call_reduction",
         "hard_commit_only",
         "train_eval_disjoint",
+        "heldout_arm_isolated",
         "replay_audit_ok",
         "rollback_audit_ok",
         "ledger_audit_ok",
@@ -477,6 +483,7 @@ def _learning_certificate_matches_report(
             "backend_id": str(report_data["backend_id"]),
             "real_backend": bool(report_data["real_backend"]),
             "held_out_task_ids": tuple(report_data["held_out_task_ids"]),
+            "heldout_arm_isolated": bool(report_data["heldout_arm_isolated"]),
         }
     )
 

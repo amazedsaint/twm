@@ -786,6 +786,8 @@ The next substrate requirements are now concrete:
 - receipt-bound verifier-cost accounting,
 - real-domain replay/rollback adapters,
 - no learned-verifier commit authority,
+- isolated held-out baseline and learned arms that start from the same frozen
+  post-training state on separate ledgers,
 - benchmark certificates that bind baseline receipts as well as learned
   evaluation receipts,
 - aggregate reports that fail if any domain has an invalid commit or loses
@@ -821,11 +823,12 @@ exposing real adapter boundaries. Each adapter now emits
 `trwm.real_task_adapter_evidence_certificate.v1`, which binds the adapter
 report hash, backend identity, task splits, claim certificate hash, learning
 certificate hash, ledger head, and exact training/baseline/learned receipt
-partitions plus any backend execution error. It also binds typed-candidate
-hashes, hard-result hashes, and hard-metadata hashes for every receipt, which
-turns command output summaries, QCEC equivalence metadata, and test-verifier
-metadata into compact certificate lanes. Missing real backends can still
-produce a valid G0 zero-receipt evidence
+partitions plus any backend execution error. It also binds whether held-out
+baseline and learned arms were isolated from the same frozen post-training
+state, plus typed-candidate hashes, hard-result hashes, and hard-metadata
+hashes for every receipt, which turns command output summaries, QCEC
+equivalence metadata, and test-verifier metadata into compact certificate
+lanes. Missing real backends can still produce a valid G0 zero-receipt evidence
 certificate; only real-backend supported claims can produce G1 adapter evidence.
 The aggregate suite now additionally binds each adapter evidence certificate to
 the domain's `trwm.real_task_benchmark_manifest.v1` spec hash and source URL
@@ -901,7 +904,10 @@ adapter evidence certificate hashes, child claim hashes, learning certificate
 hashes, receipt hashes, typed-candidate hashes, hard-result hashes,
 hard-metadata hashes, missing requirements, backend errors, verifier-call
 totals, held-out success totals, replay/rollback/ledger status, and
-invalid-commit totals. It also cross-checks that each adapter evidence
+invalid-commit totals. It also binds the aggregate `heldout_arms_isolated`
+gate, which requires every child baseline and learned evaluation arm to start
+from the same frozen post-training state on separate ledgers. It also
+cross-checks that each adapter evidence
 certificate and child claim
 certificate matches the report it accompanies, that adapter evidence is covered
 by the manifest spec sources for that domain, and that each learning
@@ -914,8 +920,8 @@ longer enough. The final claim is supported only if all four real backends are
 available, all child claims are supported, all learning certificates support
 call reduction, every adapter evidence certificate is report-consistent and
 manifest-covered, every child claim and learning certificate is
-report-consistent, every domain reduces hard-verifier calls while preserving
-held-out success, all receipt and execution-provenance counts bind exact hash
-lanes, and invalid commits remain zero. On the current local machine the suite
-correctly rejects with G0 because the external toolchains and task roots are
-missing.
+report-consistent, every held-out arm comparison is isolated, every domain
+reduces hard-verifier calls while preserving held-out success, all receipt and
+execution-provenance counts bind exact hash lanes, and invalid commits remain
+zero. On the current local machine the suite correctly rejects with G0 because
+the external toolchains and task roots are missing.

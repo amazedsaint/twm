@@ -43,6 +43,7 @@ class QuantumMqtBenchAdapterTests(unittest.TestCase):
         self.assertEqual(report.typed_candidate_hashes, ())
         self.assertEqual(report.hard_result_hashes, ())
         self.assertEqual(report.hard_metadata_hashes, ())
+        self.assertFalse(report.heldout_arm_isolated)
         self.assertIsNone(result.learning_certificate)
         self.assertTrue(validate_real_task_adapter_evidence_certificate(
             result.evidence_certificate,
@@ -51,6 +52,7 @@ class QuantumMqtBenchAdapterTests(unittest.TestCase):
             claim_certificate=result.claim_certificate,
         ))
         self.assertEqual(result.evidence_certificate.evidence_grade, "G0")
+        self.assertFalse(result.evidence_certificate.heldout_arm_isolated)
         self.assertTrue(validate_claim_certificate(result.claim_certificate))
         self.assertEqual(result.claim_certificate.status, "rejected")
         self.assertEqual(result.claim_certificate.evidence_grade, "G0")
@@ -65,8 +67,10 @@ class QuantumMqtBenchAdapterTests(unittest.TestCase):
         self.assertEqual(report.missing_requirements, ())
         self.assertIn("RuntimeError:cannot generate train-ghz-3", report.backend_error)
         self.assertEqual(report.receipt_count, 0)
+        self.assertFalse(report.heldout_arm_isolated)
         self.assertIsNone(result.learning_certificate)
         self.assertEqual(result.evidence_certificate.backend_error, report.backend_error)
+        self.assertFalse(result.evidence_certificate.heldout_arm_isolated)
         self.assertTrue(validate_real_task_adapter_evidence_certificate(
             result.evidence_certificate,
             report=report,
@@ -104,6 +108,7 @@ class QuantumMqtBenchAdapterTests(unittest.TestCase):
         self.assertEqual(report.invalid_commit_count, 0)
         self.assertTrue(report.hard_commit_only)
         self.assertTrue(report.train_eval_disjoint)
+        self.assertTrue(report.heldout_arm_isolated)
         self.assertTrue(report.replay_audit_ok)
         self.assertTrue(report.rollback_audit_ok)
         self.assertTrue(report.ledger_audit_ok)
@@ -118,6 +123,7 @@ class QuantumMqtBenchAdapterTests(unittest.TestCase):
             claim_certificate=result.claim_certificate,
         ))
         self.assertEqual(result.evidence_certificate.evidence_grade, "G0")
+        self.assertTrue(result.evidence_certificate.heldout_arm_isolated)
         self.assertEqual(result.evidence_certificate.receipt_count, report.receipt_count)
         self.assertEqual(result.evidence_certificate.learned_receipt_hashes, result.learning_certificate.evaluation_receipt_hashes)
         self.assertEqual(result.evidence_certificate.typed_candidate_hashes, report.typed_candidate_hashes)
@@ -125,6 +131,7 @@ class QuantumMqtBenchAdapterTests(unittest.TestCase):
         self.assertEqual(result.evidence_certificate.hard_metadata_hashes, report.hard_metadata_hashes)
         self.assertTrue(validate_learning_evaluation_certificate(result.learning_certificate))
         self.assertTrue(learning_evaluation_supports_claim(result.learning_certificate))
+        self.assertEqual(result.learning_certificate.metrics["heldout_arm_isolated"], True)
 
         self.assertEqual(len(report.receipt_hashes), report.receipt_count)
         self.assertEqual(len(report.typed_candidate_hashes), report.receipt_count)
@@ -146,6 +153,7 @@ class QuantumMqtBenchAdapterTests(unittest.TestCase):
         self.assertEqual(result.claim_certificate.evidence_grade, "G0")
         self.assertIn("real_mqt_backend", result.claim_certificate.failed_keys)
         self.assertNotIn("learning_certificate_supports_claim", result.claim_certificate.failed_keys)
+        self.assertNotIn("heldout_arm_isolated", result.claim_certificate.failed_keys)
         self.assertIn("Single-domain quantum adapter evidence only", result.claim_certificate.boundary)
 
     def test_default_backend_reports_missing_modules_or_real_backend(self) -> None:

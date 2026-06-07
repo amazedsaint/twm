@@ -871,9 +871,10 @@ The real-task path should execute and harden adapters in this order:
 
 Until those adapters run, the strongest claim remains G1: the repo now has the
 certificate schema, reversible proposal tokens, held-out split discipline,
-same-case baseline comparison, and zero-invalid-commit gate needed to evaluate
-the target. It does not yet prove real robotics safety, hardware correctness,
-program repair effectiveness, or quantum compilation correctness.
+same-case baseline comparison, isolated held-out baseline/learned evaluation
+arms, and zero-invalid-commit gate needed to evaluate the target. It does not
+yet prove real robotics safety, hardware correctness, program repair
+effectiveness, or quantum compilation correctness.
 
 ## Real-Task Readiness Gate
 
@@ -895,7 +896,9 @@ The gate fails closed when the environment cannot run the real benchmarks. A
 supported readiness claim would mean only that the adapters can execute; it is
 not evidence for the receipt-trained proposer claim. The final proof still
 needs real benchmark receipts, baseline and learned hard-verifier-call counts,
-zero invalid commits, and replay/rollback audits across all four domains.
+isolated held-out baseline and learned arms from the same frozen post-training
+state, zero invalid commits, and replay/rollback audits across all four
+domains.
 
 `examples.robotics_motion_benchmark_adapter` adds the robotics analogue. It
 uses task-root-backed candidate directories, runs their configured ROS launch
@@ -937,12 +940,15 @@ learning certificate, and aggregates adapter evidence certificate hashes, child
 report hashes, manifest spec hashes, receipt hashes, typed-candidate hashes,
 hard-result hashes, hard-metadata hashes, baseline calls, learned calls,
 held-out successes, replay/rollback/ledger audit status, missing requirements,
-backend errors, and invalid commits. It also rejects certificate mixing: each adapter evidence
+backend errors, held-out arm isolation status, and invalid commits. It also
+rejects certificate mixing: each adapter evidence
 certificate must bind the report hash, backend identity, task split ids, claim
 hash, learning hash, ledger head, and exact training/baseline/learned receipt
-partitions plus any backend execution error. It must also bind hard-result and
-hard-metadata hashes so external command, QCEC, and relevant-test execution
-metadata stay receipt-bound without expanding the certificate into raw logs.
+partitions plus any backend execution error. It must also bind that baseline
+and learned held-out arms started from the same frozen post-training state on
+separate ledgers, and bind hard-result and hard-metadata hashes so external
+command, QCEC, and relevant-test execution metadata stay receipt-bound without
+expanding the certificate into raw logs.
 That evidence must be covered by the
 manifest spec sources for the same domain; each child claim must match
 its report's requirement passes, metrics, boundary, and sources; and each
@@ -951,6 +957,6 @@ hard-commit audit, and exact training/learned receipt partitions. The suite
 claim supports the objective only if every real backend supports its
 single-domain claim, every child certificate is report-consistent and
 manifest-covered, and every domain reduces hard-verifier calls while preserving
-held-out success, exact receipt/provenance hash-lane counts, and zero invalid
-commits. On machines without the external toolchains and task roots, the suite
-must reject with G0 evidence.
+held-out success under isolated evaluation arms, exact receipt/provenance
+hash-lane counts, and zero invalid commits. On machines without the external
+toolchains and task roots, the suite must reject with G0 evidence.

@@ -88,6 +88,7 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertTrue(report.all_backends_available)
         self.assertFalse(report.all_real_backends)
         self.assertTrue(report.all_receipt_counts_bound)
+        self.assertTrue(report.heldout_arms_isolated)
         self.assertTrue(report.hard_verifier_calls_reduced)
         self.assertTrue(report.success_preserved)
         self.assertTrue(report.replay_rollback_ledger_ok)
@@ -105,6 +106,7 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertEqual(report.baseline_success_count, 8)
         self.assertEqual(report.learned_success_count, 8)
         for row in report.rows:
+            self.assertTrue(row.heldout_arm_isolated)
             self.assertEqual(len(row.receipt_hashes), row.receipt_count)
             self.assertEqual(len(row.typed_candidate_hashes), row.receipt_count)
             self.assertEqual(len(row.hard_result_hashes), row.receipt_count)
@@ -144,6 +146,7 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertTrue(result.suite_certificate.all_adapter_evidence_certificates_match_reports)
         self.assertTrue(result.suite_certificate.all_adapter_evidence_matches_manifest)
         self.assertTrue(result.suite_certificate.all_learning_certificates_match_reports)
+        self.assertTrue(result.suite_certificate.heldout_arms_isolated)
         self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, report))
         self.assertTrue(validate_claim_certificate(claim))
         self.assertEqual(claim.status, "rejected")
@@ -166,6 +169,8 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertEqual(result.suite_certificate.hard_result_hashes, ())
         self.assertEqual(result.suite_certificate.hard_metadata_hashes, ())
         self.assertFalse(result.report.all_backends_available)
+        self.assertFalse(result.report.heldout_arms_isolated)
+        self.assertFalse(result.suite_certificate.heldout_arms_isolated)
         self.assertTrue(result.report.all_child_claims_match_reports)
         self.assertTrue(result.report.all_adapter_evidence_certificates_valid)
         self.assertTrue(result.report.all_adapter_evidence_certificates_match_reports)
@@ -176,6 +181,7 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, result.report))
         self.assertEqual(result.claim_certificate.status, "rejected")
         self.assertIn("all_backends_available", result.claim_certificate.failed_keys)
+        self.assertIn("heldout_arms_isolated", result.claim_certificate.failed_keys)
         self.assertIn("hard_verifier_calls_reduced", result.claim_certificate.failed_keys)
 
     def test_suite_surfaces_child_backend_error(self) -> None:
@@ -345,6 +351,21 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
 
         self.assertFalse(validate_real_task_benchmark_suite_report(bad_report))
         self.assertFalse(validate_real_task_benchmark_suite_certificate(result.suite_certificate, bad_report))
+
+    def test_suite_report_validation_rejects_unbound_heldout_arm_isolation(self) -> None:
+        result = run_real_task_benchmark_suite(_deterministic_adapter_results())
+        first = result.report.rows[0]
+        bad_first = replace(first, heldout_arm_isolated=False)
+        bad_report = replace(result.report, rows=(bad_first, *result.report.rows[1:]))
+
+        self.assertFalse(validate_real_task_benchmark_suite_report(bad_report))
+        self.assertFalse(validate_real_task_benchmark_suite_certificate(result.suite_certificate, bad_report))
+
+    def test_suite_certificate_binds_heldout_arm_isolation(self) -> None:
+        result = run_real_task_benchmark_suite(_deterministic_adapter_results())
+        bad_certificate = replace(result.suite_certificate, heldout_arms_isolated=False, certificate_hash="")
+
+        self.assertFalse(validate_real_task_benchmark_suite_certificate(bad_certificate, result.report))
 
     def test_suite_certificate_binds_execution_provenance_hashes(self) -> None:
         result = run_real_task_benchmark_suite(_deterministic_adapter_results())

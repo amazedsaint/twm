@@ -1359,9 +1359,12 @@ and accepts only a benchmark result with `solved=true`, a correct solution flag,
 `approximate_solution=false`, and an explicit nonnegative solution clearance.
 The baseline tries an unsafe motion candidate before the safe candidate. The
 receipt-trained reversible proposer can rank the safe candidate first on
-held-out tasks, but the claim is supported only if the real backend is
-available, held-out success is preserved, hard-verifier calls are reduced,
-replay/rollback audits pass, and invalid commits remain zero.
+held-out tasks. Training receipts are consumed first, then the baseline and
+learned held-out arms start from the same frozen post-training state on
+separate ledgers. The claim is supported only if the real backend is available,
+held-out arm isolation is certificate-bound, held-out success is preserved,
+hard-verifier calls are reduced, replay/rollback audits pass, and invalid
+commits remain zero.
 
 This is not a robotics safety proof or a planner-performance claim. It is a
 real-benchmark adapter surface for task-root-backed MotionBenchMaker/MoveIt/OMPL
@@ -1388,9 +1391,12 @@ directories under `$TRWM_RISCV_FORMAL_TASK_ROOT/<task>/<candidate>/`. It runs
 then runs `make -C checks j1` as the hard RVFI verifier. The baseline tries an
 RVFI-violating candidate before the compliant candidate. The receipt-trained
 reversible proposer can rank the compliant candidate first on held-out check
-families, but the claim is supported only if the real backend is available,
-held-out success is preserved, hard-verifier calls are reduced,
-replay/rollback audits pass, and invalid commits remain zero.
+families. Training receipts are consumed first, then the baseline and learned
+held-out arms start from the same frozen post-training state on separate
+ledgers. The claim is supported only if the real backend is available,
+held-out arm isolation is certificate-bound, held-out success is preserved,
+hard-verifier calls are reduced, replay/rollback audits pass, and invalid
+commits remain zero.
 
 This is not a RISC-V core correctness proof. It is a real-benchmark adapter
 surface for task-root-backed RVFI candidate directories; larger core suites,
@@ -1414,10 +1420,12 @@ When the Defects4J CLI is available, the adapter creates train and held-out
 version-candidate tasks and checks candidates through Defects4J `checkout`,
 `compile`, and relevant-test execution. The baseline tries the buggy-version
 candidate before the fixed-version candidate. The receipt-trained reversible
-proposer can rank the fixed-version candidate first on held-out bugs, but the
-claim is supported only if the real backend is available, held-out success is
-preserved, hard-verifier calls are reduced, replay/rollback audits pass, and
-invalid commits remain zero.
+proposer can rank the fixed-version candidate first on held-out bugs. Training
+receipts are consumed first, then the baseline and learned held-out arms start
+from the same frozen post-training state on separate ledgers. The claim is
+supported only if the real backend is available, held-out arm isolation is
+certificate-bound, held-out success is preserved, hard-verifier calls are
+reduced, replay/rollback audits pass, and invalid commits remain zero.
 
 This is not a general automated-program-repair claim. It is a real-benchmark
 adapter surface for Defects4J fixed-version candidates; patch generation and
@@ -1441,10 +1449,13 @@ a zero-receipt report and a certificate-bound `backend_error`.
 
 When the optional MQT packages are installed, the adapter generates train and
 held-out circuit tasks from MQT Bench and checks candidate rewrites with MQT
-QCEC equivalence. The learned arm is allowed to support the single-domain
-quantum claim only if the real backend is available, the learning certificate
-validates, held-out success is preserved, hard-verifier calls are reduced,
-replay/rollback audits pass, and invalid commits remain zero.
+QCEC equivalence. Training receipts are consumed first, then the baseline and
+learned held-out arms start from the same frozen post-training state on
+separate ledgers. The learned arm is allowed to support the single-domain
+quantum claim only if the real backend is available, held-out arm isolation is
+certificate-bound, the learning certificate validates, held-out success is
+preserved, hard-verifier calls are reduced, replay/rollback audits pass, and
+invalid commits remain zero.
 
 The deterministic backend used by tests exercises the transaction, receipt,
 learning, replay, and claim-boundary mechanics. It cannot support a real
@@ -1472,15 +1483,19 @@ the aggregate report. The adapter evidence cross-check binds exact training,
 baseline, and learned receipt partitions plus any backend execution error
 before the manifest cross-check proves the adapter evidence sources are covered
 by the domain's real-task manifest spec. The learning cross-check then binds
-the learned receipt partition into the learning certificate.
+the learned receipt partition into the learning certificate. Each child report
+also binds `heldout_arm_isolated`: after training, the baseline and learned
+held-out arms must start from the same frozen post-training state but run on
+separate ledgers, so neither arm inherits state mutations or ledger history from
+the other.
 
 The suite claim is intentionally stricter than adapter readiness. It is
 supported only when all four domains use real backends, all child claims are
 supported, every adapter evidence certificate and child claim matches its
 report and real-task manifest spec, all learning certificates support call
-reduction, every learning certificate matches its report, held-out success is
-preserved, hard-verifier calls are reduced in every domain, replay/rollback and
-ledger audits pass, receipt and execution-provenance counts bind exact hash
-lanes, and invalid commits remain zero. Missing external tools or deterministic
-test doubles produce a rejected G0 claim rather than weakening the final
-objective.
+reduction, every learning certificate matches its report, all held-out arms are
+isolated, held-out success is preserved, hard-verifier calls are reduced in
+every domain, replay/rollback and ledger audits pass, receipt and
+execution-provenance counts bind exact hash lanes, and invalid commits remain
+zero. Missing external tools or deterministic test doubles produce a rejected
+G0 claim rather than weakening the final objective.

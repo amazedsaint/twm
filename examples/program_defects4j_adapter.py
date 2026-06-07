@@ -15,7 +15,7 @@ from examples.real_task_adapter_evidence import (
     receipt_execution_provenance_hashes,
 )
 from trwm.claims import ClaimCertificate, certify_claim, requirement
-from trwm.core import HardVerifierResult, ProposalTrace, Receipt, TransactionEngine, TypedCandidate, stable_hash
+from trwm.core import HardVerifierResult, ProposalTrace, Receipt, StateSnapshot, TransactionEngine, TypedCandidate, stable_hash
 from trwm.evaluation import (
     LearningEvaluationCertificate,
     build_learning_evaluation_certificate,
@@ -135,6 +135,7 @@ class ProgramDefects4JAdapterReport:
     verifier_call_gain: float
     hard_commit_only: bool
     train_eval_disjoint: bool
+    heldout_arm_isolated: bool
     replay_audit_ok: bool
     rollback_audit_ok: bool
     ledger_audit_ok: bool
@@ -410,11 +411,11 @@ def _run_available_backend(backend: ProgramRepairBackend) -> ProgramDefects4JAda
     bundles = {spec.task_id: backend.generate_task(spec) for spec in specs}
     train_specs = tuple(spec for spec in specs if spec.split == "train")
     heldout_specs = tuple(spec for spec in specs if spec.split == "heldout")
-    adapter = ProgramDefects4JAdapter(backend)
-    engine = TransactionEngine(adapter)
+    training_adapter = ProgramDefects4JAdapter(backend)
+    training_engine = TransactionEngine(training_adapter)
     proposer = ReceiptTrainedReversibleProposer()
     seed_state = {"committed_tasks": (), "last_candidate_hash": ""}
-    state: Mapping[str, Any] = seed_state
+    training_state: Mapping[str, Any] = seed_state
 
     training_receipts: list[Receipt] = []
     baseline_by_task: dict[str, tuple[Receipt, ...]] = {}
@@ -422,40 +423,67 @@ def _run_available_backend(backend: ProgramRepairBackend) -> ProgramDefects4JAda
 
     for spec in train_specs:
         outcome = _submit_until_commit(
-            engine,
-            state,
+            training_engine,
+            training_state,
             spec,
             bundles[spec.task_id],
             arm="train",
             candidates=_ordered_candidates(spec, bundles[spec.task_id]),
         )
-        state = outcome.state
+        training_state = outcome.state
         training_receipts.extend(outcome.receipts)
         for receipt in outcome.receipts:
             proposer.update(receipt)
 
     snapshot = proposer.snapshot()
+    baseline_engine = TransactionEngine(ProgramDefects4JAdapter(backend))
+    learned_engine = TransactionEngine(ProgramDefects4JAdapter(backend))
+    baseline_state: Mapping[str, Any] = training_state
+    learned_state: Mapping[str, Any] = training_state
+    heldout_arm_start_hashes: list[tuple[str, str]] = []
     for spec in heldout_specs:
+        heldout_arm_start_hashes.append((
+            StateSnapshot.capture(baseline_state).state_hash,
+            StateSnapshot.capture(learned_state).state_hash,
+        ))
         baseline = _submit_until_commit(
-            engine,
-            state,
+            baseline_engine,
+            baseline_state,
             spec,
             bundles[spec.task_id],
             arm="baseline",
             candidates=_ordered_candidates(spec, bundles[spec.task_id]),
         )
-        state = baseline.state
+        baseline_state = baseline.state
         baseline_by_task[spec.task_id] = baseline.receipts
         learned_candidates = tuple(proposer.rank("program_defects4j_repair", _ordered_candidates(spec, bundles[spec.task_id])))
-        learned = _submit_until_commit(engine, state, spec, bundles[spec.task_id], arm="learned", candidates=learned_candidates)
-        state = learned.state
+        learned = _submit_until_commit(learned_engine, learned_state, spec, bundles[spec.task_id], arm="learned", candidates=learned_candidates)
+        learned_state = learned.state
         learned_by_task[spec.task_id] = learned.receipts
 
     baseline_receipts = tuple(receipt for receipts in baseline_by_task.values() for receipt in receipts)
     learned_receipts = tuple(receipt for receipts in learned_by_task.values() for receipt in receipts)
     all_receipts = (*tuple(training_receipts), *baseline_receipts, *learned_receipts)
     typed_candidate_hashes, hard_result_hashes, hard_metadata_hashes = receipt_execution_provenance_hashes(all_receipts)
-    replay_ok, rollback_ok = _audit_replay_rollback(engine, seed_state)
+    replay_ok, rollback_ok = _audit_replay_rollback_many(
+        (training_engine, seed_state),
+        (baseline_engine, training_state),
+        (learned_engine, training_state),
+    )
+    ledger_audit_ok = training_engine.ledger.audit() and baseline_engine.ledger.audit() and learned_engine.ledger.audit()
+    invalid_commit_count = (
+        training_engine.invalid_commit_count + baseline_engine.invalid_commit_count + learned_engine.invalid_commit_count
+    )
+    heldout_arm_isolated = len(heldout_arm_start_hashes) == len(heldout_specs) and all(
+        left == right for left, right in heldout_arm_start_hashes
+    )
+    ledger_head = stable_hash(
+        {
+            "training": training_engine.ledger.head,
+            "baseline": baseline_engine.ledger.head,
+            "learned": learned_engine.ledger.head,
+        }
+    )
     learning_certificate = build_learning_evaluation_certificate(
         claim_id="program_defects4j_receipt_trained_reversible_call_reduction",
         learner_id=snapshot.learner_id,
@@ -472,13 +500,14 @@ def _run_available_backend(backend: ProgramRepairBackend) -> ProgramDefects4JAda
         candidate_count=2 * len(heldout_specs),
         same_case_baseline=True,
         hard_commit_only=all(receipt.committed == receipt.hard_result.accepted for receipt in all_receipts),
-        invalid_commit_count=engine.invalid_commit_count,
-        ledger_audit=engine.ledger.audit(),
+        invalid_commit_count=invalid_commit_count,
+        ledger_audit=ledger_audit_ok,
         replay_rollback_rate=1.0 if replay_ok and rollback_ok else 0.0,
         metrics={
             "backend_id": backend.backend_id,
             "real_backend": backend.real_backend,
             "held_out_task_ids": tuple(spec.task_id for spec in heldout_specs),
+            "heldout_arm_isolated": heldout_arm_isolated,
         },
     )
     report = ProgramDefects4JAdapterReport(
@@ -504,7 +533,7 @@ def _run_available_backend(backend: ProgramRepairBackend) -> ProgramDefects4JAda
         learned_receipt_count=len(learned_receipts),
         committed_count=sum(1 for receipt in all_receipts if receipt.committed),
         rejected_count=sum(1 for receipt in all_receipts if receipt.hard_result.rejected),
-        invalid_commit_count=engine.invalid_commit_count,
+        invalid_commit_count=invalid_commit_count,
         baseline_verifier_calls=len(baseline_receipts),
         learned_verifier_calls=len(learned_receipts),
         baseline_success_count=sum(1 for receipt in baseline_receipts if receipt.committed),
@@ -513,10 +542,11 @@ def _run_available_backend(backend: ProgramRepairBackend) -> ProgramDefects4JAda
         verifier_call_gain=round(len(baseline_receipts) / len(learned_receipts), 12),
         hard_commit_only=learning_certificate.hard_commit_only,
         train_eval_disjoint=learning_certificate.train_eval_disjoint,
+        heldout_arm_isolated=heldout_arm_isolated,
         replay_audit_ok=replay_ok,
         rollback_audit_ok=rollback_ok,
-        ledger_audit_ok=engine.ledger.audit(),
-        ledger_head=engine.ledger.head,
+        ledger_audit_ok=ledger_audit_ok,
+        ledger_head=ledger_head,
         receipt_hashes=tuple(receipt.receipt_hash for receipt in all_receipts),
         typed_candidate_hashes=typed_candidate_hashes,
         hard_result_hashes=hard_result_hashes,
@@ -654,6 +684,7 @@ def _claim_for_report(report: ProgramDefects4JAdapterReport) -> ClaimCertificate
             requirement("hard_verifier_calls_reduced", report.learned_verifier_calls < report.baseline_verifier_calls),
             requirement("success_preserved", report.learned_success_count == report.baseline_success_count and report.learned_success_count > 0),
             requirement("zero_invalid_commits", report.invalid_commit_count == 0),
+            requirement("heldout_arm_isolated", report.heldout_arm_isolated),
             requirement("replay_rollback_ok", report.replay_audit_ok and report.rollback_audit_ok and report.ledger_audit_ok),
         ),
         metrics={
@@ -700,6 +731,7 @@ def _empty_report(backend: ProgramRepairBackend, *, backend_error: str = "") -> 
         verifier_call_gain=0.0,
         hard_commit_only=False,
         train_eval_disjoint=False,
+        heldout_arm_isolated=False,
         replay_audit_ok=False,
         rollback_audit_ok=False,
         ledger_audit_ok=False,
@@ -725,6 +757,16 @@ def _audit_replay_rollback(engine: TransactionEngine, seed_state: Mapping[str, A
         rollback_ok = engine.rollback_audit(seed_state) == dict(seed_state)
     except Exception:
         rollback_ok = False
+    return replay_ok, rollback_ok
+
+
+def _audit_replay_rollback_many(*items: tuple[TransactionEngine, Mapping[str, Any]]) -> tuple[bool, bool]:
+    replay_ok = True
+    rollback_ok = True
+    for engine, seed_state in items:
+        replay, rollback = _audit_replay_rollback(engine, seed_state)
+        replay_ok = replay_ok and replay
+        rollback_ok = rollback_ok and rollback
     return replay_ok, rollback_ok
 
 
