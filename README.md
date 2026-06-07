@@ -199,8 +199,8 @@ MQT Bench/QCEC when those optional packages are installed and otherwise
 rejects cleanly; the real-task benchmark suite aggregates the four adapter
 outputs and rejects the final objective unless every real backend has supported
 child evidence with reduced hard-verifier calls, preserved held-out success,
-valid learning certificates, replay/rollback/ledger audit, and zero invalid
-commits; the
+valid learning certificates, replay/rollback/ledger audit, normalized backend
+execution evidence hashes, and zero invalid commits; the
 residual-template example turns a
 source residual/repair pair into a named repair-template proposal without
 transferring commit authority; the boundary-bracket example uses source

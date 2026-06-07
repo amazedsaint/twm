@@ -43,6 +43,8 @@ class RealTaskAdapterEvidenceCertificate:
     typed_candidate_hashes: tuple[str, ...]
     hard_result_hashes: tuple[str, ...]
     hard_metadata_hashes: tuple[str, ...]
+    backend_execution_evidence_ok: bool
+    backend_execution_evidence_hashes: tuple[str, ...]
     training_receipt_hashes: tuple[str, ...]
     baseline_receipt_hashes: tuple[str, ...]
     learned_receipt_hashes: tuple[str, ...]
@@ -79,6 +81,7 @@ class RealTaskAdapterEvidenceCertificate:
         object.__setattr__(self, "typed_candidate_hashes", tuple(self.typed_candidate_hashes))
         object.__setattr__(self, "hard_result_hashes", tuple(self.hard_result_hashes))
         object.__setattr__(self, "hard_metadata_hashes", tuple(self.hard_metadata_hashes))
+        object.__setattr__(self, "backend_execution_evidence_hashes", tuple(self.backend_execution_evidence_hashes))
         object.__setattr__(self, "training_receipt_hashes", tuple(self.training_receipt_hashes))
         object.__setattr__(self, "baseline_receipt_hashes", tuple(self.baseline_receipt_hashes))
         object.__setattr__(self, "learned_receipt_hashes", tuple(self.learned_receipt_hashes))
@@ -143,6 +146,8 @@ def build_real_task_adapter_evidence_certificate(
         typed_candidate_hashes=tuple(str(row) for row in report_data["typed_candidate_hashes"]),
         hard_result_hashes=tuple(str(row) for row in report_data["hard_result_hashes"]),
         hard_metadata_hashes=tuple(str(row) for row in report_data["hard_metadata_hashes"]),
+        backend_execution_evidence_ok=bool(report_data["backend_execution_evidence_ok"]),
+        backend_execution_evidence_hashes=tuple(str(row) for row in report_data["backend_execution_evidence_hashes"]),
         training_receipt_hashes=training_receipts,
         baseline_receipt_hashes=baseline_receipts,
         learned_receipt_hashes=learned_receipts,
@@ -206,6 +211,8 @@ def validate_real_task_adapter_evidence_certificate(
             return False
         if not isinstance(certificate.backend_available, bool) or not isinstance(certificate.real_backend, bool):
             return False
+        if not isinstance(certificate.backend_execution_evidence_ok, bool):
+            return False
         if not isinstance(certificate.claim_certificate_valid, bool):
             return False
         if certificate.claim_certificate_status not in CLAIM_STATUSES:
@@ -266,6 +273,16 @@ def receipt_execution_provenance_hashes(receipts: Any) -> tuple[tuple[str, ...],
     )
 
 
+def receipt_backend_execution_evidence(
+    domain: str,
+    receipts: Any,
+) -> tuple[bool, tuple[str, ...]]:
+    rows = tuple(_backend_execution_evidence_row(domain, receipt) for receipt in tuple(receipts))
+    if not rows:
+        return False, ()
+    return all(bool(row["execution_evidence_ok"]) for row in rows), tuple(stable_hash(row) for row in rows)
+
+
 def _report_as_dict(report: Any) -> dict[str, Any]:
     if is_dataclass(report):
         return asdict(report)
@@ -299,6 +316,8 @@ def _counts_and_partitions_are_valid(certificate: RealTaskAdapterEvidenceCertifi
         return False
     if certificate.receipt_count != len(certificate.hard_metadata_hashes):
         return False
+    if certificate.receipt_count != len(certificate.backend_execution_evidence_hashes):
+        return False
     if certificate.training_receipt_count != len(certificate.training_receipt_hashes):
         return False
     if certificate.baseline_receipt_count != len(certificate.baseline_receipt_hashes):
@@ -319,7 +338,11 @@ def _counts_and_partitions_are_valid(certificate: RealTaskAdapterEvidenceCertifi
         return False
     if any(not _is_hash(row) for row in certificate.hard_metadata_hashes):
         return False
+    if any(not _is_hash(row) for row in certificate.backend_execution_evidence_hashes):
+        return False
     if len(set(certificate.receipt_hashes)) != len(certificate.receipt_hashes):
+        return False
+    if certificate.backend_execution_evidence_ok and certificate.receipt_count == 0:
         return False
     if certificate.committed_count + certificate.rejected_count > certificate.receipt_count:
         return False
@@ -342,6 +365,7 @@ def _counts_and_partitions_are_valid(certificate: RealTaskAdapterEvidenceCertifi
             and certificate.learner_snapshot_hash == ""
             and certificate.learning_certificate_hash == ""
             and certificate.ledger_head == ""
+            and not certificate.backend_execution_evidence_ok
             and not certificate.learning_certificate_valid
             and not certificate.learning_certificate_supports_claim
         )
@@ -356,6 +380,7 @@ def _g1_supported(certificate: RealTaskAdapterEvidenceCertificate) -> bool:
         and certificate.claim_certificate_status == "supported"
         and certificate.learning_certificate_valid
         and certificate.learning_certificate_supports_claim
+        and certificate.backend_execution_evidence_ok
         and certificate.learned_verifier_calls < certificate.baseline_verifier_calls
         and certificate.learned_success_count == certificate.baseline_success_count
         and certificate.learned_success_count > 0
@@ -389,6 +414,8 @@ def _report_matches(certificate: RealTaskAdapterEvidenceCertificate, report: Any
         "typed_candidate_hashes",
         "hard_result_hashes",
         "hard_metadata_hashes",
+        "backend_execution_evidence_ok",
+        "backend_execution_evidence_hashes",
         "training_receipt_count",
         "baseline_receipt_count",
         "learned_receipt_count",
@@ -439,6 +466,13 @@ def _claim_matches_report(claim: ClaimCertificate, report_data: Mapping[str, Any
     if tuple(backend_requirement.evidence.get("missing", ())) != tuple(report_data["missing_requirements"]):
         return False
     if str(backend_requirement.evidence.get("error", "")) != str(report_data.get("backend_error", "")):
+        return False
+    execution_requirement = requirements.get("backend_execution_evidence_bound")
+    if execution_requirement is None:
+        return False
+    if execution_requirement.passed != bool(report_data["backend_execution_evidence_ok"]):
+        return False
+    if tuple(execution_requirement.evidence.get("evidence_hashes", ())) != tuple(report_data["backend_execution_evidence_hashes"]):
         return False
     return (
         claim.metrics == expected_metrics
@@ -494,3 +528,172 @@ def _nonempty_string(value: Any) -> bool:
 
 def _is_hash(value: str) -> bool:
     return isinstance(value, str) and len(value) == 64 and all(char in "0123456789abcdef" for char in value)
+
+
+def _backend_execution_evidence_row(domain: str, receipt: Any) -> dict[str, Any]:
+    metadata = _metadata(receipt)
+    real_backend = metadata.get("real_backend")
+    common = {
+        "schema_version": "trwm.real_task_backend_execution_evidence.v1",
+        "domain": domain,
+        "receipt_hash": str(getattr(receipt, "receipt_hash", "")),
+        "hard_result": str(getattr(receipt.hard_result, "result", "")),
+        "committed": bool(getattr(receipt, "committed", False)),
+        "verifier_id": str(getattr(receipt.hard_result, "verifier_id", "")),
+        "verifier_version": str(getattr(receipt.hard_result, "verifier_version", "")),
+        "backend_id": str(metadata.get("backend_id", "")),
+        "backend_version": str(metadata.get("backend_version", "")),
+        "real_backend": real_backend if isinstance(real_backend, bool) else None,
+        "task_id": str(metadata.get("task_id", "")),
+        "action": str(metadata.get("action", "")),
+        "candidate_hash": str(metadata.get("candidate_hash", "")),
+        "residual_kind": _residual_kind(receipt),
+        "metadata_hash": stable_hash(metadata),
+    }
+    common_ok = (
+        _is_hash(common["receipt_hash"])
+        and _nonempty_string(common["verifier_id"])
+        and _nonempty_string(common["verifier_version"])
+        and _nonempty_string(common["backend_id"])
+        and _nonempty_string(common["backend_version"])
+        and isinstance(real_backend, bool)
+        and _nonempty_string(common["task_id"])
+    )
+    if not real_backend:
+        return {
+            **common,
+            "evidence_kind": "deterministic_testdouble",
+            "deterministic_testdouble": metadata.get("deterministic_testdouble") is True,
+            "execution_evidence_ok": common_ok and metadata.get("deterministic_testdouble") is True,
+        }
+    if domain == "robotics":
+        command = metadata.get("command")
+        row = {
+            **common,
+            "evidence_kind": "motion_benchmark_roslaunch",
+            "robot_id": str(metadata.get("robot_id", "")),
+            "scene_id": str(metadata.get("scene_id", "")),
+            "query_id": str(metadata.get("query_id", "")),
+            "candidate_dir": str(metadata.get("candidate_dir", "")),
+            "result_file": str(metadata.get("result_file", "")),
+            "benchmark_result_hash": stable_hash(metadata.get("benchmark_result", {})) if "benchmark_result" in metadata else "",
+            "command_hash": stable_hash(command) if isinstance(command, Mapping) else "",
+        }
+        row["execution_evidence_ok"] = (
+            common_ok
+            and _is_hash(common["candidate_hash"])
+            and common["action"] in {"unsafe_motion_candidate", "safe_motion_candidate"}
+            and _nonempty_string(row["robot_id"])
+            and _nonempty_string(row["scene_id"])
+            and _nonempty_string(row["query_id"])
+            and _nonempty_string(row["candidate_dir"])
+            and _command_result_ok(command, executable="roslaunch")
+            and ("benchmark_result" in metadata or common["residual_kind"] == "motion_benchmark_launch_failed")
+        )
+        return row
+    if domain == "hardware":
+        commands = tuple(metadata.get("commands", ()))
+        row = {
+            **common,
+            "evidence_kind": "riscv_formal_symbiyosys_make",
+            "core_id": str(metadata.get("core_id", "")),
+            "check_family": str(metadata.get("check_family", "")),
+            "make_target": str(metadata.get("make_target", "")),
+            "candidate_dir": str(metadata.get("candidate_dir", "")),
+            "commands_hash": stable_hash(commands),
+        }
+        row["execution_evidence_ok"] = (
+            common_ok
+            and _is_hash(common["candidate_hash"])
+            and common["action"] in {"rvfi_violating_candidate", "rvfi_compliant_candidate"}
+            and _nonempty_string(row["core_id"])
+            and _nonempty_string(row["check_family"])
+            and _nonempty_string(row["make_target"])
+            and _nonempty_string(row["candidate_dir"])
+            and bool(commands)
+            and all(_command_result_ok(command) for command in commands)
+            and any(_command_executable(command) == "make" for command in commands)
+        )
+        return row
+    if domain == "program":
+        checkout = metadata.get("checkout")
+        compile_result = metadata.get("compile")
+        test_result = metadata.get("test")
+        row = {
+            **common,
+            "evidence_kind": "defects4j_compile_relevant_tests",
+            "project_id": str(metadata.get("project_id", "")),
+            "bug_id": _safe_int(metadata.get("bug_id", -1)),
+            "version_id": str(metadata.get("version_id", "")),
+            "checkout_hash": stable_hash(checkout) if isinstance(checkout, Mapping) else "",
+            "compile_hash": stable_hash(compile_result) if isinstance(compile_result, Mapping) else "",
+            "test_hash": stable_hash(test_result) if isinstance(test_result, Mapping) else "",
+        }
+        row["execution_evidence_ok"] = (
+            common_ok
+            and _is_hash(common["candidate_hash"])
+            and common["action"] in {"buggy_version_candidate", "fixed_version_candidate"}
+            and _nonempty_string(row["project_id"])
+            and row["bug_id"] >= 0
+            and _nonempty_string(row["version_id"])
+            and _command_result_ok(checkout, executable="defects4j")
+            and _command_result_ok(compile_result, executable="defects4j")
+            and _command_result_ok(test_result, executable="defects4j")
+            and metadata.get("workdir_deleted") is True
+        )
+        return row
+    if domain == "quantum":
+        row = {
+            **common,
+            "evidence_kind": "mqt_qcec_verify",
+            "original_hash": str(metadata.get("original_hash", "")),
+            "qcec_equivalence": str(metadata.get("qcec_equivalence", "")),
+        }
+        row["execution_evidence_ok"] = (
+            common_ok
+            and _is_hash(row["original_hash"])
+            and _is_hash(common["candidate_hash"])
+            and common["action"] in {"non_equivalent_rewrite", "equivalence_preserving_rewrite"}
+            and _nonempty_string(row["qcec_equivalence"])
+        )
+        return row
+    return {**common, "evidence_kind": "unknown_domain", "execution_evidence_ok": False}
+
+
+def _metadata(receipt: Any) -> dict[str, Any]:
+    metadata = getattr(getattr(receipt, "hard_result", None), "metadata", {})
+    return dict(metadata) if isinstance(metadata, Mapping) else {}
+
+
+def _residual_kind(receipt: Any) -> str:
+    residual = getattr(getattr(receipt, "hard_result", None), "residual", None)
+    if isinstance(residual, Mapping):
+        return str(residual.get("kind", ""))
+    return ""
+
+
+def _command_result_ok(value: Any, *, executable: str | None = None) -> bool:
+    if not isinstance(value, Mapping):
+        return False
+    command = tuple(str(part) for part in value.get("command", ()))
+    if not command:
+        return False
+    if executable is not None and command[0] != executable:
+        return False
+    return isinstance(value.get("returncode"), int) and not isinstance(value.get("returncode"), bool)
+
+
+def _command_executable(value: Any) -> str:
+    if not isinstance(value, Mapping):
+        return ""
+    command = tuple(str(part) for part in value.get("command", ()))
+    return command[0] if command else ""
+
+
+def _safe_int(value: Any) -> int:
+    if isinstance(value, bool):
+        return -1
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return -1

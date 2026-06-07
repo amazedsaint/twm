@@ -28,9 +28,12 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
         self.assertEqual(certificate.typed_candidate_hashes, result.report.typed_candidate_hashes)
         self.assertEqual(certificate.hard_result_hashes, result.report.hard_result_hashes)
         self.assertEqual(certificate.hard_metadata_hashes, result.report.hard_metadata_hashes)
+        self.assertEqual(certificate.backend_execution_evidence_ok, result.report.backend_execution_evidence_ok)
+        self.assertEqual(certificate.backend_execution_evidence_hashes, result.report.backend_execution_evidence_hashes)
         self.assertEqual(len(certificate.typed_candidate_hashes), result.report.receipt_count)
         self.assertEqual(len(certificate.hard_result_hashes), result.report.receipt_count)
         self.assertEqual(len(certificate.hard_metadata_hashes), result.report.receipt_count)
+        self.assertEqual(len(certificate.backend_execution_evidence_hashes), result.report.receipt_count)
         self.assertEqual(
             certificate.receipt_hashes,
             certificate.training_receipt_hashes + certificate.baseline_receipt_hashes + certificate.learned_receipt_hashes,
@@ -55,6 +58,8 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
         self.assertEqual(certificate.typed_candidate_hashes, ())
         self.assertEqual(certificate.hard_result_hashes, ())
         self.assertEqual(certificate.hard_metadata_hashes, ())
+        self.assertFalse(certificate.backend_execution_evidence_ok)
+        self.assertEqual(certificate.backend_execution_evidence_hashes, ())
         self.assertEqual(certificate.learning_certificate_hash, "")
         self.assertFalse(certificate.heldout_arm_isolated)
         self.assertEqual(certificate.heldout_arm_isolated, result.report.heldout_arm_isolated)
@@ -88,6 +93,35 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
             validate_real_task_adapter_evidence_certificate(
                 result.evidence_certificate,
                 report=bad_report,
+                learning_certificate=result.learning_certificate,
+                claim_certificate=result.claim_certificate,
+            )
+        )
+
+    def test_tampered_report_backend_execution_evidence_hash_fails(self) -> None:
+        result = run_robotics_motion_benchmark_adapter_experiment(DeterministicMotionBenchmarkBackend())
+        bad_report = replace(
+            result.report,
+            backend_execution_evidence_hashes=("0" * 64, *result.report.backend_execution_evidence_hashes[1:]),
+        )
+
+        self.assertFalse(
+            validate_real_task_adapter_evidence_certificate(
+                result.evidence_certificate,
+                report=bad_report,
+                learning_certificate=result.learning_certificate,
+                claim_certificate=result.claim_certificate,
+            )
+        )
+
+    def test_zero_receipt_backend_execution_evidence_ok_fails(self) -> None:
+        result = run_robotics_motion_benchmark_adapter_experiment(DeterministicMotionBenchmarkBackend(available=False))
+        certificate = replace(result.evidence_certificate, backend_execution_evidence_ok=True, certificate_hash="")
+
+        self.assertFalse(
+            validate_real_task_adapter_evidence_certificate(
+                certificate,
+                report=result.report,
                 learning_certificate=result.learning_certificate,
                 claim_certificate=result.claim_certificate,
             )

@@ -90,6 +90,7 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertTrue(report.all_backends_available)
         self.assertFalse(report.all_real_backends)
         self.assertTrue(report.all_receipt_counts_bound)
+        self.assertTrue(report.all_backend_execution_evidence_bound)
         self.assertTrue(report.heldout_arms_isolated)
         self.assertTrue(report.hard_verifier_calls_reduced)
         self.assertTrue(report.success_preserved)
@@ -113,6 +114,8 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
             self.assertEqual(len(row.typed_candidate_hashes), row.receipt_count)
             self.assertEqual(len(row.hard_result_hashes), row.receipt_count)
             self.assertEqual(len(row.hard_metadata_hashes), row.receipt_count)
+            self.assertTrue(row.backend_execution_evidence_ok)
+            self.assertEqual(len(row.backend_execution_evidence_hashes), row.receipt_count)
 
         self.assertTrue(validate_real_task_benchmark_suite_report(report))
         self.assertEqual(
@@ -143,11 +146,16 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
             result.suite_certificate.hard_metadata_hashes,
             tuple(metadata_hash for row in report.rows for metadata_hash in row.hard_metadata_hashes),
         )
+        self.assertEqual(
+            result.suite_certificate.backend_execution_evidence_hashes,
+            tuple(evidence_hash for row in report.rows for evidence_hash in row.backend_execution_evidence_hashes),
+        )
         self.assertTrue(result.suite_certificate.all_child_claims_match_reports)
         self.assertTrue(result.suite_certificate.all_adapter_evidence_certificates_valid)
         self.assertTrue(result.suite_certificate.all_adapter_evidence_certificates_match_reports)
         self.assertTrue(result.suite_certificate.all_adapter_evidence_matches_manifest)
         self.assertTrue(result.suite_certificate.all_learning_certificates_match_reports)
+        self.assertTrue(result.suite_certificate.all_backend_execution_evidence_bound)
         self.assertTrue(result.suite_certificate.heldout_arms_isolated)
         self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, report))
         self.assertTrue(validate_claim_certificate(claim))
@@ -170,8 +178,11 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertEqual(result.suite_certificate.typed_candidate_hashes, ())
         self.assertEqual(result.suite_certificate.hard_result_hashes, ())
         self.assertEqual(result.suite_certificate.hard_metadata_hashes, ())
+        self.assertEqual(result.suite_certificate.backend_execution_evidence_hashes, ())
         self.assertFalse(result.report.all_backends_available)
+        self.assertFalse(result.report.all_backend_execution_evidence_bound)
         self.assertFalse(result.report.heldout_arms_isolated)
+        self.assertFalse(result.suite_certificate.all_backend_execution_evidence_bound)
         self.assertFalse(result.suite_certificate.heldout_arms_isolated)
         self.assertTrue(result.report.all_child_claims_match_reports)
         self.assertTrue(result.report.all_adapter_evidence_certificates_valid)
@@ -363,6 +374,24 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertFalse(validate_real_task_benchmark_suite_report(bad_report))
         self.assertFalse(validate_real_task_benchmark_suite_certificate(result.suite_certificate, bad_report))
 
+    def test_suite_report_validation_rejects_missing_backend_execution_evidence_hash(self) -> None:
+        result = run_real_task_benchmark_suite(_deterministic_adapter_results())
+        first = result.report.rows[0]
+        bad_first = replace(first, backend_execution_evidence_hashes=first.backend_execution_evidence_hashes[:-1])
+        bad_report = replace(result.report, rows=(bad_first, *result.report.rows[1:]))
+
+        self.assertFalse(validate_real_task_benchmark_suite_report(bad_report))
+        self.assertFalse(validate_real_task_benchmark_suite_certificate(result.suite_certificate, bad_report))
+
+    def test_suite_report_validation_rejects_unbound_backend_execution_evidence(self) -> None:
+        result = run_real_task_benchmark_suite(_deterministic_adapter_results())
+        first = result.report.rows[0]
+        bad_first = replace(first, backend_execution_evidence_ok=False)
+        bad_report = replace(result.report, rows=(bad_first, *result.report.rows[1:]))
+
+        self.assertFalse(validate_real_task_benchmark_suite_report(bad_report))
+        self.assertFalse(validate_real_task_benchmark_suite_certificate(result.suite_certificate, bad_report))
+
     def test_suite_report_validation_rejects_unbound_heldout_arm_isolation(self) -> None:
         result = run_real_task_benchmark_suite(_deterministic_adapter_results())
         first = result.report.rows[0]
@@ -381,6 +410,16 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
     def test_suite_certificate_binds_execution_provenance_hashes(self) -> None:
         result = run_real_task_benchmark_suite(_deterministic_adapter_results())
         bad_certificate = replace(result.suite_certificate, hard_result_hashes=result.suite_certificate.hard_result_hashes[:-1], certificate_hash="")
+
+        self.assertFalse(validate_real_task_benchmark_suite_certificate(bad_certificate, result.report))
+
+    def test_suite_certificate_binds_backend_execution_evidence_hashes(self) -> None:
+        result = run_real_task_benchmark_suite(_deterministic_adapter_results())
+        bad_certificate = replace(
+            result.suite_certificate,
+            backend_execution_evidence_hashes=result.suite_certificate.backend_execution_evidence_hashes[:-1],
+            certificate_hash="",
+        )
 
         self.assertFalse(validate_real_task_benchmark_suite_certificate(bad_certificate, result.report))
 

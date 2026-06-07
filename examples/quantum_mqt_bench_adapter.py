@@ -10,6 +10,7 @@ from typing import Any, Mapping, Protocol
 from examples.real_task_adapter_evidence import (
     RealTaskAdapterEvidenceCertificate,
     build_real_task_adapter_evidence_certificate,
+    receipt_backend_execution_evidence,
     receipt_execution_provenance_hashes,
 )
 from trwm.claims import ClaimCertificate, certify_claim, requirement
@@ -139,6 +140,8 @@ class QuantumMqtBenchAdapterReport:
     typed_candidate_hashes: tuple[str, ...]
     hard_result_hashes: tuple[str, ...]
     hard_metadata_hashes: tuple[str, ...]
+    backend_execution_evidence_ok: bool
+    backend_execution_evidence_hashes: tuple[str, ...]
     source_urls: tuple[str, ...]
     claim_boundary: str
 
@@ -369,6 +372,7 @@ def _run_available_backend(backend: QuantumEquivalenceBackend) -> QuantumMqtBenc
     learned_receipts = tuple(receipt for receipts in learned_by_task.values() for receipt in receipts)
     all_receipts = (*tuple(training_receipts), *baseline_receipts, *learned_receipts)
     typed_candidate_hashes, hard_result_hashes, hard_metadata_hashes = receipt_execution_provenance_hashes(all_receipts)
+    backend_execution_evidence_ok, backend_execution_evidence_hashes = receipt_backend_execution_evidence("quantum", all_receipts)
     replay_ok, rollback_ok = _audit_replay_rollback_many(
         (training_engine, seed_state),
         (baseline_engine, training_state),
@@ -455,6 +459,8 @@ def _run_available_backend(backend: QuantumEquivalenceBackend) -> QuantumMqtBenc
         typed_candidate_hashes=typed_candidate_hashes,
         hard_result_hashes=hard_result_hashes,
         hard_metadata_hashes=hard_metadata_hashes,
+        backend_execution_evidence_ok=backend_execution_evidence_ok,
+        backend_execution_evidence_hashes=backend_execution_evidence_hashes,
         source_urls=QUANTUM_MQT_SOURCES,
         claim_boundary=QUANTUM_MQT_CLAIM_BOUNDARY,
     )
@@ -577,11 +583,16 @@ def _claim_for_report(report: QuantumMqtBenchAdapterReport) -> ClaimCertificate:
             "On held-out MQT Bench/QCEC quantum tasks, a receipt-trained reversible proposer "
             "reduces hard-verifier calls while preserving zero invalid commits."
         ),
-        evidence_grade="G1" if report.backend_available and report.real_backend else "G0",
+        evidence_grade="G1" if report.backend_available and report.real_backend and report.backend_execution_evidence_ok else "G0",
         scope="quantum_mqt_bench_adapter",
         requirements=(
             requirement("backend_available", report.backend_available, missing=report.missing_requirements, error=report.backend_error),
             requirement("real_mqt_backend", report.real_backend),
+            requirement(
+                "backend_execution_evidence_bound",
+                report.backend_execution_evidence_ok,
+                evidence_hashes=report.backend_execution_evidence_hashes,
+            ),
             requirement("learning_certificate_valid", report.learning_certificate_valid),
             requirement("learning_certificate_supports_claim", report.learning_certificate_supports_claim),
             requirement("hard_verifier_calls_reduced", report.learned_verifier_calls < report.baseline_verifier_calls),
@@ -644,6 +655,8 @@ def _empty_report(backend: QuantumEquivalenceBackend, *, backend_error: str = ""
         typed_candidate_hashes=(),
         hard_result_hashes=(),
         hard_metadata_hashes=(),
+        backend_execution_evidence_ok=False,
+        backend_execution_evidence_hashes=(),
         source_urls=QUANTUM_MQT_SOURCES,
         claim_boundary=QUANTUM_MQT_CLAIM_BOUNDARY,
     )
