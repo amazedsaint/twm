@@ -1455,14 +1455,19 @@ python3 -m examples.real_task_benchmark_suite
 This emits JSON with top-level `manifest`, `manifest_certificate`, `report`,
 `suite_certificate`, and `claim_certificate`. It runs the four optional real
 adapters, validates their child claim certificates and learning certificates,
+cross-checks each child claim and learning certificate against its child report,
 and aggregates child report hashes, exact receipt counts, baseline calls,
 learned calls, held-out successes, replay/rollback/ledger status, missing
-requirements, and invalid-commit counts.
+requirements, and invalid-commit counts. The learning cross-check binds exact
+training and learned receipt partitions rather than only checking that a
+certificate hash is well formed.
 
 The suite claim is intentionally stricter than adapter readiness. It is
 supported only when all four domains use real backends, all child claims are
-supported, all learning certificates support call reduction, held-out success is
-preserved, hard-verifier calls are reduced in every domain, replay/rollback and
-ledger audits pass, receipt counts bind exact receipt hashes, and invalid
-commits remain zero. Missing external tools or deterministic test doubles
-produce a rejected G0 claim rather than weakening the final objective.
+supported, every child claim matches its report, all learning certificates
+support call reduction, every learning certificate matches its report, held-out
+success is preserved, hard-verifier calls are reduced in every domain,
+replay/rollback and ledger audits pass, receipt counts bind exact receipt
+hashes, and invalid commits remain zero. Missing external tools or
+deterministic test doubles produce a rejected G0 claim rather than weakening
+the final objective.

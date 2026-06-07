@@ -884,12 +884,16 @@ reports into one `trwm.real_task_benchmark_suite_report.v1` report plus a
 the readiness manifest, child adapter report hashes, child claim hashes,
 learning certificate hashes, receipt hashes, missing requirements,
 verifier-call totals, held-out success totals, replay/rollback/ledger status,
-and invalid-commit totals.
+and invalid-commit totals. It also cross-checks that each child claim
+certificate matches the report it accompanies and that each learning certificate
+matches the report's learner snapshot, verifier-call metrics, success metrics,
+hard-commit flag, ledger audit, and exact training/learned receipt partitions.
 
 That changes the proof boundary again: single-domain adapter success is no
 longer enough. The final claim is supported only if all four real backends are
 available, all child claims are supported, all learning certificates support
-call reduction, every domain reduces hard-verifier calls while preserving
-held-out success, all receipt counts bind exact receipt hashes, and invalid
-commits remain zero. On the current local machine the suite correctly rejects
-with G0 because the external toolchains and task roots are missing.
+call reduction, every child claim and learning certificate is report-consistent,
+every domain reduces hard-verifier calls while preserving held-out success, all
+receipt counts bind exact receipt hashes, and invalid commits remain zero. On
+the current local machine the suite correctly rejects with G0 because the
+external toolchains and task roots are missing.

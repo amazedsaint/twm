@@ -50,9 +50,13 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertEqual(len(report.rows), 4)
         self.assertTrue(report.all_child_claims_valid)
         self.assertFalse(report.all_child_claims_supported)
+        self.assertTrue(report.all_child_claims_match_reports)
         self.assertTrue(all(row.child_claim_valid for row in report.rows))
+        self.assertTrue(all(row.child_claim_matches_report for row in report.rows))
         self.assertTrue(report.all_learning_certificates_valid)
         self.assertTrue(report.all_learning_certificates_support_claim)
+        self.assertTrue(report.all_learning_certificates_match_reports)
+        self.assertTrue(all(row.learning_certificate_matches_report for row in report.rows))
         self.assertTrue(report.all_backends_available)
         self.assertFalse(report.all_real_backends)
         self.assertTrue(report.all_receipt_counts_bound)
@@ -78,6 +82,8 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
             result.suite_certificate.child_report_hashes,
             tuple(row.child_report_hash for row in report.rows),
         )
+        self.assertTrue(result.suite_certificate.all_child_claims_match_reports)
+        self.assertTrue(result.suite_certificate.all_learning_certificates_match_reports)
         self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, report))
         self.assertTrue(validate_claim_certificate(claim))
         self.assertEqual(claim.status, "rejected")
@@ -96,6 +102,8 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
 
         self.assertEqual(result.report.total_receipt_count, 0)
         self.assertFalse(result.report.all_backends_available)
+        self.assertTrue(result.report.all_child_claims_match_reports)
+        self.assertTrue(result.report.all_learning_certificates_match_reports)
         self.assertFalse(result.report.hard_verifier_calls_reduced)
         self.assertFalse(result.report.success_preserved)
         self.assertTrue(result.report.missing_requirements)
@@ -114,10 +122,55 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         result = build_real_task_benchmark_suite_result(results)
 
         self.assertFalse(result.report.all_child_claims_valid)
+        self.assertFalse(result.report.all_child_claims_match_reports)
         self.assertTrue(validate_real_task_benchmark_suite_report(result.report))
         self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, result.report))
         self.assertEqual(result.claim_certificate.status, "rejected")
         self.assertIn("all_child_claims_valid", result.claim_certificate.failed_keys)
+        self.assertIn("all_child_claims_match_reports", result.claim_certificate.failed_keys)
+
+    def test_suite_rejects_valid_child_claim_that_does_not_match_report(self) -> None:
+        results = _deterministic_adapter_results()
+        robotics = results["robotics"]
+        bad_metrics = dict(robotics.claim_certificate.metrics)
+        bad_metrics["baseline_verifier_calls"] = bad_metrics["baseline_verifier_calls"] + 1
+        results["robotics"] = replace(
+            robotics,
+            claim_certificate=replace(robotics.claim_certificate, metrics=bad_metrics, certificate_hash=""),
+        )
+        result = build_real_task_benchmark_suite_result(results)
+
+        self.assertTrue(result.report.all_child_claims_valid)
+        self.assertFalse(result.report.all_child_claims_match_reports)
+        self.assertTrue(validate_real_task_benchmark_suite_report(result.report))
+        self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, result.report))
+        self.assertEqual(result.claim_certificate.status, "rejected")
+        self.assertIn("all_child_claims_match_reports", result.claim_certificate.failed_keys)
+
+    def test_suite_rejects_valid_learning_certificate_that_does_not_match_report(self) -> None:
+        results = _deterministic_adapter_results()
+        robotics = results["robotics"]
+        learning_certificate = robotics.learning_certificate
+        self.assertIsNotNone(learning_certificate)
+        bad_baseline_calls = learning_certificate.baseline_verifier_calls + 1
+        results["robotics"] = replace(
+            robotics,
+            learning_certificate=replace(
+                learning_certificate,
+                baseline_verifier_calls=bad_baseline_calls,
+                verifier_call_gain_numerator=bad_baseline_calls,
+                certificate_hash="",
+            ),
+        )
+        result = build_real_task_benchmark_suite_result(results)
+
+        self.assertTrue(result.report.all_learning_certificates_valid)
+        self.assertTrue(result.report.all_learning_certificates_support_claim)
+        self.assertFalse(result.report.all_learning_certificates_match_reports)
+        self.assertTrue(validate_real_task_benchmark_suite_report(result.report))
+        self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, result.report))
+        self.assertEqual(result.claim_certificate.status, "rejected")
+        self.assertIn("all_learning_certificates_match_reports", result.claim_certificate.failed_keys)
 
     def test_suite_certificate_binds_child_report_hashes(self) -> None:
         result = run_real_task_benchmark_suite(_deterministic_adapter_results())

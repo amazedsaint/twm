@@ -32,6 +32,24 @@ REAL_TASK_BENCHMARK_SUITE_CLAIM_BOUNDARY = (
     "and ledger audits, and zero invalid commits. Deterministic test doubles and missing "
     "external toolchains must reject."
 )
+_REAL_BACKEND_REQUIREMENT_BY_DOMAIN = {
+    "robotics": "real_motion_benchmark_backend",
+    "hardware": "real_riscv_formal_backend",
+    "program": "real_defects4j_backend",
+    "quantum": "real_mqt_backend",
+}
+_CHILD_CLAIM_ID_BY_DOMAIN = {
+    "robotics": "robotics_motion_benchmark_receipt_trained_reversible_adapter",
+    "hardware": "hardware_riscv_formal_receipt_trained_reversible_adapter",
+    "program": "program_defects4j_receipt_trained_reversible_adapter",
+    "quantum": "quantum_mqt_receipt_trained_reversible_adapter",
+}
+_CHILD_CLAIM_SCOPE_BY_DOMAIN = {
+    "robotics": "robotics_motion_benchmark_adapter",
+    "hardware": "hardware_riscv_formal_adapter",
+    "program": "program_defects4j_adapter",
+    "quantum": "quantum_mqt_bench_adapter",
+}
 
 
 @dataclass(frozen=True)
@@ -48,9 +66,11 @@ class RealTaskBenchmarkSuiteRow:
     child_claim_valid: bool
     child_claim_status: str
     child_claim_hash: str
+    child_claim_matches_report: bool
     learning_certificate_hash: str
     learning_certificate_valid: bool
     learning_certificate_supports_claim: bool
+    learning_certificate_matches_report: bool
     train_task_ids: tuple[str, ...]
     held_out_task_ids: tuple[str, ...]
     receipt_count: int
@@ -92,8 +112,10 @@ class RealTaskBenchmarkSuiteReport:
     rows: tuple[RealTaskBenchmarkSuiteRow, ...]
     all_child_claims_valid: bool
     all_child_claims_supported: bool
+    all_child_claims_match_reports: bool
     all_learning_certificates_valid: bool
     all_learning_certificates_support_claim: bool
+    all_learning_certificates_match_reports: bool
     all_backends_available: bool
     all_real_backends: bool
     all_receipt_counts_bound: bool
@@ -141,7 +163,9 @@ class RealTaskBenchmarkSuiteCertificate:
     receipt_hashes: tuple[str, ...]
     all_child_claims_valid: bool
     all_child_claims_supported: bool
+    all_child_claims_match_reports: bool
     all_learning_certificates_valid: bool
+    all_learning_certificates_match_reports: bool
     all_real_backends: bool
     all_receipt_counts_bound: bool
     hard_verifier_calls_reduced: bool
@@ -195,11 +219,8 @@ def build_real_task_benchmark_suite_result(
     preflight_report = build_real_task_preflight_report(manifest)
     manifest_certificate = build_real_task_manifest_certificate(manifest, preflight_report)
     rows = tuple(_suite_row(domain, adapter_results[domain]) for domain in REAL_TASK_BENCHMARK_SUITE_DOMAINS)
-    child_claims_valid = tuple(validate_claim_certificate(adapter_results[domain].claim_certificate) for domain in REAL_TASK_BENCHMARK_SUITE_DOMAINS)
-    child_claims_supported = tuple(
-        valid and adapter_results[domain].claim_certificate.status == "supported"
-        for domain, valid in zip(REAL_TASK_BENCHMARK_SUITE_DOMAINS, child_claims_valid)
-    )
+    child_claims_valid = tuple(row.child_claim_valid for row in rows)
+    child_claims_supported = tuple(row.child_claim_valid and row.child_claim_status == "supported" for row in rows)
     report = _build_report(manifest, manifest_certificate, rows, child_claims_valid, child_claims_supported)
     suite_certificate = build_real_task_benchmark_suite_certificate(report, manifest, manifest_certificate)
     claim = certify_claim(
@@ -209,7 +230,16 @@ def build_real_task_benchmark_suite_result(
             "zero invalid commits on held-out robotics, hardware, program, and quantum real-task "
             "benchmarks."
         ),
-        evidence_grade="G1" if report.all_real_backends and report.all_child_claims_supported else "G0",
+        evidence_grade=(
+            "G1"
+            if (
+                report.all_real_backends
+                and report.all_child_claims_supported
+                and report.all_child_claims_match_reports
+                and report.all_learning_certificates_match_reports
+            )
+            else "G0"
+        ),
         scope="real_task_benchmark_suite",
         requirements=(
             requirement("manifest_valid", validate_real_task_manifest(manifest)),
@@ -219,8 +249,10 @@ def build_real_task_benchmark_suite_result(
             requirement("exactly_four_domains", report.domain_count == 4 and report.domains == REAL_TASK_BENCHMARK_SUITE_DOMAINS),
             requirement("all_child_claims_valid", report.all_child_claims_valid),
             requirement("all_child_claims_supported", report.all_child_claims_supported),
+            requirement("all_child_claims_match_reports", report.all_child_claims_match_reports),
             requirement("all_learning_certificates_valid", report.all_learning_certificates_valid),
             requirement("all_learning_certificates_support_claim", report.all_learning_certificates_support_claim),
+            requirement("all_learning_certificates_match_reports", report.all_learning_certificates_match_reports),
             requirement("all_backends_available", report.all_backends_available, missing=report.missing_requirements),
             requirement("all_real_backends", report.all_real_backends),
             requirement("all_receipt_counts_bound", report.all_receipt_counts_bound),
@@ -270,7 +302,9 @@ def build_real_task_benchmark_suite_certificate(
         receipt_hashes=tuple(receipt_hash for row in report.rows for receipt_hash in row.receipt_hashes),
         all_child_claims_valid=report.all_child_claims_valid,
         all_child_claims_supported=report.all_child_claims_supported,
+        all_child_claims_match_reports=report.all_child_claims_match_reports,
         all_learning_certificates_valid=report.all_learning_certificates_valid,
+        all_learning_certificates_match_reports=report.all_learning_certificates_match_reports,
         all_real_backends=report.all_real_backends,
         all_receipt_counts_bound=report.all_receipt_counts_bound,
         hard_verifier_calls_reduced=report.hard_verifier_calls_reduced,
@@ -300,10 +334,22 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
             return False
         if any(row.child_claim_status not in {"supported", "rejected"} for row in report.rows):
             return False
+        if any(not isinstance(row.child_claim_matches_report, bool) for row in report.rows):
+            return False
+        if any(not isinstance(row.learning_certificate_matches_report, bool) for row in report.rows):
+            return False
         if report.all_child_claims_valid != all(row.child_claim_valid for row in report.rows):
+            return False
+        if report.all_child_claims_match_reports != all(row.child_claim_matches_report for row in report.rows):
+            return False
+        if report.all_learning_certificates_match_reports != all(row.learning_certificate_matches_report for row in report.rows):
+            return False
+        if any(row.child_claim_matches_report and not row.child_claim_valid for row in report.rows):
             return False
         for row in report.rows:
             if row.receipt_count != len(row.receipt_hashes):
+                return False
+            if row.receipt_count != row.training_receipt_count + row.baseline_receipt_count + row.learned_receipt_count:
                 return False
             if any(not _is_hash(receipt_hash) for receipt_hash in row.receipt_hashes):
                 return False
@@ -358,6 +404,10 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
         if report.all_real_backends != all(row.real_backend for row in report.rows):
             return False
         if report.all_child_claims_supported != all(row.child_claim_valid and row.child_claim_status == "supported" for row in report.rows):
+            return False
+        if report.all_learning_certificates_valid != all(row.learning_certificate_valid for row in report.rows):
+            return False
+        if report.all_learning_certificates_support_claim != all(row.learning_certificate_supports_claim for row in report.rows):
             return False
         if report.all_receipt_counts_bound != all(row.receipt_count == len(row.receipt_hashes) for row in report.rows):
             return False
@@ -430,7 +480,9 @@ def validate_real_task_benchmark_suite_certificate(
             for field in (
                 "all_child_claims_valid",
                 "all_child_claims_supported",
+                "all_child_claims_match_reports",
                 "all_learning_certificates_valid",
+                "all_learning_certificates_match_reports",
                 "all_real_backends",
                 "all_receipt_counts_bound",
                 "hard_verifier_calls_reduced",
@@ -462,8 +514,10 @@ def _build_report(
         rows=rows,
         all_child_claims_valid=all(child_claims_valid),
         all_child_claims_supported=all(child_claims_supported),
+        all_child_claims_match_reports=all(row.child_claim_matches_report for row in rows),
         all_learning_certificates_valid=all(row.learning_certificate_valid for row in rows),
         all_learning_certificates_support_claim=all(row.learning_certificate_supports_claim for row in rows),
+        all_learning_certificates_match_reports=all(row.learning_certificate_matches_report for row in rows),
         all_backends_available=all(row.backend_available for row in rows),
         all_real_backends=all(row.real_backend for row in rows),
         all_receipt_counts_bound=all(row.receipt_count == len(row.receipt_hashes) for row in rows),
@@ -499,6 +553,8 @@ def _suite_row(domain: str, result: Any) -> RealTaskBenchmarkSuiteRow:
         learning_valid = validate_learning_evaluation_certificate(learning_certificate)
         learning_supports = learning_evaluation_supports_claim(learning_certificate)
         learning_hash = learning_certificate.certificate_hash
+    child_claim = result.claim_certificate
+    child_claim_valid = validate_claim_certificate(child_claim)
     return RealTaskBenchmarkSuiteRow(
         domain=domain,
         report_schema_version=str(report.schema_version),
@@ -509,12 +565,14 @@ def _suite_row(domain: str, result: Any) -> RealTaskBenchmarkSuiteRow:
         real_backend=bool(report.real_backend),
         missing_requirements=tuple(str(row) for row in report.missing_requirements),
         child_report_hash=stable_hash(asdict(report)),
-        child_claim_valid=validate_claim_certificate(result.claim_certificate),
-        child_claim_status=str(result.claim_certificate.status),
-        child_claim_hash=str(result.claim_certificate.certificate_hash),
+        child_claim_valid=child_claim_valid,
+        child_claim_status=str(child_claim.status),
+        child_claim_hash=str(child_claim.certificate_hash),
+        child_claim_matches_report=_child_claim_matches_report(domain, report, child_claim),
         learning_certificate_hash=learning_hash,
         learning_certificate_valid=learning_valid,
         learning_certificate_supports_claim=learning_supports,
+        learning_certificate_matches_report=_learning_certificate_matches_report(report, learning_certificate),
         train_task_ids=tuple(str(row) for row in report.train_task_ids),
         held_out_task_ids=tuple(str(row) for row in report.held_out_task_ids),
         receipt_count=int(report.receipt_count),
@@ -536,6 +594,104 @@ def _suite_row(domain: str, result: Any) -> RealTaskBenchmarkSuiteRow:
         receipt_hashes=tuple(str(row) for row in report.receipt_hashes),
         source_urls=tuple(str(row) for row in report.source_urls),
         claim_boundary=str(report.claim_boundary),
+    )
+
+
+def _child_claim_matches_report(domain: str, report: Any, claim: ClaimCertificate) -> bool:
+    if not validate_claim_certificate(claim):
+        return False
+    real_backend_requirement = _REAL_BACKEND_REQUIREMENT_BY_DOMAIN.get(domain)
+    if real_backend_requirement is None:
+        return False
+    expected_requirement_keys = (
+        "backend_available",
+        real_backend_requirement,
+        "learning_certificate_valid",
+        "learning_certificate_supports_claim",
+        "hard_verifier_calls_reduced",
+        "success_preserved",
+        "zero_invalid_commits",
+        "replay_rollback_ok",
+    )
+    if tuple(row.key for row in claim.requirements) != expected_requirement_keys:
+        return False
+    requirements = {row.key: row for row in claim.requirements}
+    expected_passes = {
+        "backend_available": bool(report.backend_available),
+        real_backend_requirement: bool(report.real_backend),
+        "learning_certificate_valid": bool(report.learning_certificate_valid),
+        "learning_certificate_supports_claim": bool(report.learning_certificate_supports_claim),
+        "hard_verifier_calls_reduced": report.learned_verifier_calls < report.baseline_verifier_calls,
+        "success_preserved": report.learned_success_count == report.baseline_success_count and report.learned_success_count > 0,
+        "zero_invalid_commits": report.invalid_commit_count == 0,
+        "replay_rollback_ok": bool(report.replay_audit_ok and report.rollback_audit_ok and report.ledger_audit_ok),
+    }
+    if any(requirements[key].passed != expected_passes[key] for key in expected_requirement_keys):
+        return False
+    expected_metrics = {
+        "baseline_verifier_calls": int(report.baseline_verifier_calls),
+        "learned_verifier_calls": int(report.learned_verifier_calls),
+        "verifier_call_reduction": int(report.verifier_call_reduction),
+        "invalid_commit_count": int(report.invalid_commit_count),
+    }
+    if claim.metrics != expected_metrics:
+        return False
+    return (
+        claim.claim_id == _CHILD_CLAIM_ID_BY_DOMAIN[domain]
+        and claim.scope == _CHILD_CLAIM_SCOPE_BY_DOMAIN[domain]
+        and claim.evidence_grade == ("G1" if report.backend_available and report.real_backend else "G0")
+        and claim.status == ("supported" if all(expected_passes.values()) else "rejected")
+        and claim.boundary == report.claim_boundary
+        and claim.sources == tuple(report.source_urls)
+    )
+
+
+def _learning_certificate_matches_report(report: Any, learning_certificate: Any | None) -> bool:
+    if learning_certificate is None:
+        return (
+            report.receipt_count == 0
+            and report.training_receipt_count == 0
+            and report.baseline_receipt_count == 0
+            and report.learned_receipt_count == 0
+            and report.learner_snapshot_hash == ""
+            and report.learning_certificate_hash == ""
+            and not report.learning_certificate_valid
+            and not report.learning_certificate_supports_claim
+        )
+    if not validate_learning_evaluation_certificate(learning_certificate):
+        return False
+    receipt_hashes = tuple(report.receipt_hashes)
+    training_end = int(report.training_receipt_count)
+    learned_start = int(report.training_receipt_count) + int(report.baseline_receipt_count)
+    training_hashes = receipt_hashes[:training_end]
+    learned_hashes = receipt_hashes[learned_start:]
+    expected_metrics = {
+        "backend_id": str(report.backend_id),
+        "real_backend": bool(report.real_backend),
+        "held_out_task_ids": tuple(report.held_out_task_ids),
+    }
+    return (
+        learning_certificate.certificate_hash == report.learning_certificate_hash
+        and learning_certificate.learner_snapshot_hash == report.learner_snapshot_hash
+        and learning_certificate.training_receipt_hashes == training_hashes
+        and learning_certificate.evaluation_receipt_hashes == learned_hashes
+        and len(learning_certificate.training_receipt_hashes) == report.training_receipt_count
+        and len(learning_certificate.evaluation_receipt_hashes) == report.learned_receipt_count
+        and learning_certificate.baseline_verifier_calls == report.baseline_verifier_calls
+        and learning_certificate.learned_verifier_calls == report.learned_verifier_calls
+        and learning_certificate.baseline_success_count == report.baseline_success_count
+        and learning_certificate.learned_success_count == report.learned_success_count
+        and learning_certificate.verifier_budget == report.baseline_verifier_calls
+        and learning_certificate.candidate_count == 2 * len(report.held_out_task_ids)
+        and learning_certificate.same_case_baseline
+        and learning_certificate.train_eval_disjoint == report.train_eval_disjoint
+        and learning_certificate.hard_commit_only == report.hard_commit_only
+        and learning_certificate.invalid_commit_count == report.invalid_commit_count
+        and learning_certificate.ledger_audit == report.ledger_audit_ok
+        and learning_certificate.replay_rollback_rate == (1.0 if report.replay_audit_ok and report.rollback_audit_ok else 0.0)
+        and learning_certificate.metrics == expected_metrics
+        and report.learning_certificate_valid == validate_learning_evaluation_certificate(learning_certificate)
+        and report.learning_certificate_supports_claim == learning_evaluation_supports_claim(learning_certificate)
     )
 
 
