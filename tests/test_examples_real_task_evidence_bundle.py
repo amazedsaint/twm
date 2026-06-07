@@ -65,6 +65,14 @@ class RealTaskEvidenceBundleTests(unittest.TestCase):
         self.assertEqual(certificate.child_training_receipt_counts, (2, 2, 2, 2))
         self.assertEqual(certificate.child_baseline_receipt_counts, (4, 4, 4, 4))
         self.assertEqual(certificate.child_learned_receipt_counts, (2, 2, 2, 2))
+        self.assertEqual(len(certificate.child_learner_snapshot_hashes), 4)
+        self.assertEqual(len(certificate.child_learner_snapshot_receipt_hashes), 8)
+        self.assertTrue(certificate.child_learner_snapshot_row_hashes)
+        self.assertEqual(len(certificate.child_proposer_rank_audit_hashes), 8)
+        self.assertEqual(certificate.child_learner_snapshot_hashes, result.suite_result.suite_certificate.learner_snapshot_hashes)
+        self.assertEqual(certificate.child_learner_snapshot_receipt_hashes, result.suite_result.suite_certificate.learner_snapshot_receipt_hashes)
+        self.assertEqual(certificate.child_learner_snapshot_row_hashes, result.suite_result.suite_certificate.learner_snapshot_row_hashes)
+        self.assertEqual(certificate.child_proposer_rank_audit_hashes, result.suite_result.suite_certificate.proposer_rank_audit_hashes)
         self.assertEqual(
             certificate.child_report_hashes,
             tuple(real_task_adapter_report_hash(child_results[domain].report) for domain in REAL_TASK_BENCHMARK_SUITE_DOMAINS),
@@ -75,9 +83,11 @@ class RealTaskEvidenceBundleTests(unittest.TestCase):
         self.assertTrue(certificate.all_child_evidence_certificates_match_reports)
         self.assertTrue(certificate.all_child_claims_valid)
         self.assertTrue(certificate.all_child_claims_match_reports)
+        self.assertTrue(certificate.all_learner_snapshots_bound)
         self.assertTrue(certificate.all_learning_certificates_valid)
         self.assertTrue(certificate.all_learning_certificates_match_reports)
         self.assertTrue(certificate.all_learning_certificates_support_claim)
+        self.assertTrue(certificate.all_proposer_rank_audits_bound)
         self.assertTrue(certificate.hard_verifier_calls_reduced)
         self.assertTrue(certificate.success_preserved)
         self.assertTrue(certificate.replay_rollback_ledger_ok)
@@ -97,10 +107,16 @@ class RealTaskEvidenceBundleTests(unittest.TestCase):
         self.assertEqual(certificate.aggregate_evidence_grade, "G0")
         self.assertEqual(certificate.total_receipt_count, 0)
         self.assertEqual(certificate.child_receipt_counts, (0, 0, 0, 0))
+        self.assertEqual(certificate.child_learner_snapshot_hashes, ())
+        self.assertEqual(certificate.child_learner_snapshot_receipt_hashes, ())
+        self.assertEqual(certificate.child_learner_snapshot_row_hashes, ())
+        self.assertEqual(certificate.child_proposer_rank_audit_hashes, ())
         self.assertEqual(certificate.child_learning_certificate_hashes, ("", "", "", ""))
         self.assertFalse(certificate.all_backends_available)
+        self.assertFalse(certificate.all_learner_snapshots_bound)
         self.assertFalse(certificate.all_learning_certificates_valid)
         self.assertFalse(certificate.all_learning_certificates_support_claim)
+        self.assertFalse(certificate.all_proposer_rank_audits_bound)
         self.assertFalse(certificate.hard_verifier_calls_reduced)
         self.assertFalse(certificate.success_preserved)
         self.assertTrue(certificate.no_invalid_commits)
@@ -111,6 +127,21 @@ class RealTaskEvidenceBundleTests(unittest.TestCase):
         bad_certificate = replace(
             result.bundle_certificate,
             child_report_hashes=("0" * 64, *result.bundle_certificate.child_report_hashes[1:]),
+            certificate_hash="",
+        )
+        bad_result = RealTaskEvidenceBundleResult(
+            bundle_certificate=bad_certificate,
+            suite_result=result.suite_result,
+            child_results=result.child_results,
+        )
+
+        self.assertFalse(validate_real_task_evidence_bundle(bad_result))
+
+    def test_tampered_bundle_proposer_rank_hash_fails(self) -> None:
+        result = run_real_task_evidence_bundle(_deterministic_adapter_results())
+        bad_certificate = replace(
+            result.bundle_certificate,
+            child_proposer_rank_audit_hashes=("0" * 64, *result.bundle_certificate.child_proposer_rank_audit_hashes[1:]),
             certificate_hash="",
         )
         bad_result = RealTaskEvidenceBundleResult(

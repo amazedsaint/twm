@@ -44,7 +44,11 @@ class RealTaskEvidenceBundleCertificate:
     child_report_hashes: tuple[str, ...]
     child_evidence_certificate_hashes: tuple[str, ...]
     child_claim_hashes: tuple[str, ...]
+    child_learner_snapshot_hashes: tuple[str, ...]
+    child_learner_snapshot_receipt_hashes: tuple[str, ...]
+    child_learner_snapshot_row_hashes: tuple[str, ...]
     child_learning_certificate_hashes: tuple[str, ...]
+    child_proposer_rank_audit_hashes: tuple[str, ...]
     child_receipt_counts: tuple[int, ...]
     child_training_receipt_counts: tuple[int, ...]
     child_baseline_receipt_counts: tuple[int, ...]
@@ -56,6 +60,7 @@ class RealTaskEvidenceBundleCertificate:
     all_child_evidence_certificates_match_reports: bool
     all_child_claims_valid: bool
     all_child_claims_match_reports: bool
+    all_learner_snapshots_bound: bool
     all_learning_certificates_valid: bool
     all_learning_certificates_match_reports: bool
     suite_report_valid: bool
@@ -68,6 +73,7 @@ class RealTaskEvidenceBundleCertificate:
     all_receipt_artifacts_cover_manifest_assets: bool
     all_backend_execution_evidence_bound: bool
     all_learning_certificates_support_claim: bool
+    all_proposer_rank_audits_bound: bool
     hard_verifier_calls_reduced: bool
     success_preserved: bool
     replay_rollback_ledger_ok: bool
@@ -84,7 +90,11 @@ class RealTaskEvidenceBundleCertificate:
         object.__setattr__(self, "child_report_hashes", tuple(self.child_report_hashes))
         object.__setattr__(self, "child_evidence_certificate_hashes", tuple(self.child_evidence_certificate_hashes))
         object.__setattr__(self, "child_claim_hashes", tuple(self.child_claim_hashes))
+        object.__setattr__(self, "child_learner_snapshot_hashes", tuple(self.child_learner_snapshot_hashes))
+        object.__setattr__(self, "child_learner_snapshot_receipt_hashes", tuple(self.child_learner_snapshot_receipt_hashes))
+        object.__setattr__(self, "child_learner_snapshot_row_hashes", tuple(self.child_learner_snapshot_row_hashes))
         object.__setattr__(self, "child_learning_certificate_hashes", tuple(self.child_learning_certificate_hashes))
+        object.__setattr__(self, "child_proposer_rank_audit_hashes", tuple(self.child_proposer_rank_audit_hashes))
         object.__setattr__(self, "child_receipt_counts", tuple(int(row) for row in self.child_receipt_counts))
         object.__setattr__(self, "child_training_receipt_counts", tuple(int(row) for row in self.child_training_receipt_counts))
         object.__setattr__(self, "child_baseline_receipt_counts", tuple(int(row) for row in self.child_baseline_receipt_counts))
@@ -161,7 +171,11 @@ def build_real_task_evidence_bundle_certificate(
         child_report_hashes=child_report_hashes,
         child_evidence_certificate_hashes=tuple(evidence.certificate_hash for evidence in child_evidence_certificates),
         child_claim_hashes=tuple(claim.certificate_hash for claim in child_claims),
+        child_learner_snapshot_hashes=suite_result.suite_certificate.learner_snapshot_hashes,
+        child_learner_snapshot_receipt_hashes=suite_result.suite_certificate.learner_snapshot_receipt_hashes,
+        child_learner_snapshot_row_hashes=suite_result.suite_certificate.learner_snapshot_row_hashes,
         child_learning_certificate_hashes=tuple(_learning_hash(learning) for learning in child_learning_certificates),
+        child_proposer_rank_audit_hashes=suite_result.suite_certificate.proposer_rank_audit_hashes,
         child_receipt_counts=tuple(int(report.receipt_count) for report in child_reports),
         child_training_receipt_counts=tuple(int(report.training_receipt_count) for report in child_reports),
         child_baseline_receipt_counts=tuple(int(report.baseline_receipt_count) for report in child_reports),
@@ -173,6 +187,7 @@ def build_real_task_evidence_bundle_certificate(
         all_child_evidence_certificates_match_reports=suite_result.report.all_adapter_evidence_certificates_match_reports,
         all_child_claims_valid=all(validate_claim_certificate(claim) for claim in child_claims) and suite_result.report.all_child_claims_valid,
         all_child_claims_match_reports=suite_result.report.all_child_claims_match_reports,
+        all_learner_snapshots_bound=suite_result.report.all_learner_snapshots_bound,
         all_learning_certificates_valid=suite_result.report.all_learning_certificates_valid,
         all_learning_certificates_match_reports=suite_result.report.all_learning_certificates_match_reports,
         suite_report_valid=validate_real_task_benchmark_suite_report(suite_result.report),
@@ -185,6 +200,7 @@ def build_real_task_evidence_bundle_certificate(
         all_receipt_artifacts_cover_manifest_assets=suite_result.report.all_receipt_artifacts_cover_manifest_assets,
         all_backend_execution_evidence_bound=suite_result.report.all_backend_execution_evidence_bound,
         all_learning_certificates_support_claim=suite_result.report.all_learning_certificates_support_claim,
+        all_proposer_rank_audits_bound=suite_result.report.all_proposer_rank_audits_bound,
         hard_verifier_calls_reduced=suite_result.report.hard_verifier_calls_reduced,
         success_preserved=suite_result.report.success_preserved,
         replay_rollback_ledger_ok=suite_result.report.replay_rollback_ledger_ok,
@@ -215,6 +231,14 @@ def validate_real_task_evidence_bundle(
         if not _hash_tuple(certificate.child_evidence_certificate_hashes, size=4):
             return False
         if not _hash_tuple(certificate.child_claim_hashes, size=4):
+            return False
+        if any(not _is_hash(value) for value in certificate.child_learner_snapshot_hashes):
+            return False
+        if any(not _is_hash(value) for value in certificate.child_learner_snapshot_receipt_hashes):
+            return False
+        if any(not _is_hash(value) for value in certificate.child_learner_snapshot_row_hashes):
+            return False
+        if any(not _is_hash(value) for value in certificate.child_proposer_rank_audit_hashes):
             return False
         if len(certificate.child_learning_certificate_hashes) != 4:
             return False
@@ -247,6 +271,20 @@ def validate_real_task_evidence_bundle(
         if certificate.aggregate_claim_status not in {"supported", "rejected"}:
             return False
         if certificate.aggregate_evidence_grade not in {"G0", "G1", "G2", "G3"}:
+            return False
+        if certificate.total_receipt_count > 0:
+            if len(certificate.child_learner_snapshot_hashes) != 4:
+                return False
+            if not certificate.child_proposer_rank_audit_hashes:
+                return False
+        if certificate.total_receipt_count == 0 and (
+            certificate.child_learner_snapshot_hashes
+            or certificate.child_learner_snapshot_receipt_hashes
+            or certificate.child_learner_snapshot_row_hashes
+            or certificate.child_proposer_rank_audit_hashes
+            or certificate.all_learner_snapshots_bound
+            or certificate.all_proposer_rank_audits_bound
+        ):
             return False
         if not certificate.source_urls or any(not isinstance(source, str) or not source for source in certificate.source_urls):
             return False
@@ -310,6 +348,7 @@ def _supported_bundle(certificate: RealTaskEvidenceBundleCertificate) -> bool:
         and certificate.all_child_evidence_certificates_match_reports
         and certificate.all_child_claims_valid
         and certificate.all_child_claims_match_reports
+        and certificate.all_learner_snapshots_bound
         and certificate.all_learning_certificates_valid
         and certificate.all_learning_certificates_match_reports
         and certificate.suite_report_valid
@@ -321,6 +360,7 @@ def _supported_bundle(certificate: RealTaskEvidenceBundleCertificate) -> bool:
         and certificate.all_receipt_artifacts_cover_manifest_assets
         and certificate.all_backend_execution_evidence_bound
         and certificate.all_learning_certificates_support_claim
+        and certificate.all_proposer_rank_audits_bound
         and certificate.hard_verifier_calls_reduced
         and certificate.success_preserved
         and certificate.replay_rollback_ledger_ok

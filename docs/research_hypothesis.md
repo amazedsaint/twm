@@ -1019,3 +1019,6 @@ checks that the learned arm submits the prefix of the candidate order produced
 by the snapshot-trained proposer. The aggregate suite now exposes
 `all_learner_snapshots_bound` and `all_proposer_rank_audits_bound`; both must
 hold before any four-domain G1 real-task call-reduction claim can promote.
+The final evidence bundle now carries the same compact lanes, so downstream
+review can validate the learner-snapshot and rank-audit gates from the portable
+bundle certificate rather than re-opening every child report first.

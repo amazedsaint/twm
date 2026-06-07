@@ -984,3 +984,10 @@ from the training snapshot. The suite lifts these into
 real-task G1 promotion now requires not only fewer verifier calls and zero
 invalid commits, but also a certificate-bound explanation of why the learned
 arm made fewer calls.
+
+The evidence bundle now carries those same lanes as portable proof material:
+child learner snapshot hashes, snapshot receipt hashes, snapshot row hashes,
+child proposer-rank audit hashes, `all_learner_snapshots_bound`, and
+`all_proposer_rank_audits_bound`. That closes the handoff gap where the suite
+could validate the learned proposer path but the final bundle did not expose
+the compact hashes needed for downstream review.

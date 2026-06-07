@@ -1585,8 +1585,11 @@ emits a `bundle_certificate`, the full `suite_result`, and all four
 `child_results`. The bundle certificate binds the manifest hash, preflight hash,
 suite report hash, suite certificate hash, aggregate claim hash, child adapter
 report hashes, child evidence certificate hashes, child claim hashes, child
-learning certificate hashes, exact child receipt counts, missing requirements,
-failed aggregate requirements, and the final zero-invalid-commit gate. It then
+learning certificate hashes, child learner snapshot hashes, child learner
+snapshot receipt hashes, child learner snapshot row hashes, child
+proposer-rank audit hashes, exact child receipt counts, missing requirements,
+failed aggregate requirements, the aggregate learner-snapshot and rank-audit
+gates, and the final zero-invalid-commit gate. It then
 rebuilds the aggregate suite from the included child results during validation,
 so a valid bundle cannot mix a suite result from one run with child evidence
 from another run.
