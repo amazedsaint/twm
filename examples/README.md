@@ -1463,8 +1463,11 @@ certificates, and learning certificates, cross-checks each certificate against
 its child report and manifest spec, and aggregates manifest spec hashes,
 adapter evidence certificate hashes, child report hashes, exact receipt counts,
 baseline calls, learned calls, held-out successes, replay/rollback/ledger
-status, missing requirements, and invalid-commit counts. The adapter evidence
-cross-check binds exact training, baseline, and learned receipt partitions
+status, missing requirements, and invalid-commit counts. Adapter reports and
+evidence certificates also bind typed-candidate hashes, hard-result hashes, and
+hard-metadata hashes for every receipt, so external command/QCEC/test metadata
+has a compact audit lane without bloating the aggregate report. The adapter
+evidence cross-check binds exact training, baseline, and learned receipt partitions
 before the manifest cross-check proves the adapter evidence sources are covered
 by the domain's real-task manifest spec. The learning cross-check then binds
 the learned receipt partition into the learning certificate.

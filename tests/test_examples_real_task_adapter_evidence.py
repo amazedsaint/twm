@@ -22,6 +22,12 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
         self.assertEqual(certificate.training_receipt_count, result.report.training_receipt_count)
         self.assertEqual(certificate.baseline_receipt_count, result.report.baseline_receipt_count)
         self.assertEqual(certificate.learned_receipt_count, result.report.learned_receipt_count)
+        self.assertEqual(certificate.typed_candidate_hashes, result.report.typed_candidate_hashes)
+        self.assertEqual(certificate.hard_result_hashes, result.report.hard_result_hashes)
+        self.assertEqual(certificate.hard_metadata_hashes, result.report.hard_metadata_hashes)
+        self.assertEqual(len(certificate.typed_candidate_hashes), result.report.receipt_count)
+        self.assertEqual(len(certificate.hard_result_hashes), result.report.receipt_count)
+        self.assertEqual(len(certificate.hard_metadata_hashes), result.report.receipt_count)
         self.assertEqual(
             certificate.receipt_hashes,
             certificate.training_receipt_hashes + certificate.baseline_receipt_hashes + certificate.learned_receipt_hashes,
@@ -42,6 +48,9 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
         self.assertEqual(certificate.evidence_grade, "G0")
         self.assertEqual(certificate.receipt_count, 0)
         self.assertEqual(certificate.receipt_hashes, ())
+        self.assertEqual(certificate.typed_candidate_hashes, ())
+        self.assertEqual(certificate.hard_result_hashes, ())
+        self.assertEqual(certificate.hard_metadata_hashes, ())
         self.assertEqual(certificate.learning_certificate_hash, "")
         self.assertTrue(
             validate_real_task_adapter_evidence_certificate(
@@ -60,6 +69,19 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
             validate_real_task_adapter_evidence_certificate(
                 certificate,
                 report=result.report,
+                learning_certificate=result.learning_certificate,
+                claim_certificate=result.claim_certificate,
+            )
+        )
+
+    def test_tampered_report_provenance_hash_fails(self) -> None:
+        result = run_robotics_motion_benchmark_adapter_experiment(DeterministicMotionBenchmarkBackend())
+        bad_report = replace(result.report, hard_metadata_hashes=("0" * 64, *result.report.hard_metadata_hashes[1:]))
+
+        self.assertFalse(
+            validate_real_task_adapter_evidence_certificate(
+                result.evidence_certificate,
+                report=bad_report,
                 learning_certificate=result.learning_certificate,
                 claim_certificate=result.claim_certificate,
             )

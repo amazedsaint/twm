@@ -39,6 +39,9 @@ class RealTaskAdapterEvidenceCertificate:
     claim_certificate_valid: bool
     claim_certificate_status: str
     receipt_hashes: tuple[str, ...]
+    typed_candidate_hashes: tuple[str, ...]
+    hard_result_hashes: tuple[str, ...]
+    hard_metadata_hashes: tuple[str, ...]
     training_receipt_hashes: tuple[str, ...]
     baseline_receipt_hashes: tuple[str, ...]
     learned_receipt_hashes: tuple[str, ...]
@@ -71,6 +74,9 @@ class RealTaskAdapterEvidenceCertificate:
         object.__setattr__(self, "train_task_ids", tuple(self.train_task_ids))
         object.__setattr__(self, "held_out_task_ids", tuple(self.held_out_task_ids))
         object.__setattr__(self, "receipt_hashes", tuple(self.receipt_hashes))
+        object.__setattr__(self, "typed_candidate_hashes", tuple(self.typed_candidate_hashes))
+        object.__setattr__(self, "hard_result_hashes", tuple(self.hard_result_hashes))
+        object.__setattr__(self, "hard_metadata_hashes", tuple(self.hard_metadata_hashes))
         object.__setattr__(self, "training_receipt_hashes", tuple(self.training_receipt_hashes))
         object.__setattr__(self, "baseline_receipt_hashes", tuple(self.baseline_receipt_hashes))
         object.__setattr__(self, "learned_receipt_hashes", tuple(self.learned_receipt_hashes))
@@ -131,6 +137,9 @@ def build_real_task_adapter_evidence_certificate(
         claim_certificate_valid=claim_valid,
         claim_certificate_status=str(claim_certificate.status),
         receipt_hashes=receipt_hashes,
+        typed_candidate_hashes=tuple(str(row) for row in report_data["typed_candidate_hashes"]),
+        hard_result_hashes=tuple(str(row) for row in report_data["hard_result_hashes"]),
+        hard_metadata_hashes=tuple(str(row) for row in report_data["hard_metadata_hashes"]),
         training_receipt_hashes=training_receipts,
         baseline_receipt_hashes=baseline_receipts,
         learned_receipt_hashes=learned_receipts,
@@ -240,6 +249,15 @@ def real_task_adapter_evidence_certificate_hash(certificate: RealTaskAdapterEvid
     return stable_hash(certificate.without_hash())
 
 
+def receipt_execution_provenance_hashes(receipts: Any) -> tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]:
+    rows = tuple(receipts)
+    return (
+        tuple(str(receipt.typed_candidate_hash) for receipt in rows),
+        tuple(stable_hash(asdict(receipt.hard_result)) for receipt in rows),
+        tuple(stable_hash(receipt.hard_result.metadata) for receipt in rows),
+    )
+
+
 def _report_as_dict(report: Any) -> dict[str, Any]:
     if is_dataclass(report):
         return asdict(report)
@@ -267,6 +285,12 @@ def _counts_and_partitions_are_valid(certificate: RealTaskAdapterEvidenceCertifi
         return False
     if certificate.receipt_count != len(certificate.receipt_hashes):
         return False
+    if certificate.receipt_count != len(certificate.typed_candidate_hashes):
+        return False
+    if certificate.receipt_count != len(certificate.hard_result_hashes):
+        return False
+    if certificate.receipt_count != len(certificate.hard_metadata_hashes):
+        return False
     if certificate.training_receipt_count != len(certificate.training_receipt_hashes):
         return False
     if certificate.baseline_receipt_count != len(certificate.baseline_receipt_hashes):
@@ -280,6 +304,12 @@ def _counts_and_partitions_are_valid(certificate: RealTaskAdapterEvidenceCertifi
     if certificate.receipt_count != certificate.training_receipt_count + certificate.baseline_receipt_count + certificate.learned_receipt_count:
         return False
     if any(not _is_hash(row) for row in certificate.receipt_hashes):
+        return False
+    if any(not _is_hash(row) for row in certificate.typed_candidate_hashes):
+        return False
+    if any(not _is_hash(row) for row in certificate.hard_result_hashes):
+        return False
+    if any(not _is_hash(row) for row in certificate.hard_metadata_hashes):
         return False
     if len(set(certificate.receipt_hashes)) != len(certificate.receipt_hashes):
         return False
@@ -346,6 +376,9 @@ def _report_matches(certificate: RealTaskAdapterEvidenceCertificate, report: Any
         "learning_certificate_valid",
         "learning_certificate_supports_claim",
         "receipt_count",
+        "typed_candidate_hashes",
+        "hard_result_hashes",
+        "hard_metadata_hashes",
         "training_receipt_count",
         "baseline_receipt_count",
         "learned_receipt_count",

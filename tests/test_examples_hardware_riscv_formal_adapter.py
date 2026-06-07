@@ -21,6 +21,9 @@ class HardwareRiscVFormalAdapterTests(unittest.TestCase):
         self.assertFalse(report.backend_available)
         self.assertEqual(report.missing_requirements, HARDWARE_RISCV_FORMAL_REQUIRED_REQUIREMENTS)
         self.assertEqual(report.receipt_count, 0)
+        self.assertEqual(report.typed_candidate_hashes, ())
+        self.assertEqual(report.hard_result_hashes, ())
+        self.assertEqual(report.hard_metadata_hashes, ())
         self.assertIsNone(result.learning_certificate)
         self.assertTrue(validate_real_task_adapter_evidence_certificate(
             result.evidence_certificate,
@@ -75,10 +78,16 @@ class HardwareRiscVFormalAdapterTests(unittest.TestCase):
         self.assertEqual(result.evidence_certificate.evidence_grade, "G0")
         self.assertEqual(result.evidence_certificate.receipt_count, report.receipt_count)
         self.assertEqual(result.evidence_certificate.learned_receipt_hashes, result.learning_certificate.evaluation_receipt_hashes)
+        self.assertEqual(result.evidence_certificate.typed_candidate_hashes, report.typed_candidate_hashes)
+        self.assertEqual(result.evidence_certificate.hard_result_hashes, report.hard_result_hashes)
+        self.assertEqual(result.evidence_certificate.hard_metadata_hashes, report.hard_metadata_hashes)
         self.assertTrue(validate_learning_evaluation_certificate(result.learning_certificate))
         self.assertTrue(learning_evaluation_supports_claim(result.learning_certificate))
 
         self.assertEqual(len(report.receipt_hashes), report.receipt_count)
+        self.assertEqual(len(report.typed_candidate_hashes), report.receipt_count)
+        self.assertEqual(len(report.hard_result_hashes), report.receipt_count)
+        self.assertEqual(len(report.hard_metadata_hashes), report.receipt_count)
         for row in report.rows:
             self.assertEqual(row.baseline_verifier_calls, 2)
             self.assertEqual(row.learned_verifier_calls, 1)

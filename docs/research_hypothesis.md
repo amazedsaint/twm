@@ -932,13 +932,16 @@ not a RISC-V core correctness claim.
 runs the robotics, hardware, program, and quantum adapters, binds the readiness
 manifest, validates every adapter evidence certificate, child claim, and
 learning certificate, and aggregates adapter evidence certificate hashes, child
-report hashes, manifest spec hashes, receipt hashes, baseline calls, learned
-calls, held-out successes, replay/rollback/ledger audit status, missing
-requirements, and invalid commits. It also rejects certificate mixing: each
-adapter evidence certificate must bind the report hash, backend identity, task
-split ids, claim hash, learning hash, ledger head, and exact
-training/baseline/learned receipt partitions, and that evidence must be covered
-by the manifest spec sources for the same domain; each child claim must match
+report hashes, manifest spec hashes, receipt hashes, typed-candidate hashes,
+hard-result hashes, hard-metadata hashes, baseline calls, learned calls,
+held-out successes, replay/rollback/ledger audit status, missing requirements,
+and invalid commits. It also rejects certificate mixing: each adapter evidence
+certificate must bind the report hash, backend identity, task split ids, claim
+hash, learning hash, ledger head, and exact training/baseline/learned receipt
+partitions. It must also bind hard-result and hard-metadata hashes so external
+command, QCEC, and relevant-test execution metadata stay receipt-bound without
+expanding the certificate into raw logs. That evidence must be covered by the
+manifest spec sources for the same domain; each child claim must match
 its report's requirement passes, metrics, boundary, and sources; and each
 learning certificate must match the report's learner snapshot, held-out metrics,
 hard-commit audit, and exact training/learned receipt partitions. The suite

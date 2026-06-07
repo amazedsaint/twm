@@ -11,6 +11,7 @@ from typing import Any, Mapping, Protocol
 from examples.real_task_adapter_evidence import (
     RealTaskAdapterEvidenceCertificate,
     build_real_task_adapter_evidence_certificate,
+    receipt_execution_provenance_hashes,
 )
 from trwm.claims import ClaimCertificate, certify_claim, requirement
 from trwm.core import HardVerifierResult, ProposalTrace, Receipt, TransactionEngine, TypedCandidate, stable_hash
@@ -145,6 +146,9 @@ class RoboticsMotionBenchmarkAdapterReport:
     ledger_audit_ok: bool
     ledger_head: str
     receipt_hashes: tuple[str, ...]
+    typed_candidate_hashes: tuple[str, ...]
+    hard_result_hashes: tuple[str, ...]
+    hard_metadata_hashes: tuple[str, ...]
     source_urls: tuple[str, ...]
     claim_boundary: str
 
@@ -453,6 +457,7 @@ def _run_available_backend(backend: RoboticsBenchmarkBackend) -> RoboticsMotionB
     baseline_receipts = tuple(receipt for receipts in baseline_by_task.values() for receipt in receipts)
     learned_receipts = tuple(receipt for receipts in learned_by_task.values() for receipt in receipts)
     all_receipts = (*tuple(training_receipts), *baseline_receipts, *learned_receipts)
+    typed_candidate_hashes, hard_result_hashes, hard_metadata_hashes = receipt_execution_provenance_hashes(all_receipts)
     replay_ok, rollback_ok = _audit_replay_rollback(engine, seed_state)
     learning_certificate = build_learning_evaluation_certificate(
         claim_id="robotics_motion_benchmark_receipt_trained_reversible_call_reduction",
@@ -516,6 +521,9 @@ def _run_available_backend(backend: RoboticsBenchmarkBackend) -> RoboticsMotionB
         ledger_audit_ok=engine.ledger.audit(),
         ledger_head=engine.ledger.head,
         receipt_hashes=tuple(receipt.receipt_hash for receipt in all_receipts),
+        typed_candidate_hashes=typed_candidate_hashes,
+        hard_result_hashes=hard_result_hashes,
+        hard_metadata_hashes=hard_metadata_hashes,
         source_urls=ROBOTICS_MOTION_BENCHMARK_SOURCES,
         claim_boundary=ROBOTICS_MOTION_BENCHMARK_CLAIM_BOUNDARY,
     )
@@ -706,6 +714,9 @@ def _empty_report(backend: RoboticsBenchmarkBackend, *, backend_error: str = "")
         ledger_audit_ok=False,
         ledger_head="",
         receipt_hashes=(),
+        typed_candidate_hashes=(),
+        hard_result_hashes=(),
+        hard_metadata_hashes=(),
         source_urls=ROBOTICS_MOTION_BENCHMARK_SOURCES,
         claim_boundary=ROBOTICS_MOTION_BENCHMARK_CLAIM_BOUNDARY,
     )
