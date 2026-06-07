@@ -810,11 +810,13 @@ model should distinguish:
 
 The last category is still open.
 
-## Optional Quantum MQT Adapter
+## Optional Real Benchmark Adapters
 
-The quantum MQT adapter is the first concrete step from readiness evidence
-toward a real benchmark receipt stream. It keeps the repository dependency-free
-while exposing the real adapter boundary:
+The optional MQT and Defects4J adapters are the first concrete steps from
+readiness evidence toward real benchmark receipt streams. They keep the
+repository dependency-free while exposing real adapter boundaries.
+
+For quantum:
 
 - MQT Bench provides train and held-out circuit tasks,
 - MQT QCEC owns the hard equivalence decision,
@@ -826,7 +828,19 @@ while exposing the real adapter boundary:
   the learning certificate, pass replay/rollback audit, and keep invalid
   commits at zero before a single-domain quantum claim can be supported.
 
+For program repair:
+
+- Defects4J provides real bug ids and version checkouts,
+- Defects4J `compile` plus relevant-test execution owns the hard decision,
+- missing `defects4j`, `java`, `git`, `svn`, or `perl` produces a rejected
+  claim with zero receipts,
+- deterministic test doubles can validate transaction mechanics but not
+  program-repair performance,
+- the current candidate surface compares buggy-version and fixed-version
+  candidates, so it is adapter evidence rather than an APR patch-generation
+  result.
+
 This changes the substrate requirement from "name the external verifier" to
 "ship an adapter that can fail closed until the verifier is available." The
-same pattern should be used for robotics, hardware, and program repair before
-the aggregate four-domain proof is attempted.
+same pattern should be used for robotics, hardware, and a deeper Defects4J
+patch-candidate adapter before the aggregate four-domain proof is attempted.

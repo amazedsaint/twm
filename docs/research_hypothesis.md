@@ -309,6 +309,10 @@ This repository currently targets `G1` evidence:
   verification certificates, replay packages, and replay verification
   certificates that package those attestations and validate the underlying
   trace/candidate/receipt/learner body evidence,
+- an optional Defects4J program adapter that checks buggy-version and
+  fixed-version candidates through Defects4J checkout, compile, and relevant
+  tests, fails closed when required CLI tools are missing, and supports a
+  program call-reduction claim only on the real backend,
 - an optional MQT Bench/QCEC quantum adapter that generates train/held-out
   circuit-equivalence tasks, fails closed when `mqt.bench` or `mqt.qcec` is
   missing, and supports a quantum call-reduction claim only on the real backend,
@@ -885,3 +889,11 @@ hard equivalence verifier when the optional packages are installed. Without
 those packages it emits a rejected claim and zero receipts. Its deterministic
 test backend validates adapter mechanics only; it cannot promote a quantum
 benchmark-performance claim or satisfy the four-domain goal.
+
+`examples.program_defects4j_adapter` adds the same fail-closed shape for
+program repair. It uses Defects4J `checkout`, `compile`, and relevant-test
+execution as the hard verifier for buggy-version versus fixed-version
+candidates. This is real benchmark adapter plumbing, not a full APR result:
+the current candidate surface uses known fixed versions, and future work still
+needs patch-generation, patch-minimization, and held-out patch receipts before
+program-repair effectiveness can be claimed.

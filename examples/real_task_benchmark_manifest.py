@@ -202,14 +202,21 @@ def build_real_task_benchmark_manifest() -> RealTaskBenchmarkManifest:
                 required_tools=("defects4j", "java", "git", "svn", "perl"),
                 required_python_modules=(),
                 command_templates=(
-                    "defects4j checkout -p <project> -v <bug_id>b -w <workdir>",
-                    "defects4j export -p tests.trigger",
-                    "defects4j test",
+                    "defects4j checkout -p <project> -v <bug_id>b -w <buggy_workdir>",
+                    "defects4j checkout -p <project> -v <bug_id>f -w <fixed_workdir>",
+                    "defects4j compile",
+                    "defects4j test -r",
                 ),
                 source_urls=(
                     "https://github.com/rjust/defects4j",
+                    "https://defects4j.org/html_doc/defects4j.html",
+                    "https://defects4j.org/html_doc/d4j/d4j-checkout.html",
+                    "https://defects4j.org/html_doc/d4j/d4j-test.html",
                 ),
-                claim_boundary="Readiness only; not program-repair effectiveness evidence until test receipts are produced.",
+                claim_boundary=(
+                    "Readiness only; fixed-version candidate receipts are not program-repair effectiveness "
+                    "evidence until patch-generation and patch-minimization receipts are produced."
+                ),
             ),
             RealTaskBenchmarkSpec(
                 domain="quantum",

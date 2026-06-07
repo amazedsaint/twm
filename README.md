@@ -90,6 +90,7 @@ python3 -m examples.branch_composition_transfer
 python3 -m examples.context_retention_transfer
 python3 -m examples.receipt_trained_reversible_proposer_benchmark
 python3 -m examples.real_task_benchmark_manifest
+python3 -m examples.program_defects4j_adapter
 python3 -m examples.quantum_mqt_bench_adapter
 python3 -m examples.branch_history_frontier
 python3 -m examples.programmable_world_model_frontier
@@ -181,6 +182,9 @@ benchmark preserves four held-out local canary successes while reducing
 hard-verifier calls from eight to four with zero invalid commits; the
 real-task benchmark manifest adds a fail-closed readiness certificate for the
 external robotics, hardware, program, and quantum benchmark adapters; the
+program Defects4J adapter compares buggy-version and fixed-version candidates
+through Defects4J compile/relevant-test execution when the CLI is available and
+otherwise rejects cleanly; the
 quantum MQT adapter runs the same receipt-trained call-reduction path against
 MQT Bench/QCEC when those optional packages are installed and otherwise
 rejects cleanly; the

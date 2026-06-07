@@ -60,6 +60,7 @@ python3 -m examples.branch_composition_transfer
 python3 -m examples.context_retention_transfer
 python3 -m examples.receipt_trained_reversible_proposer_benchmark
 python3 -m examples.real_task_benchmark_manifest
+python3 -m examples.program_defects4j_adapter
 python3 -m examples.quantum_mqt_bench_adapter
 python3 -m examples.branch_history_frontier
 python3 -m examples.programmable_world_model_frontier
@@ -1328,6 +1329,32 @@ missing, the readiness claim is `rejected`; this is not a performance result
 and cannot support the final receipt-trained proposer claim. A supported
 readiness claim only means the adapters are ready to run and produce benchmark
 receipts.
+
+## Program Defects4J Adapter
+
+Run:
+
+```bash
+python3 -m examples.program_defects4j_adapter
+```
+
+This emits JSON with top-level `report`, `learning_certificate`, and
+`claim_certificate`. The adapter is dependency-free by default: if `defects4j`
+or required host tools such as `java`, `git`, `svn`, or `perl` are unavailable,
+it emits a rejected claim with zero receipts.
+
+When the Defects4J CLI is available, the adapter creates train and held-out
+version-candidate tasks and checks candidates through Defects4J `checkout`,
+`compile`, and relevant-test execution. The baseline tries the buggy-version
+candidate before the fixed-version candidate. The receipt-trained reversible
+proposer can rank the fixed-version candidate first on held-out bugs, but the
+claim is supported only if the real backend is available, held-out success is
+preserved, hard-verifier calls are reduced, replay/rollback audits pass, and
+invalid commits remain zero.
+
+This is not a general automated-program-repair claim. It is a real-benchmark
+adapter surface for Defects4J fixed-version candidates; patch generation and
+patch-minimization receipts remain future work.
 
 ## Quantum MQT Bench Adapter
 
