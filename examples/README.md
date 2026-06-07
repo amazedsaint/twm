@@ -1333,7 +1333,10 @@ a performance result and cannot support the final receipt-trained proposer
 claim. Task-root environment variables must point at existing directories. A
 supported readiness claim also requires the expected robotics candidate
 `command.json` files and hardware task candidate directories/shared
-`genchecks.py` file. It only means the adapters are ready to run and produce
+`genchecks.py` file. Each probe carries an `evidence_hash` over its tool,
+module, environment, or task-asset evidence; available task assets are
+fingerprinted so task-package drift changes the preflight report hash. A
+supported readiness claim only means the adapters are ready to run and produce
 benchmark receipts.
 
 ## Robotics Motion Benchmark Adapter
@@ -1469,17 +1472,19 @@ Run:
 python3 -m examples.real_task_benchmark_suite
 ```
 
-This emits JSON with top-level `manifest`, `manifest_certificate`, `report`,
-`suite_certificate`, and `claim_certificate`. It runs the four optional real
-adapters, validates their adapter evidence certificates, child claim
-certificates, and learning certificates, cross-checks each certificate against
-its child report and manifest spec, and aggregates manifest spec hashes,
-adapter evidence certificate hashes, child report hashes, exact receipt counts,
-typed-candidate hashes, hard-result hashes, hard-metadata hashes, baseline
-calls, learned calls, held-out successes, replay/rollback/ledger status,
-missing requirements, backend errors, and invalid-commit counts. Those compact
-hash lanes keep external command/QCEC/test metadata auditable without bloating
-the aggregate report. The adapter evidence cross-check binds exact training,
+This emits JSON with top-level `manifest`, `preflight_report`,
+`manifest_certificate`, `report`, `suite_certificate`, and
+`claim_certificate`. It runs the four optional real adapters, validates their
+adapter evidence certificates, child claim certificates, and learning
+certificates, cross-checks each certificate against its child report and
+manifest spec, and aggregates the preflight report hash,
+manifest spec hashes, adapter evidence certificate hashes, child report hashes,
+exact receipt counts, typed-candidate hashes, hard-result hashes,
+hard-metadata hashes, baseline calls, learned calls, held-out successes,
+replay/rollback/ledger status, missing requirements, backend errors, and
+invalid-commit counts. Those compact hash lanes keep external
+command/QCEC/test metadata and readiness probes auditable without bloating the
+aggregate report. The adapter evidence cross-check binds exact training,
 baseline, and learned receipt partitions plus any backend execution error
 before the manifest cross-check proves the adapter evidence sources are covered
 by the domain's real-task manifest spec. The learning cross-check then binds

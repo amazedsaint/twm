@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+from hashlib import sha256
 import importlib.util
 import json
 import os
 import shutil
+import subprocess
 from pathlib import Path
 from typing import Callable, Mapping
 
@@ -81,6 +83,15 @@ class RequirementProbe:
     name: str
     available: bool
     evidence: str
+    evidence_hash: str = ""
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "kind", str(self.kind))
+        object.__setattr__(self, "name", str(self.name))
+        object.__setattr__(self, "available", bool(self.available))
+        object.__setattr__(self, "evidence", str(self.evidence))
+        if not self.evidence_hash:
+            object.__setattr__(self, "evidence_hash", _probe_evidence_hash(self.kind, self.name, self.available, self.evidence))
 
 
 @dataclass(frozen=True)
@@ -299,6 +310,7 @@ def run_real_task_benchmark_readiness(probe: ProbeFn | None = None) -> RealTaskB
         scope="real_task_benchmark_readiness",
         requirements=(
             requirement("manifest_valid", validate_real_task_manifest(manifest)),
+            requirement("preflight_report_valid", validate_real_task_preflight_report(report, manifest)),
             requirement("certificate_valid", validate_real_task_manifest_certificate(certificate, manifest, report)),
             requirement("exactly_four_domains", report.domain_count == 4 and set(manifest.domains) == {"robotics", "hardware", "program", "quantum"}),
             requirement("sources_present", certificate.all_sources_present),
@@ -431,6 +443,92 @@ def validate_real_task_manifest(manifest: RealTaskBenchmarkManifest) -> bool:
         return False
 
 
+def validate_real_task_preflight_report(
+    report: RealTaskBenchmarkPreflightReport,
+    manifest: RealTaskBenchmarkManifest | None = None,
+) -> bool:
+    try:
+        if report.schema_version != REAL_TASK_PREFLIGHT_REPORT_SCHEMA:
+            return False
+        if not report.experiment_id or not _is_hash(report.manifest_hash):
+            return False
+        if report.domain_count != len(report.rows):
+            return False
+        if report.ready_domain_count != sum(1 for row in report.rows if row.ready):
+            return False
+        if report.ready_to_run_all != (report.ready_domain_count == report.domain_count):
+            return False
+        expected_missing: list[str] = []
+        for row in report.rows:
+            if not row.domain or not row.benchmark_id or not row.task_selector:
+                return False
+            if not row.train_split_id or not row.held_out_split_id or row.train_split_id == row.held_out_split_id:
+                return False
+            if not row.hard_verifier or not row.source_urls:
+                return False
+            row_missing = tuple(f"{row.domain}:{probe.kind}:{probe.name}" for probe in row.probes if not probe.available)
+            expected_missing.extend(row_missing)
+            if row.ready != (not row_missing):
+                return False
+            if row.missing_requirements != row_missing:
+                return False
+            for probe in row.probes:
+                if probe.kind not in {"tool", "python_module", "env_var", "task_asset"}:
+                    return False
+                if not probe.name or not probe.evidence:
+                    return False
+                if not isinstance(probe.available, bool):
+                    return False
+                if not _is_hash(probe.evidence_hash) or probe.evidence_hash == "0" * 64:
+                    return False
+        if report.missing_requirements != tuple(expected_missing):
+            return False
+        if manifest is not None:
+            if not validate_real_task_manifest(manifest):
+                return False
+            if report.manifest_hash != manifest.manifest_hash:
+                return False
+            if report.experiment_id != manifest.experiment_id:
+                return False
+            if report.domain_count != len(manifest.specs):
+                return False
+            if tuple(row.domain for row in report.rows) != manifest.domains:
+                return False
+            for row, spec in zip(report.rows, manifest.specs):
+                if row.benchmark_id != spec.benchmark_id:
+                    return False
+                if row.task_selector != spec.task_selector:
+                    return False
+                if row.train_split_id != spec.train_split_id:
+                    return False
+                if row.held_out_split_id != spec.held_out_split_id:
+                    return False
+                if row.hard_verifier != spec.hard_verifier:
+                    return False
+                if row.source_urls != spec.source_urls:
+                    return False
+                expected_probe_keys = (
+                    *((("tool", value) for value in spec.required_tools)),
+                    *((("python_module", value) for value in spec.required_python_modules)),
+                    *((("env_var", value) for value in spec.required_env_vars)),
+                )
+                probe_keys = tuple((probe.kind, probe.name) for probe in row.probes)
+                if probe_keys[: len(expected_probe_keys)] != expected_probe_keys:
+                    return False
+                env_count = len(spec.required_env_vars)
+                env_start = len(spec.required_tools) + len(spec.required_python_modules)
+                env_probes = row.probes[env_start : env_start + env_count]
+                expected_asset_keys = tuple(("task_asset", value) for value in spec.required_task_assets)
+                if all(probe.available for probe in env_probes):
+                    if probe_keys[len(expected_probe_keys) :] != expected_asset_keys:
+                        return False
+                elif any(kind == "task_asset" for kind, _ in probe_keys[len(expected_probe_keys) :]):
+                    return False
+        return True
+    except Exception:
+        return False
+
+
 def validate_real_task_manifest_certificate(
     certificate: RealTaskBenchmarkManifestCertificate,
     manifest: RealTaskBenchmarkManifest | None = None,
@@ -465,6 +563,8 @@ def validate_real_task_manifest_certificate(
             if certificate.spec_hashes != tuple(spec.spec_hash for spec in manifest.specs):
                 return False
         if report is not None:
+            if not validate_real_task_preflight_report(report, manifest):
+                return False
             if certificate.preflight_report_hash != real_task_preflight_report_hash(report):
                 return False
             if certificate.ready_to_run_all != report.ready_to_run_all:
@@ -491,11 +591,13 @@ def real_task_manifest_certificate_hash(certificate: RealTaskBenchmarkManifestCe
 def fake_probe(availability: Mapping[tuple[str, str], bool]) -> ProbeFn:
     def _probe(kind: str, name: str) -> RequirementProbe:
         available = bool(availability.get((kind, name), False))
+        evidence = "fake_available" if available else "fake_missing"
         return RequirementProbe(
             kind=kind,
             name=name,
             available=available,
-            evidence="fake_available" if available else "fake_missing",
+            evidence=evidence,
+            evidence_hash=_probe_evidence_hash(kind, name, available, evidence),
         )
 
     return _probe
@@ -504,25 +606,30 @@ def fake_probe(availability: Mapping[tuple[str, str], bool]) -> ProbeFn:
 def _default_probe(kind: str, name: str) -> RequirementProbe:
     if kind == "tool":
         path = shutil.which(name)
-        return RequirementProbe(kind=kind, name=name, available=path is not None, evidence=path or "missing_on_path")
+        if path is None:
+            return _make_probe(kind=kind, name=name, available=False, evidence="missing_on_path")
+        version = _tool_version(path)
+        return _make_probe(kind=kind, name=name, available=True, evidence=path, extra={"version": version})
     if kind == "python_module":
         try:
             spec = importlib.util.find_spec(name)
         except ModuleNotFoundError:
             spec = None
-        return RequirementProbe(kind=kind, name=name, available=spec is not None, evidence=getattr(spec, "origin", None) or "missing_module")
+        origin = getattr(spec, "origin", None) if spec is not None else None
+        extra = {"origin": origin or "", "package": name}
+        return _make_probe(kind=kind, name=name, available=spec is not None, evidence=origin or "missing_module", extra=extra)
     if kind == "env_var":
         value = os.environ.get(name, "")
         if not value:
-            return RequirementProbe(kind=kind, name=name, available=False, evidence="missing_env_var")
+            return _make_probe(kind=kind, name=name, available=False, evidence="missing_env_var")
         if name.endswith("TASK_ROOT"):
             path = Path(value)
             if not path.exists():
-                return RequirementProbe(kind=kind, name=name, available=False, evidence=f"missing_path:{value}")
+                return _make_probe(kind=kind, name=name, available=False, evidence=f"missing_path:{value}")
             if not path.is_dir():
-                return RequirementProbe(kind=kind, name=name, available=False, evidence=f"not_directory:{value}")
-            return RequirementProbe(kind=kind, name=name, available=True, evidence=str(path))
-        return RequirementProbe(kind=kind, name=name, available=True, evidence="set")
+                return _make_probe(kind=kind, name=name, available=False, evidence=f"not_directory:{value}")
+            return _make_probe(kind=kind, name=name, available=True, evidence=str(path), extra={"realpath": str(path.resolve())})
+        return _make_probe(kind=kind, name=name, available=True, evidence="set")
     if kind == "task_asset":
         return _probe_task_asset(name)
     raise ValueError(f"unknown probe kind: {kind}")
@@ -542,32 +649,125 @@ def _probe_task_asset(name: str) -> RequirementProbe:
         )
     expanded = os.path.expandvars(template)
     if "$" in expanded:
-        return RequirementProbe(kind="task_asset", name=name, available=False, evidence=f"unresolved_env:{template}")
+        return _make_probe(kind="task_asset", name=name, available=False, evidence=f"unresolved_env:{template}")
     path = Path(expanded)
     if asset_kind == "file":
         if not path.exists():
-            return RequirementProbe(kind="task_asset", name=name, available=False, evidence=f"missing_path:{expanded}")
-        return RequirementProbe(
+            return _make_probe(kind="task_asset", name=name, available=False, evidence=f"missing_path:{expanded}")
+        return _make_probe(
             kind="task_asset",
             name=name,
             available=path.is_file(),
             evidence=str(path) if path.is_file() else f"not_file:{expanded}",
+            extra=_path_fingerprint(path) if path.is_file() else None,
         )
     if asset_kind == "dir":
         if not path.exists():
-            return RequirementProbe(kind="task_asset", name=name, available=False, evidence=f"missing_path:{expanded}")
-        return RequirementProbe(
+            return _make_probe(kind="task_asset", name=name, available=False, evidence=f"missing_path:{expanded}")
+        return _make_probe(
             kind="task_asset",
             name=name,
             available=path.is_dir(),
             evidence=str(path) if path.is_dir() else f"not_directory:{expanded}",
+            extra=_path_fingerprint(path) if path.is_dir() else None,
         )
-    return RequirementProbe(
+    return _make_probe(
         kind="task_asset",
         name=name,
         available=path.exists(),
         evidence=str(path) if path.exists() else f"missing_path:{expanded}",
+        extra=_path_fingerprint(path) if path.exists() else None,
     )
+
+
+def _make_probe(
+    *,
+    kind: str,
+    name: str,
+    available: bool,
+    evidence: str,
+    extra: Mapping[str, object] | None = None,
+) -> RequirementProbe:
+    return RequirementProbe(
+        kind=kind,
+        name=name,
+        available=available,
+        evidence=evidence,
+        evidence_hash=_probe_evidence_hash(kind, name, available, evidence, extra=extra),
+    )
+
+
+def _probe_evidence_hash(
+    kind: str,
+    name: str,
+    available: bool,
+    evidence: str,
+    *,
+    extra: Mapping[str, object] | None = None,
+) -> str:
+    return stable_hash(
+        {
+            "schema_version": "trwm.real_task_requirement_probe_evidence.v1",
+            "kind": kind,
+            "name": name,
+            "available": bool(available),
+            "evidence": evidence,
+            "extra": dict(extra or {}),
+        }
+    )
+
+
+def _tool_version(path: str) -> str:
+    for flag in ("--version", "-V", "-version"):
+        try:
+            completed = subprocess.run(
+                (path, flag),
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=2,
+            )
+        except Exception:
+            continue
+        output = f"{completed.stdout}\n{completed.stderr}".strip()
+        if output:
+            return output[-500:]
+    return "version_unavailable"
+
+
+def _path_fingerprint(path: Path) -> Mapping[str, object]:
+    if path.is_file():
+        return {
+            "kind": "file",
+            "path": str(path),
+            "size": path.stat().st_size,
+            "sha256": _file_sha256(path),
+        }
+    if path.is_dir():
+        entries: list[Mapping[str, object]] = []
+        for idx, child in enumerate(sorted(path.rglob("*"), key=lambda item: str(item.relative_to(path)))):
+            if idx >= 200:
+                entries.append({"truncated_after": 200})
+                break
+            relative = str(child.relative_to(path))
+            if child.is_file():
+                entries.append({"path": relative, "kind": "file", "size": child.stat().st_size, "sha256": _file_sha256(child)})
+            elif child.is_dir():
+                entries.append({"path": relative, "kind": "dir"})
+            elif child.is_symlink():
+                entries.append({"path": relative, "kind": "symlink", "target": os.readlink(child)})
+            else:
+                entries.append({"path": relative, "kind": "other"})
+        return {"kind": "dir", "path": str(path), "entries": tuple(entries)}
+    return {"kind": "missing", "path": str(path)}
+
+
+def _file_sha256(path: Path) -> str:
+    digest = sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _is_hash(value: str) -> bool:

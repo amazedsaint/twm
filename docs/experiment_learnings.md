@@ -802,6 +802,11 @@ toolchain, Python modules, task-root directories, and required task assets.
 Missing requirements, task-root variables that do not point at existing
 directories, or empty/mis-shaped task roots produce a rejected G0 readiness
 claim instead of a runtime crash or a softened performance claim.
+Each probe now carries an evidence hash. Tools bind their discovered path and
+available version output, Python modules bind their origin, task-root variables
+bind their resolved directory, and task assets bind deterministic file or
+directory fingerprints. This makes task-package or toolchain drift visible in
+the preflight report hash before any performance claim can be promoted.
 
 This adds a useful substrate rule: real benchmark evidence starts only after an
 adapter-readiness certificate validates. A programmable transactional world
@@ -899,12 +904,12 @@ The real-task benchmark suite adds the aggregate promotion gate for the active
 objective. It composes the robotics, hardware, program, and quantum adapter
 reports into one `trwm.real_task_benchmark_suite_report.v1` report plus a
 `trwm.real_task_benchmark_suite_certificate.v1` certificate. The suite binds
-the readiness manifest, manifest spec hashes, child adapter report hashes,
-adapter evidence certificate hashes, child claim hashes, learning certificate
-hashes, receipt hashes, typed-candidate hashes, hard-result hashes,
-hard-metadata hashes, missing requirements, backend errors, verifier-call
-totals, held-out success totals, replay/rollback/ledger status, and
-invalid-commit totals. It also binds the aggregate `heldout_arms_isolated`
+the readiness manifest, preflight report hash, manifest spec hashes, child
+adapter report hashes, adapter evidence certificate hashes, child claim hashes,
+learning certificate hashes, receipt hashes, typed-candidate hashes,
+hard-result hashes, hard-metadata hashes, missing requirements, backend errors,
+verifier-call totals, held-out success totals, replay/rollback/ledger status,
+and invalid-commit totals. It also binds the aggregate `heldout_arms_isolated`
 gate, which requires every child baseline and learned evaluation arm to start
 from the same frozen post-training state on separate ledgers. It also
 cross-checks that each adapter evidence

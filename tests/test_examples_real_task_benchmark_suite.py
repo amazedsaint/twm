@@ -68,6 +68,8 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertEqual(report.schema_version, "trwm.real_task_benchmark_suite_report.v1")
         self.assertEqual(report.domains, REAL_TASK_BENCHMARK_SUITE_DOMAINS)
         self.assertEqual(report.domain_count, 4)
+        self.assertEqual(report.manifest_preflight_report_hash, result.suite_certificate.manifest_preflight_report_hash)
+        self.assertEqual(report.manifest_preflight_report_hash, result.manifest_certificate.preflight_report_hash)
         self.assertEqual(len(report.rows), 4)
         self.assertTrue(report.all_child_claims_valid)
         self.assertFalse(report.all_child_claims_supported)
@@ -333,6 +335,15 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
 
         self.assertTrue(validate_real_task_benchmark_suite_report(bad_report))
         self.assertFalse(validate_real_task_benchmark_suite_certificate(result.suite_certificate, bad_report))
+
+    def test_suite_certificate_binds_preflight_report_hash(self) -> None:
+        result = run_real_task_benchmark_suite(_deterministic_adapter_results())
+        bad_report = replace(result.report, manifest_preflight_report_hash="0" * 64)
+        bad_certificate = replace(result.suite_certificate, manifest_preflight_report_hash="0" * 64, certificate_hash="")
+
+        self.assertFalse(validate_real_task_benchmark_suite_report(bad_report))
+        self.assertFalse(validate_real_task_benchmark_suite_certificate(result.suite_certificate, bad_report))
+        self.assertFalse(validate_real_task_benchmark_suite_certificate(bad_certificate, result.report))
 
     def test_suite_report_validation_rejects_missing_receipt_hash(self) -> None:
         result = run_real_task_benchmark_suite(_deterministic_adapter_results())

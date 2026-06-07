@@ -10,12 +10,15 @@ from examples.quantum_mqt_bench_adapter import run_quantum_mqt_bench_adapter_exp
 from examples.real_task_benchmark_manifest import (
     RealTaskBenchmarkManifest,
     RealTaskBenchmarkManifestCertificate,
+    RealTaskBenchmarkPreflightReport,
     RealTaskBenchmarkSpec,
     build_real_task_benchmark_manifest,
     build_real_task_manifest_certificate,
     build_real_task_preflight_report,
+    real_task_preflight_report_hash,
     validate_real_task_manifest,
     validate_real_task_manifest_certificate,
+    validate_real_task_preflight_report,
 )
 from examples.real_task_adapter_evidence import validate_real_task_adapter_evidence_certificate
 from examples.robotics_motion_benchmark_adapter import run_robotics_motion_benchmark_adapter_experiment
@@ -125,6 +128,7 @@ class RealTaskBenchmarkSuiteReport:
     schema_version: str
     experiment_id: str
     manifest_hash: str
+    manifest_preflight_report_hash: str
     manifest_certificate_hash: str
     domain_count: int
     domains: tuple[str, ...]
@@ -177,6 +181,7 @@ class RealTaskBenchmarkSuiteCertificate:
     experiment_id: str
     report_hash: str
     manifest_hash: str
+    manifest_preflight_report_hash: str
     manifest_certificate_hash: str
     domain_count: int
     domains: tuple[str, ...]
@@ -231,6 +236,7 @@ class RealTaskBenchmarkSuiteCertificate:
 @dataclass(frozen=True)
 class RealTaskBenchmarkSuiteResult:
     manifest: RealTaskBenchmarkManifest
+    preflight_report: RealTaskBenchmarkPreflightReport
     manifest_certificate: RealTaskBenchmarkManifestCertificate
     report: RealTaskBenchmarkSuiteReport
     suite_certificate: RealTaskBenchmarkSuiteCertificate
@@ -262,7 +268,7 @@ def build_real_task_benchmark_suite_result(
     )
     child_claims_valid = tuple(row.child_claim_valid for row in rows)
     child_claims_supported = tuple(row.child_claim_valid and row.child_claim_status == "supported" for row in rows)
-    report = _build_report(manifest, manifest_certificate, rows, child_claims_valid, child_claims_supported)
+    report = _build_report(manifest, preflight_report, manifest_certificate, rows, child_claims_valid, child_claims_supported)
     suite_certificate = build_real_task_benchmark_suite_certificate(report, manifest, manifest_certificate)
     claim = certify_claim(
         claim_id="receipt_trained_reversible_real_task_four_domain_call_reduction",
@@ -282,13 +288,16 @@ def build_real_task_benchmark_suite_result(
                 and report.all_adapter_evidence_matches_manifest
                 and report.all_learning_certificates_match_reports
                 and report.heldout_arms_isolated
+                and validate_real_task_preflight_report(preflight_report, manifest)
             )
             else "G0"
         ),
         scope="real_task_benchmark_suite",
         requirements=(
             requirement("manifest_valid", validate_real_task_manifest(manifest)),
+            requirement("preflight_report_valid", validate_real_task_preflight_report(preflight_report, manifest)),
             requirement("manifest_certificate_valid", validate_real_task_manifest_certificate(manifest_certificate, manifest, preflight_report)),
+            requirement("manifest_preflight_report_bound", report.manifest_preflight_report_hash == real_task_preflight_report_hash(preflight_report)),
             requirement("suite_report_valid", validate_real_task_benchmark_suite_report(report)),
             requirement("suite_certificate_valid", validate_real_task_benchmark_suite_certificate(suite_certificate, report)),
             requirement("exactly_four_domains", report.domain_count == 4 and report.domains == REAL_TASK_BENCHMARK_SUITE_DOMAINS),
@@ -326,6 +335,7 @@ def build_real_task_benchmark_suite_result(
     )
     return RealTaskBenchmarkSuiteResult(
         manifest=manifest,
+        preflight_report=preflight_report,
         manifest_certificate=manifest_certificate,
         report=report,
         suite_certificate=suite_certificate,
@@ -343,6 +353,7 @@ def build_real_task_benchmark_suite_certificate(
         experiment_id=report.experiment_id,
         report_hash=real_task_benchmark_suite_report_hash(report),
         manifest_hash=manifest.manifest_hash,
+        manifest_preflight_report_hash=report.manifest_preflight_report_hash,
         manifest_certificate_hash=manifest_certificate.certificate_hash,
         domain_count=report.domain_count,
         domains=report.domains,
@@ -381,7 +392,9 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
             return False
         if len(report.rows) != 4 or tuple(row.domain for row in report.rows) != REAL_TASK_BENCHMARK_SUITE_DOMAINS:
             return False
-        if not _is_hash(report.manifest_hash) or not _is_hash(report.manifest_certificate_hash):
+        if not _is_hash(report.manifest_hash) or not _is_hash(report.manifest_preflight_report_hash) or not _is_hash(report.manifest_certificate_hash):
+            return False
+        if report.manifest_preflight_report_hash == "0" * 64:
             return False
         if not report.claim_boundary or not report.aggregate_sources:
             return False
@@ -540,11 +553,14 @@ def validate_real_task_benchmark_suite_certificate(
         for hash_value in (
             certificate.report_hash,
             certificate.manifest_hash,
+            certificate.manifest_preflight_report_hash,
             certificate.manifest_certificate_hash,
             certificate.certificate_hash,
         ):
             if not _is_hash(hash_value):
                 return False
+        if certificate.manifest_preflight_report_hash == "0" * 64:
+            return False
         if len(certificate.manifest_spec_hashes) != 4 or any(not _is_hash(row) for row in certificate.manifest_spec_hashes):
             return False
         if len(certificate.child_report_hashes) != 4 or any(not _is_hash(row) for row in certificate.child_report_hashes):
@@ -586,6 +602,8 @@ def validate_real_task_benchmark_suite_certificate(
             if certificate.report_hash != real_task_benchmark_suite_report_hash(report):
                 return False
             if certificate.manifest_hash != report.manifest_hash:
+                return False
+            if certificate.manifest_preflight_report_hash != report.manifest_preflight_report_hash:
                 return False
             if certificate.manifest_certificate_hash != report.manifest_certificate_hash:
                 return False
@@ -635,6 +653,7 @@ def validate_real_task_benchmark_suite_certificate(
 
 def _build_report(
     manifest: RealTaskBenchmarkManifest,
+    preflight_report: RealTaskBenchmarkPreflightReport,
     manifest_certificate: RealTaskBenchmarkManifestCertificate,
     rows: tuple[RealTaskBenchmarkSuiteRow, ...],
     child_claims_valid: tuple[bool, ...],
@@ -644,6 +663,7 @@ def _build_report(
         schema_version=REAL_TASK_BENCHMARK_SUITE_REPORT_SCHEMA,
         experiment_id="receipt_trained_reversible_real_task_suite",
         manifest_hash=manifest.manifest_hash,
+        manifest_preflight_report_hash=real_task_preflight_report_hash(preflight_report),
         manifest_certificate_hash=manifest_certificate.certificate_hash,
         domain_count=len(rows),
         domains=tuple(row.domain for row in rows),

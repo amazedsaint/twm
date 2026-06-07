@@ -892,6 +892,13 @@ four-domain external benchmark manifest to a preflight certificate:
 - train/held-out split ids for each domain,
 - source URLs for every benchmark family.
 
+The preflight report now carries evidence hashes for those probes. Available
+tools bind their discovered path and version output, Python modules bind their
+origin, task-root environment variables bind their resolved directory, and
+required task assets bind deterministic file or directory fingerprints.
+Changing a task package or toolchain therefore changes the preflight report hash
+before any adapter evidence can be promoted.
+
 The gate fails closed when the environment cannot run the real benchmarks. A
 supported readiness claim would mean only that the adapters can execute; it is
 not evidence for the receipt-trained proposer claim. The final proof still
@@ -936,12 +943,12 @@ not a RISC-V core correctness claim.
 `examples.real_task_benchmark_suite` is the current four-domain proof gate. It
 runs the robotics, hardware, program, and quantum adapters, binds the readiness
 manifest, validates every adapter evidence certificate, child claim, and
-learning certificate, and aggregates adapter evidence certificate hashes, child
-report hashes, manifest spec hashes, receipt hashes, typed-candidate hashes,
-hard-result hashes, hard-metadata hashes, baseline calls, learned calls,
-held-out successes, replay/rollback/ledger audit status, missing requirements,
-backend errors, held-out arm isolation status, and invalid commits. It also
-rejects certificate mixing: each adapter evidence
+learning certificate, and aggregates the preflight report hash, adapter evidence
+certificate hashes, child report hashes, manifest spec hashes, receipt hashes,
+typed-candidate hashes, hard-result hashes, hard-metadata hashes, baseline
+calls, learned calls, held-out successes, replay/rollback/ledger audit status,
+missing requirements, backend errors, held-out arm isolation status, and invalid
+commits. It also rejects certificate mixing: each adapter evidence
 certificate must bind the report hash, backend identity, task split ids, claim
 hash, learning hash, ledger head, and exact training/baseline/learned receipt
 partitions plus any backend execution error. It must also bind that baseline

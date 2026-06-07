@@ -15,9 +15,11 @@ from examples.real_task_benchmark_manifest import (
     build_real_task_manifest_certificate,
     build_real_task_preflight_report,
     fake_probe,
+    real_task_preflight_report_hash,
     run_real_task_benchmark_readiness,
     validate_real_task_manifest,
     validate_real_task_manifest_certificate,
+    validate_real_task_preflight_report,
 )
 from trwm.claims import validate_claim_certificate
 
@@ -49,6 +51,10 @@ class RealTaskBenchmarkManifestTests(unittest.TestCase):
         self.assertEqual(result.preflight_report.ready_domain_count, 0)
         self.assertFalse(result.preflight_report.ready_to_run_all)
         self.assertTrue(result.preflight_report.missing_requirements)
+        self.assertTrue(validate_real_task_preflight_report(result.preflight_report, result.manifest))
+        for row in result.preflight_report.rows:
+            for probe in row.probes:
+                self.assertEqual(len(probe.evidence_hash), 64)
 
     def test_readiness_can_support_only_adapter_readiness_when_all_requirements_probe_available(self) -> None:
         manifest = build_real_task_benchmark_manifest()
@@ -86,6 +92,8 @@ class RealTaskBenchmarkManifestTests(unittest.TestCase):
         self.assertTrue(result.preflight_report.ready_to_run_all)
         self.assertEqual(result.preflight_report.ready_domain_count, 4)
         self.assertEqual(result.preflight_report.missing_requirements, ())
+        self.assertTrue(validate_real_task_preflight_report(result.preflight_report, result.manifest))
+        self.assertEqual(result.manifest_certificate.preflight_report_hash, real_task_preflight_report_hash(result.preflight_report))
         self.assertIn("Readiness gate only", result.claim_certificate.boundary)
 
     def test_manifest_certificate_detects_tampering(self) -> None:
@@ -99,6 +107,19 @@ class RealTaskBenchmarkManifestTests(unittest.TestCase):
         self.assertTrue(validate_real_task_manifest_certificate(certificate, manifest, report))
         self.assertFalse(validate_real_task_manifest_certificate(bad_hash, manifest, report))
         self.assertFalse(validate_real_task_manifest_certificate(bad_missing, manifest, report))
+
+    def test_preflight_report_validation_rejects_tampered_probe_evidence_hash(self) -> None:
+        manifest = build_real_task_benchmark_manifest()
+        report = build_real_task_preflight_report(manifest, probe=fake_probe({}))
+        first_row = report.rows[0]
+        first_probe = first_row.probes[0]
+        bad_probe = replace(first_probe, evidence_hash="0" * 64)
+        bad_row = replace(first_row, probes=(bad_probe, *first_row.probes[1:]))
+        bad_report = replace(report, rows=(bad_row, *report.rows[1:]))
+
+        self.assertTrue(validate_real_task_preflight_report(report, manifest))
+        self.assertFalse(validate_real_task_preflight_report(bad_report, manifest))
+        self.assertFalse(validate_real_task_manifest_certificate(build_real_task_manifest_certificate(manifest, bad_report), manifest, bad_report))
 
     def test_default_env_probe_requires_existing_task_root_directory(self) -> None:
         key = "TRWM_MOTION_BENCHMARK_TASK_ROOT"
