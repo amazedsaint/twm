@@ -931,8 +931,9 @@ not a RISC-V core correctness claim.
 `examples.real_task_benchmark_suite` is the current four-domain proof gate. It
 runs the robotics, hardware, program, and quantum adapters, binds the readiness
 manifest, validates every child claim and learning certificate, and aggregates
-receipt hashes, baseline calls, learned calls, held-out successes, replay/
-rollback/ledger audit status, missing requirements, and invalid commits. The
+child report hashes, receipt hashes, baseline calls, learned calls, held-out
+successes, replay/rollback/ledger audit status, missing requirements, and
+invalid commits. The
 suite claim supports the objective only if every real backend supports its
 single-domain claim and every domain reduces hard-verifier calls while
 preserving held-out success and zero invalid commits. On machines without the

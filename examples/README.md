@@ -1455,9 +1455,9 @@ python3 -m examples.real_task_benchmark_suite
 This emits JSON with top-level `manifest`, `manifest_certificate`, `report`,
 `suite_certificate`, and `claim_certificate`. It runs the four optional real
 adapters, validates their child claim certificates and learning certificates,
-and aggregates the exact receipt counts, baseline calls, learned calls,
-held-out successes, replay/rollback/ledger status, missing requirements, and
-invalid-commit counts.
+and aggregates child report hashes, exact receipt counts, baseline calls,
+learned calls, held-out successes, replay/rollback/ledger status, missing
+requirements, and invalid-commit counts.
 
 The suite claim is intentionally stricter than adapter readiness. It is
 supported only when all four domains use real backends, all child claims are

@@ -50,6 +50,7 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertEqual(len(report.rows), 4)
         self.assertTrue(report.all_child_claims_valid)
         self.assertFalse(report.all_child_claims_supported)
+        self.assertTrue(all(row.child_claim_valid for row in report.rows))
         self.assertTrue(report.all_learning_certificates_valid)
         self.assertTrue(report.all_learning_certificates_support_claim)
         self.assertTrue(report.all_backends_available)
@@ -73,6 +74,10 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertEqual(report.learned_success_count, 8)
 
         self.assertTrue(validate_real_task_benchmark_suite_report(report))
+        self.assertEqual(
+            result.suite_certificate.child_report_hashes,
+            tuple(row.child_report_hash for row in report.rows),
+        )
         self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, report))
         self.assertTrue(validate_claim_certificate(claim))
         self.assertEqual(claim.status, "rejected")
@@ -113,6 +118,15 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, result.report))
         self.assertEqual(result.claim_certificate.status, "rejected")
         self.assertIn("all_child_claims_valid", result.claim_certificate.failed_keys)
+
+    def test_suite_certificate_binds_child_report_hashes(self) -> None:
+        result = run_real_task_benchmark_suite(_deterministic_adapter_results())
+        first = result.report.rows[0]
+        bad_first = replace(first, child_report_hash="0" * 64)
+        bad_report = replace(result.report, rows=(bad_first, *result.report.rows[1:]))
+
+        self.assertTrue(validate_real_task_benchmark_suite_report(bad_report))
+        self.assertFalse(validate_real_task_benchmark_suite_certificate(result.suite_certificate, bad_report))
 
     def test_suite_report_validation_rejects_missing_receipt_hash(self) -> None:
         result = run_real_task_benchmark_suite(_deterministic_adapter_results())

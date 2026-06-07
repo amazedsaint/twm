@@ -44,6 +44,8 @@ class RealTaskBenchmarkSuiteRow:
     backend_available: bool
     real_backend: bool
     missing_requirements: tuple[str, ...]
+    child_report_hash: str
+    child_claim_valid: bool
     child_claim_status: str
     child_claim_hash: str
     learning_certificate_hash: str
@@ -133,6 +135,7 @@ class RealTaskBenchmarkSuiteCertificate:
     manifest_certificate_hash: str
     domain_count: int
     domains: tuple[str, ...]
+    child_report_hashes: tuple[str, ...]
     child_claim_hashes: tuple[str, ...]
     learning_certificate_hashes: tuple[str, ...]
     receipt_hashes: tuple[str, ...]
@@ -151,6 +154,7 @@ class RealTaskBenchmarkSuiteCertificate:
         if self.schema_version != REAL_TASK_BENCHMARK_SUITE_CERTIFICATE_SCHEMA:
             raise ValueError(f"invalid real-task suite certificate schema: {self.schema_version}")
         object.__setattr__(self, "domains", tuple(self.domains))
+        object.__setattr__(self, "child_report_hashes", tuple(self.child_report_hashes))
         object.__setattr__(self, "child_claim_hashes", tuple(self.child_claim_hashes))
         object.__setattr__(self, "learning_certificate_hashes", tuple(self.learning_certificate_hashes))
         object.__setattr__(self, "receipt_hashes", tuple(self.receipt_hashes))
@@ -260,6 +264,7 @@ def build_real_task_benchmark_suite_certificate(
         manifest_certificate_hash=manifest_certificate.certificate_hash,
         domain_count=report.domain_count,
         domains=report.domains,
+        child_report_hashes=tuple(row.child_report_hash for row in report.rows),
         child_claim_hashes=tuple(row.child_claim_hash for row in report.rows),
         learning_certificate_hashes=tuple(row.learning_certificate_hash for row in report.rows if row.learning_certificate_hash),
         receipt_hashes=tuple(receipt_hash for row in report.rows for receipt_hash in row.receipt_hashes),
@@ -289,7 +294,13 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
             return False
         if any(not row.source_urls for row in report.rows):
             return False
+        if any(not _is_hash(row.child_report_hash) for row in report.rows):
+            return False
         if any(not _is_hash(row.child_claim_hash) for row in report.rows):
+            return False
+        if any(row.child_claim_status not in {"supported", "rejected"} for row in report.rows):
+            return False
+        if report.all_child_claims_valid != all(row.child_claim_valid for row in report.rows):
             return False
         for row in report.rows:
             if row.receipt_count != len(row.receipt_hashes):
@@ -346,6 +357,8 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
             return False
         if report.all_real_backends != all(row.real_backend for row in report.rows):
             return False
+        if report.all_child_claims_supported != all(row.child_claim_valid and row.child_claim_status == "supported" for row in report.rows):
+            return False
         if report.all_receipt_counts_bound != all(row.receipt_count == len(row.receipt_hashes) for row in report.rows):
             return False
         if report.hard_verifier_calls_reduced != all(row.learned_verifier_calls < row.baseline_verifier_calls for row in report.rows):
@@ -383,6 +396,8 @@ def validate_real_task_benchmark_suite_certificate(
         ):
             if not _is_hash(hash_value):
                 return False
+        if len(certificate.child_report_hashes) != 4 or any(not _is_hash(row) for row in certificate.child_report_hashes):
+            return False
         if len(certificate.child_claim_hashes) != 4 or any(not _is_hash(row) for row in certificate.child_claim_hashes):
             return False
         if any(not _is_hash(row) for row in certificate.learning_certificate_hashes):
@@ -403,6 +418,8 @@ def validate_real_task_benchmark_suite_certificate(
             if certificate.manifest_certificate_hash != report.manifest_certificate_hash:
                 return False
             if certificate.domains != report.domains:
+                return False
+            if certificate.child_report_hashes != tuple(row.child_report_hash for row in report.rows):
                 return False
             if certificate.child_claim_hashes != tuple(row.child_claim_hash for row in report.rows):
                 return False
@@ -491,6 +508,8 @@ def _suite_row(domain: str, result: Any) -> RealTaskBenchmarkSuiteRow:
         backend_available=bool(report.backend_available),
         real_backend=bool(report.real_backend),
         missing_requirements=tuple(str(row) for row in report.missing_requirements),
+        child_report_hash=stable_hash(asdict(report)),
+        child_claim_valid=validate_claim_certificate(result.claim_certificate),
         child_claim_status=str(result.claim_certificate.status),
         child_claim_hash=str(result.claim_certificate.certificate_hash),
         learning_certificate_hash=learning_hash,
