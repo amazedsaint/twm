@@ -60,6 +60,7 @@ python3 -m examples.branch_composition_transfer
 python3 -m examples.context_retention_transfer
 python3 -m examples.receipt_trained_reversible_proposer_benchmark
 python3 -m examples.real_task_benchmark_manifest
+python3 -m examples.robotics_motion_benchmark_adapter
 python3 -m examples.hardware_riscv_formal_adapter
 python3 -m examples.program_defects4j_adapter
 python3 -m examples.quantum_mqt_bench_adapter
@@ -1301,10 +1302,10 @@ across four domains. The receipt-trained reversible proposer ranks the repair
 first and spends four hard-verifier calls, while both arms commit all four
 held-out tasks and the ledger records zero invalid commits.
 
-This is still G1 local evidence. The next real-task adapters should target OMPL
-or MotionBenchMaker robotics tasks, `riscv-formal` RVFI instruction checks,
-Defects4J active bug IDs, and MQT Bench/RevLib circuits checked through MQT
-QCEC.
+This is still G1 local evidence. The real-task adapter path should now execute
+MotionBenchMaker/MoveIt/OMPL robotics tasks, `riscv-formal` RVFI instruction
+checks, Defects4J active bug IDs, and MQT Bench/RevLib circuits checked through
+MQT QCEC.
 
 ## Real-Task Benchmark Readiness Gate
 
@@ -1330,6 +1331,37 @@ environment variable is missing, the readiness claim is `rejected`; this is not
 a performance result and cannot support the final receipt-trained proposer
 claim. A supported readiness claim only means the adapters are ready to run and
 produce benchmark receipts.
+
+## Robotics Motion Benchmark Adapter
+
+Run:
+
+```bash
+python3 -m examples.robotics_motion_benchmark_adapter
+```
+
+This emits JSON with top-level `report`, `learning_certificate`, and
+`claim_certificate`. The adapter is dependency-free by default: if `roslaunch`
+or `TRWM_MOTION_BENCHMARK_TASK_ROOT` is unavailable, it emits a rejected claim
+with zero receipts.
+
+When ROS and the task root are available, the adapter expects candidate
+directories under `$TRWM_MOTION_BENCHMARK_TASK_ROOT/<task>/<candidate>/`.
+Each candidate directory must provide `command.json` with `launch_package`,
+`launch_file`, optional `args`, and optional `result_file`. The adapter runs
+`roslaunch <launch_package> <launch_file> <candidate_args>` in that directory
+and accepts only a benchmark result with `solved=true`, a correct solution flag,
+`approximate_solution=false`, and an explicit nonnegative solution clearance.
+The baseline tries an unsafe motion candidate before the safe candidate. The
+receipt-trained reversible proposer can rank the safe candidate first on
+held-out tasks, but the claim is supported only if the real backend is
+available, held-out success is preserved, hard-verifier calls are reduced,
+replay/rollback audits pass, and invalid commits remain zero.
+
+This is not a robotics safety proof or a planner-performance claim. It is a
+real-benchmark adapter surface for task-root-backed MotionBenchMaker/MoveIt/OMPL
+candidate directories; broader scene sets, hardware-in-the-loop checks, and
+independent audit-verifier receipts remain future work.
 
 ## Hardware RISC-V Formal Adapter
 

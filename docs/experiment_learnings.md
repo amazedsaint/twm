@@ -812,9 +812,25 @@ The last category is still open.
 
 ## Optional Real Benchmark Adapters
 
-The optional riscv-formal, Defects4J, and MQT adapters are the first concrete
-steps from readiness evidence toward real benchmark receipt streams. They keep
-the repository dependency-free while exposing real adapter boundaries.
+The optional MotionBenchMaker/MoveIt/OMPL, riscv-formal, Defects4J, and MQT
+adapters are the first concrete steps from readiness evidence toward real
+benchmark receipt streams. They keep the repository dependency-free while
+exposing real adapter boundaries.
+
+For robotics:
+
+- MotionBenchMaker/MoveIt/OMPL task assets provide train and held-out motion
+  planning candidates,
+- `roslaunch` owns execution of the configured benchmark command,
+- result JSON owns the hard decision by binding solved/correct status,
+  approximate-solution rejection, and explicit nonnegative clearance,
+- missing `roslaunch` or `TRWM_MOTION_BENCHMARK_TASK_ROOT` produces a rejected
+  claim with zero receipts,
+- deterministic test doubles can validate transaction mechanics but not
+  robotics safety or planner performance,
+- the current candidate surface compares unsafe and safe motion candidates, so
+  it is adapter evidence rather than a motion-planning optimality or robot
+  safety proof.
 
 For hardware:
 
@@ -853,7 +869,8 @@ For program repair:
   result.
 
 This changes the substrate requirement from "name the external verifier" to
-"ship an adapter that can fail closed until the verifier is available." The
-same pattern should be used for robotics, broader hardware suites, and a
-deeper Defects4J patch-candidate adapter before the aggregate four-domain proof
-is attempted.
+"ship an adapter that can fail closed until the verifier is available." All
+four goal-domain adapter shapes now exist. The remaining work is real
+task-root/toolchain execution, broader hardware suites, deeper Defects4J
+patch-candidate receipts, independent audit verifiers, and aggregate
+four-domain receipts before the proof is attempted.

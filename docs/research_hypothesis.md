@@ -309,6 +309,12 @@ This repository currently targets `G1` evidence:
   verification certificates, replay packages, and replay verification
   certificates that package those attestations and validate the underlying
   trace/candidate/receipt/learner body evidence,
+- an optional MotionBenchMaker/MoveIt/OMPL robotics adapter that checks
+  task-root-backed motion-planning candidates through `roslaunch`, requires
+  solved, correct, non-approximate results with explicit nonnegative clearance,
+  fails closed when `roslaunch` or `TRWM_MOTION_BENCHMARK_TASK_ROOT` is
+  missing, and supports a robotics call-reduction claim only on the real
+  backend,
 - an optional riscv-formal hardware adapter that checks task-root-backed RVFI
   candidate directories through generated SymbiYosys checks, fails closed when
   required tools or `TRWM_RISCV_FORMAL_TASK_ROOT` are missing, and supports a
@@ -853,7 +859,7 @@ authority.
 
 ## External Benchmark Anchors
 
-The real-task path should attach adapters in this order:
+The real-task path should execute and harden adapters in this order:
 
 - robotics: OMPL/MotionBenchMaker-style motion-planning problems with explicit
   state-validity and collision-checking receipts,
@@ -887,12 +893,21 @@ not evidence for the receipt-trained proposer claim. The final proof still
 needs real benchmark receipts, baseline and learned hard-verifier-call counts,
 zero invalid commits, and replay/rollback audits across all four domains.
 
-`examples.quantum_mqt_bench_adapter` is the first single-domain adapter after
-the readiness gate. It uses MQT Bench as the task source and MQT QCEC as the
-hard equivalence verifier when the optional packages are installed. Without
-those packages it emits a rejected claim and zero receipts. Its deterministic
-test backend validates adapter mechanics only; it cannot promote a quantum
-benchmark-performance claim or satisfy the four-domain goal.
+`examples.robotics_motion_benchmark_adapter` adds the robotics analogue. It
+uses task-root-backed candidate directories, runs their configured ROS launch
+commands, and accepts a candidate only when the benchmark result reports solved,
+correct, non-approximate motion with explicit nonnegative clearance. Missing
+`roslaunch` or `TRWM_MOTION_BENCHMARK_TASK_ROOT` produces a rejected claim and
+zero receipts. This is adapter plumbing, not a robotics safety or planner
+performance result: deterministic test doubles exercise transaction mechanics
+only, and real MotionBenchMaker/MoveIt/OMPL receipts are still needed.
+
+`examples.quantum_mqt_bench_adapter` adds the quantum fail-closed shape. It uses
+MQT Bench as the task source and MQT QCEC as the hard equivalence verifier when
+the optional packages are installed. Without those packages it emits a rejected
+claim and zero receipts. Its deterministic test backend validates adapter
+mechanics only; it cannot promote a quantum benchmark-performance claim or
+satisfy the four-domain goal.
 
 `examples.program_defects4j_adapter` adds the same fail-closed shape for
 program repair. It uses Defects4J `checkout`, `compile`, and relevant-test

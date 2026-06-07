@@ -90,6 +90,7 @@ python3 -m examples.branch_composition_transfer
 python3 -m examples.context_retention_transfer
 python3 -m examples.receipt_trained_reversible_proposer_benchmark
 python3 -m examples.real_task_benchmark_manifest
+python3 -m examples.robotics_motion_benchmark_adapter
 python3 -m examples.hardware_riscv_formal_adapter
 python3 -m examples.program_defects4j_adapter
 python3 -m examples.quantum_mqt_bench_adapter
@@ -183,6 +184,9 @@ benchmark preserves four held-out local canary successes while reducing
 hard-verifier calls from eight to four with zero invalid commits; the
 real-task benchmark manifest adds a fail-closed readiness certificate for the
 external robotics, hardware, program, and quantum benchmark adapters; the
+robotics motion benchmark adapter runs task-root-backed
+MotionBenchMaker/MoveIt/OMPL candidates through `roslaunch` when the toolchain
+and task root are available and otherwise rejects cleanly; the
 hardware riscv-formal adapter runs task-root-backed RVFI candidates through
 SymbiYosys/Yosys when the toolchain and task root are available and otherwise
 rejects cleanly; the

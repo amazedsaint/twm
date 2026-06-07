@@ -25,6 +25,7 @@ class RealTaskBenchmarkManifestTests(unittest.TestCase):
         self.assertEqual(len(manifest.specs), 4)
         self.assertTrue(all(spec.source_urls for spec in manifest.specs))
         self.assertTrue(all(spec.command_templates for spec in manifest.specs))
+        self.assertIn("TRWM_MOTION_BENCHMARK_TASK_ROOT", manifest.specs[0].required_env_vars)
         self.assertIn("TRWM_RISCV_FORMAL_TASK_ROOT", manifest.specs[1].required_env_vars)
         self.assertTrue(set(spec.train_split_id for spec in manifest.specs).isdisjoint(spec.held_out_split_id for spec in manifest.specs))
 

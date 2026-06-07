@@ -160,22 +160,28 @@ def build_real_task_benchmark_manifest() -> RealTaskBenchmarkManifest:
                 domain="robotics",
                 benchmark_id="motion_bench_maker_ompl",
                 task_selector="prefabricated manipulation datasets; train on generated source scenes, hold out distinct problem sets",
-                train_split_id="motionbenchmaker.train.problem-set",
-                held_out_split_id="motionbenchmaker.heldout.problem-set",
-                hard_verifier="MoveIt/OMPL state-validity and collision-checking benchmark result",
+                train_split_id="motion-benchmark.train.motionbenchmaker-scenes",
+                held_out_split_id="motion-benchmark.heldout.motionbenchmaker-scenes",
+                hard_verifier="MoveIt/OMPL benchmark solved/correct-solution/clearance result",
                 required_tools=("roslaunch",),
                 required_python_modules=(),
-                required_env_vars=(),
+                required_env_vars=("TRWM_MOTION_BENCHMARK_TASK_ROOT",),
                 command_templates=(
-                    "cd motion_bench_maker/problems && ./download.sh all",
-                    "roslaunch motion_bench_maker benchmark.launch dataset:=<heldout_dataset> planners:=RRTConnect,BiEST,BKPIECE",
+                    "cd $TRWM_MOTION_BENCHMARK_TASK_ROOT/<task>/<candidate>",
+                    "roslaunch <launch_package> <launch_file> <candidate_args>",
+                    "read benchmark_result.json and require solved=true, correct_solution=true, approximate_solution=false, solution_clearance>=0",
                 ),
                 source_urls=(
                     "https://carlosquinterop.github.io/project/motionbenchmaker/",
                     "https://github.com/KavrakiLab/motion_bench_maker",
-                    "https://ompl.kavrakilab.org/",
+                    "https://moveit.picknik.ai/main/doc/concepts/motion_planning.html",
+                    "https://docs.ros.org/en/indigo/api/moveit_tutorials/html/doc/benchmarking_tutorial.html",
+                    "https://docs.ros.org/en/rolling/p/ompl/doc/markdown/benchmark.html",
                 ),
-                claim_boundary="Readiness only; not robotics safety evidence until benchmark receipts are produced.",
+                claim_boundary=(
+                    "Readiness only; not robotics safety evidence until task-root-backed "
+                    "MotionBenchMaker/MoveIt/OMPL receipts are produced."
+                ),
             ),
             RealTaskBenchmarkSpec(
                 domain="hardware",
