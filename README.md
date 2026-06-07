@@ -95,6 +95,7 @@ python3 -m examples.hardware_riscv_formal_adapter
 python3 -m examples.program_defects4j_adapter
 python3 -m examples.quantum_mqt_bench_adapter
 python3 -m examples.real_task_benchmark_suite
+python3 -m examples.real_task_evidence_bundle
 python3 -m examples.branch_history_frontier
 python3 -m examples.programmable_world_model_frontier
 ```

@@ -65,6 +65,7 @@ python3 -m examples.hardware_riscv_formal_adapter
 python3 -m examples.program_defects4j_adapter
 python3 -m examples.quantum_mqt_bench_adapter
 python3 -m examples.real_task_benchmark_suite
+python3 -m examples.real_task_evidence_bundle
 python3 -m examples.branch_history_frontier
 python3 -m examples.programmable_world_model_frontier
 ```
@@ -1543,3 +1544,22 @@ preflighted manifest task-asset content hash, backend execution evidence counts
 bind exact receipt counts, and invalid commits remain zero. Missing external tools or
 deterministic test doubles produce a rejected G0 claim rather than weakening the
 final objective.
+
+## Real-Task Evidence Bundle
+
+Run:
+
+```bash
+python3 -m examples.real_task_evidence_bundle
+```
+
+This is the preferred command for collecting an external proof artifact. It
+emits a `bundle_certificate`, the full `suite_result`, and all four
+`child_results`. The bundle certificate binds the manifest hash, preflight hash,
+suite report hash, suite certificate hash, aggregate claim hash, child adapter
+report hashes, child evidence certificate hashes, child claim hashes, child
+learning certificate hashes, exact child receipt counts, missing requirements,
+failed aggregate requirements, and the final zero-invalid-commit gate. It then
+rebuilds the aggregate suite from the included child results during validation,
+so a valid bundle cannot mix a suite result from one run with child evidence
+from another run.

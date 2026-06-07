@@ -992,3 +992,14 @@ preflighted manifest task-asset content hash, so a real receipt cannot promote
 unless its task ids, runtime, and task artifacts match the assets the manifest
 preflight saw. On machines without the external toolchains and task roots, the suite must
 reject with G0 evidence.
+
+`examples.real_task_evidence_bundle` is the current handoff artifact for that
+proof path. It emits the full child adapter results together with the aggregate
+suite result and a `trwm.real_task_evidence_bundle_certificate.v1`
+certificate. The certificate binds child report hashes, adapter evidence
+certificate hashes, child claim hashes, learning certificate hashes, exact
+child receipt counts, the suite report hash, suite certificate hash, aggregate
+claim hash, missing requirements, failed aggregate gates, and zero invalid
+commits. Validation rebuilds the suite from the included child results, so a
+supported final claim must be carried by one coherent bundle rather than by
+separate report fragments.

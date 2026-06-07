@@ -952,3 +952,15 @@ preflighted manifest task-asset content hash, all backend execution evidence
 lanes bind exact receipt counts, and invalid commits remain zero. On
 the current local machine the suite correctly rejects with G0 because the
 external toolchains and task roots are missing.
+
+`examples.real_task_evidence_bundle` turns that gate into a portable proof
+artifact for external runs. It emits the full child adapter results plus the
+aggregate suite result, then certifies that the bundle's child report hashes,
+adapter evidence certificate hashes, child claim hashes, learning certificate
+hashes, receipt counts, missing requirements, failed aggregate gates, and
+zero-invalid-commit count match the rebuilt suite. That changes the next
+execution requirement from "run several modules and compare their outputs by
+hand" to "produce one bundle whose certificate can be validated against all
+included child evidence." On this machine it is still a valid G0 bundle with
+zero receipts; on a provisioned machine it is the artifact that must carry the
+real robotics, hardware, program, and quantum receipt streams.
