@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import os
+from pathlib import Path
+import tempfile
 import unittest
+from unittest.mock import patch
 
 from examples.real_task_benchmark_manifest import (
     REAL_TASK_MANIFEST_CERTIFICATE_SCHEMA,
+    _default_probe,
     build_real_task_benchmark_manifest,
     build_real_task_manifest_certificate,
     build_real_task_preflight_report,
@@ -84,6 +89,34 @@ class RealTaskBenchmarkManifestTests(unittest.TestCase):
         self.assertTrue(validate_real_task_manifest_certificate(certificate, manifest, report))
         self.assertFalse(validate_real_task_manifest_certificate(bad_hash, manifest, report))
         self.assertFalse(validate_real_task_manifest_certificate(bad_missing, manifest, report))
+
+    def test_default_env_probe_requires_existing_task_root_directory(self) -> None:
+        key = "TRWM_MOTION_BENCHMARK_TASK_ROOT"
+        with patch.dict(os.environ, {}, clear=True):
+            missing = _default_probe("env_var", key)
+        self.assertFalse(missing.available)
+        self.assertEqual(missing.evidence, "missing_env_var")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            absent_path = str(Path(tmp) / "absent")
+            with patch.dict(os.environ, {key: absent_path}, clear=True):
+                absent = _default_probe("env_var", key)
+            self.assertFalse(absent.available)
+            self.assertEqual(absent.evidence, f"missing_path:{absent_path}")
+
+            file_path = Path(tmp) / "not-a-directory"
+            file_path.write_text("not a task root", encoding="utf-8")
+            with patch.dict(os.environ, {key: str(file_path)}, clear=True):
+                file_probe = _default_probe("env_var", key)
+            self.assertFalse(file_probe.available)
+            self.assertEqual(file_probe.evidence, f"not_directory:{file_path}")
+
+            task_root = Path(tmp) / "tasks"
+            task_root.mkdir()
+            with patch.dict(os.environ, {key: str(task_root)}, clear=True):
+                directory_probe = _default_probe("env_var", key)
+            self.assertTrue(directory_probe.available)
+            self.assertEqual(directory_probe.evidence, str(task_root))
 
 
 if __name__ == "__main__":

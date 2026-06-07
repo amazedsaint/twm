@@ -796,8 +796,9 @@ The next substrate requirements are now concrete:
 The real-task manifest adds an environment-facing gate before the final proof
 can be attempted. It names concrete external adapters for MotionBenchMaker/OMPL,
 `riscv-formal`, Defects4J, and MQT Bench/QCEC/RevLib, then probes the local
-toolchain and Python modules. Missing requirements produce a rejected G0
-readiness claim instead of a runtime crash or a softened performance claim.
+toolchain, Python modules, and task-root directories. Missing requirements or
+task-root variables that do not point at existing directories produce a rejected
+G0 readiness claim instead of a runtime crash or a softened performance claim.
 
 This adds a useful substrate rule: real benchmark evidence starts only after an
 adapter-readiness certificate validates. A programmable transactional world

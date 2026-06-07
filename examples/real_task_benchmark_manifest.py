@@ -5,6 +5,7 @@ import importlib.util
 import json
 import os
 import shutil
+from pathlib import Path
 from typing import Callable, Mapping
 
 from trwm.claims import ClaimCertificate, certify_claim, requirement
@@ -479,7 +480,16 @@ def _default_probe(kind: str, name: str) -> RequirementProbe:
         return RequirementProbe(kind=kind, name=name, available=spec is not None, evidence=getattr(spec, "origin", None) or "missing_module")
     if kind == "env_var":
         value = os.environ.get(name, "")
-        return RequirementProbe(kind=kind, name=name, available=bool(value), evidence="set" if value else "missing_env_var")
+        if not value:
+            return RequirementProbe(kind=kind, name=name, available=False, evidence="missing_env_var")
+        if name.endswith("TASK_ROOT"):
+            path = Path(value)
+            if not path.exists():
+                return RequirementProbe(kind=kind, name=name, available=False, evidence=f"missing_path:{value}")
+            if not path.is_dir():
+                return RequirementProbe(kind=kind, name=name, available=False, evidence=f"not_directory:{value}")
+            return RequirementProbe(kind=kind, name=name, available=True, evidence=str(path))
+        return RequirementProbe(kind=kind, name=name, available=True, evidence="set")
     raise ValueError(f"unknown probe kind: {kind}")
 
 
