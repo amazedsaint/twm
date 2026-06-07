@@ -10,6 +10,7 @@ from examples.quantum_mqt_bench_adapter import run_quantum_mqt_bench_adapter_exp
 from examples.real_task_benchmark_manifest import (
     RealTaskBenchmarkManifest,
     RealTaskBenchmarkManifestCertificate,
+    RealTaskBenchmarkSpec,
     build_real_task_benchmark_manifest,
     build_real_task_manifest_certificate,
     build_real_task_preflight_report,
@@ -63,10 +64,15 @@ class RealTaskBenchmarkSuiteRow:
     backend_available: bool
     real_backend: bool
     missing_requirements: tuple[str, ...]
+    manifest_spec_hash: str
+    manifest_benchmark_id: str
+    manifest_train_split_id: str
+    manifest_held_out_split_id: str
     child_report_hash: str
     adapter_evidence_certificate_hash: str
     adapter_evidence_certificate_valid: bool
     adapter_evidence_certificate_matches_report: bool
+    adapter_evidence_matches_manifest: bool
     child_claim_valid: bool
     child_claim_status: str
     child_claim_hash: str
@@ -119,6 +125,7 @@ class RealTaskBenchmarkSuiteReport:
     all_child_claims_match_reports: bool
     all_adapter_evidence_certificates_valid: bool
     all_adapter_evidence_certificates_match_reports: bool
+    all_adapter_evidence_matches_manifest: bool
     all_learning_certificates_valid: bool
     all_learning_certificates_support_claim: bool
     all_learning_certificates_match_reports: bool
@@ -163,6 +170,7 @@ class RealTaskBenchmarkSuiteCertificate:
     manifest_certificate_hash: str
     domain_count: int
     domains: tuple[str, ...]
+    manifest_spec_hashes: tuple[str, ...]
     child_report_hashes: tuple[str, ...]
     adapter_evidence_certificate_hashes: tuple[str, ...]
     child_claim_hashes: tuple[str, ...]
@@ -173,6 +181,7 @@ class RealTaskBenchmarkSuiteCertificate:
     all_child_claims_match_reports: bool
     all_adapter_evidence_certificates_valid: bool
     all_adapter_evidence_certificates_match_reports: bool
+    all_adapter_evidence_matches_manifest: bool
     all_learning_certificates_valid: bool
     all_learning_certificates_match_reports: bool
     all_real_backends: bool
@@ -187,6 +196,7 @@ class RealTaskBenchmarkSuiteCertificate:
         if self.schema_version != REAL_TASK_BENCHMARK_SUITE_CERTIFICATE_SCHEMA:
             raise ValueError(f"invalid real-task suite certificate schema: {self.schema_version}")
         object.__setattr__(self, "domains", tuple(self.domains))
+        object.__setattr__(self, "manifest_spec_hashes", tuple(self.manifest_spec_hashes))
         object.__setattr__(self, "child_report_hashes", tuple(self.child_report_hashes))
         object.__setattr__(self, "adapter_evidence_certificate_hashes", tuple(self.adapter_evidence_certificate_hashes))
         object.__setattr__(self, "child_claim_hashes", tuple(self.child_claim_hashes))
@@ -228,7 +238,11 @@ def build_real_task_benchmark_suite_result(
     manifest = build_real_task_benchmark_manifest()
     preflight_report = build_real_task_preflight_report(manifest)
     manifest_certificate = build_real_task_manifest_certificate(manifest, preflight_report)
-    rows = tuple(_suite_row(domain, adapter_results[domain]) for domain in REAL_TASK_BENCHMARK_SUITE_DOMAINS)
+    specs_by_domain = {spec.domain: spec for spec in manifest.specs}
+    rows = tuple(
+        _suite_row(domain, adapter_results[domain], specs_by_domain[domain])
+        for domain in REAL_TASK_BENCHMARK_SUITE_DOMAINS
+    )
     child_claims_valid = tuple(row.child_claim_valid for row in rows)
     child_claims_supported = tuple(row.child_claim_valid and row.child_claim_status == "supported" for row in rows)
     report = _build_report(manifest, manifest_certificate, rows, child_claims_valid, child_claims_supported)
@@ -248,6 +262,7 @@ def build_real_task_benchmark_suite_result(
                 and report.all_child_claims_match_reports
                 and report.all_adapter_evidence_certificates_valid
                 and report.all_adapter_evidence_certificates_match_reports
+                and report.all_adapter_evidence_matches_manifest
                 and report.all_learning_certificates_match_reports
             )
             else "G0"
@@ -264,6 +279,7 @@ def build_real_task_benchmark_suite_result(
             requirement("all_child_claims_match_reports", report.all_child_claims_match_reports),
             requirement("all_adapter_evidence_certificates_valid", report.all_adapter_evidence_certificates_valid),
             requirement("all_adapter_evidence_certificates_match_reports", report.all_adapter_evidence_certificates_match_reports),
+            requirement("all_adapter_evidence_matches_manifest", report.all_adapter_evidence_matches_manifest),
             requirement("all_learning_certificates_valid", report.all_learning_certificates_valid),
             requirement("all_learning_certificates_support_claim", report.all_learning_certificates_support_claim),
             requirement("all_learning_certificates_match_reports", report.all_learning_certificates_match_reports),
@@ -310,6 +326,7 @@ def build_real_task_benchmark_suite_certificate(
         manifest_certificate_hash=manifest_certificate.certificate_hash,
         domain_count=report.domain_count,
         domains=report.domains,
+        manifest_spec_hashes=tuple(row.manifest_spec_hash for row in report.rows),
         child_report_hashes=tuple(row.child_report_hash for row in report.rows),
         adapter_evidence_certificate_hashes=tuple(row.adapter_evidence_certificate_hash for row in report.rows),
         child_claim_hashes=tuple(row.child_claim_hash for row in report.rows),
@@ -320,6 +337,7 @@ def build_real_task_benchmark_suite_certificate(
         all_child_claims_match_reports=report.all_child_claims_match_reports,
         all_adapter_evidence_certificates_valid=report.all_adapter_evidence_certificates_valid,
         all_adapter_evidence_certificates_match_reports=report.all_adapter_evidence_certificates_match_reports,
+        all_adapter_evidence_matches_manifest=report.all_adapter_evidence_matches_manifest,
         all_learning_certificates_valid=report.all_learning_certificates_valid,
         all_learning_certificates_match_reports=report.all_learning_certificates_match_reports,
         all_real_backends=report.all_real_backends,
@@ -345,6 +363,10 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
             return False
         if any(not row.source_urls for row in report.rows):
             return False
+        if any(not _is_hash(row.manifest_spec_hash) for row in report.rows):
+            return False
+        if any(not row.manifest_benchmark_id or not row.manifest_train_split_id or not row.manifest_held_out_split_id for row in report.rows):
+            return False
         if any(not _is_hash(row.child_report_hash) for row in report.rows):
             return False
         if any(not _is_hash(row.adapter_evidence_certificate_hash) for row in report.rows):
@@ -359,6 +381,8 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
             return False
         if any(not isinstance(row.adapter_evidence_certificate_matches_report, bool) for row in report.rows):
             return False
+        if any(not isinstance(row.adapter_evidence_matches_manifest, bool) for row in report.rows):
+            return False
         if any(not isinstance(row.learning_certificate_matches_report, bool) for row in report.rows):
             return False
         if report.all_child_claims_valid != all(row.child_claim_valid for row in report.rows):
@@ -369,7 +393,11 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
             return False
         if report.all_adapter_evidence_certificates_match_reports != all(row.adapter_evidence_certificate_matches_report for row in report.rows):
             return False
+        if report.all_adapter_evidence_matches_manifest != all(row.adapter_evidence_matches_manifest for row in report.rows):
+            return False
         if report.all_learning_certificates_match_reports != all(row.learning_certificate_matches_report for row in report.rows):
+            return False
+        if any(row.adapter_evidence_matches_manifest and not row.adapter_evidence_certificate_matches_report for row in report.rows):
             return False
         if any(row.child_claim_matches_report and not row.child_claim_valid for row in report.rows):
             return False
@@ -473,6 +501,8 @@ def validate_real_task_benchmark_suite_certificate(
         ):
             if not _is_hash(hash_value):
                 return False
+        if len(certificate.manifest_spec_hashes) != 4 or any(not _is_hash(row) for row in certificate.manifest_spec_hashes):
+            return False
         if len(certificate.child_report_hashes) != 4 or any(not _is_hash(row) for row in certificate.child_report_hashes):
             return False
         if len(certificate.adapter_evidence_certificate_hashes) != 4 or any(
@@ -500,6 +530,8 @@ def validate_real_task_benchmark_suite_certificate(
                 return False
             if certificate.domains != report.domains:
                 return False
+            if certificate.manifest_spec_hashes != tuple(row.manifest_spec_hash for row in report.rows):
+                return False
             if certificate.child_report_hashes != tuple(row.child_report_hash for row in report.rows):
                 return False
             if certificate.adapter_evidence_certificate_hashes != tuple(row.adapter_evidence_certificate_hash for row in report.rows):
@@ -516,6 +548,7 @@ def validate_real_task_benchmark_suite_certificate(
                 "all_child_claims_match_reports",
                 "all_adapter_evidence_certificates_valid",
                 "all_adapter_evidence_certificates_match_reports",
+                "all_adapter_evidence_matches_manifest",
                 "all_learning_certificates_valid",
                 "all_learning_certificates_match_reports",
                 "all_real_backends",
@@ -552,6 +585,7 @@ def _build_report(
         all_child_claims_match_reports=all(row.child_claim_matches_report for row in rows),
         all_adapter_evidence_certificates_valid=all(row.adapter_evidence_certificate_valid for row in rows),
         all_adapter_evidence_certificates_match_reports=all(row.adapter_evidence_certificate_matches_report for row in rows),
+        all_adapter_evidence_matches_manifest=all(row.adapter_evidence_matches_manifest for row in rows),
         all_learning_certificates_valid=all(row.learning_certificate_valid for row in rows),
         all_learning_certificates_support_claim=all(row.learning_certificate_supports_claim for row in rows),
         all_learning_certificates_match_reports=all(row.learning_certificate_matches_report for row in rows),
@@ -580,7 +614,7 @@ def _build_report(
     )
 
 
-def _suite_row(domain: str, result: Any) -> RealTaskBenchmarkSuiteRow:
+def _suite_row(domain: str, result: Any, manifest_spec: RealTaskBenchmarkSpec) -> RealTaskBenchmarkSuiteRow:
     report = result.report
     learning_certificate = result.learning_certificate
     learning_valid = False
@@ -608,6 +642,10 @@ def _suite_row(domain: str, result: Any) -> RealTaskBenchmarkSuiteRow:
         backend_available=bool(report.backend_available),
         real_backend=bool(report.real_backend),
         missing_requirements=tuple(str(row) for row in report.missing_requirements),
+        manifest_spec_hash=manifest_spec.spec_hash,
+        manifest_benchmark_id=manifest_spec.benchmark_id,
+        manifest_train_split_id=manifest_spec.train_split_id,
+        manifest_held_out_split_id=manifest_spec.held_out_split_id,
         child_report_hash=stable_hash(asdict(report)),
         adapter_evidence_certificate_hash=str(adapter_evidence_certificate.certificate_hash),
         adapter_evidence_certificate_valid=adapter_evidence_valid,
@@ -615,6 +653,13 @@ def _suite_row(domain: str, result: Any) -> RealTaskBenchmarkSuiteRow:
             adapter_evidence_valid
             and adapter_evidence_certificate.report_hash == stable_hash(asdict(report))
             and adapter_evidence_certificate.domain == domain
+        ),
+        adapter_evidence_matches_manifest=_adapter_evidence_matches_manifest(
+            domain,
+            manifest_spec,
+            report,
+            adapter_evidence_certificate,
+            adapter_evidence_valid,
         ),
         child_claim_valid=child_claim_valid,
         child_claim_status=str(child_claim.status),
@@ -646,6 +691,37 @@ def _suite_row(domain: str, result: Any) -> RealTaskBenchmarkSuiteRow:
         source_urls=tuple(str(row) for row in report.source_urls),
         claim_boundary=str(report.claim_boundary),
     )
+
+
+def _adapter_evidence_matches_manifest(
+    domain: str,
+    manifest_spec: RealTaskBenchmarkSpec,
+    report: Any,
+    adapter_evidence_certificate: Any,
+    adapter_evidence_valid: bool,
+) -> bool:
+    if manifest_spec.domain != domain or not adapter_evidence_valid:
+        return False
+    manifest_sources = set(manifest_spec.source_urls)
+    report_sources = set(report.source_urls)
+    evidence_sources = set(adapter_evidence_certificate.source_urls)
+    if not report_sources or not report_sources.issubset(manifest_sources):
+        return False
+    if not evidence_sources or not evidence_sources.issubset(manifest_sources):
+        return False
+    if adapter_evidence_certificate.domain != domain:
+        return False
+    if adapter_evidence_certificate.backend_id != report.backend_id:
+        return False
+    if adapter_evidence_certificate.train_task_ids != tuple(report.train_task_ids):
+        return False
+    if adapter_evidence_certificate.held_out_task_ids != tuple(report.held_out_task_ids):
+        return False
+    if report.receipt_count > 0 and (not report.train_task_ids or not report.held_out_task_ids):
+        return False
+    if set(report.train_task_ids).intersection(report.held_out_task_ids):
+        return False
+    return True
 
 
 def _child_claim_matches_report(domain: str, report: Any, claim: ClaimCertificate) -> bool:

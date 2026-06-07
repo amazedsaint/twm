@@ -932,16 +932,18 @@ not a RISC-V core correctness claim.
 runs the robotics, hardware, program, and quantum adapters, binds the readiness
 manifest, validates every adapter evidence certificate, child claim, and
 learning certificate, and aggregates adapter evidence certificate hashes, child
-report hashes, receipt hashes, baseline calls, learned calls, held-out
-successes, replay/rollback/ledger audit status, missing requirements, and
-invalid commits. It also rejects certificate mixing: each adapter evidence
-certificate must bind the report hash, backend identity, task split ids, claim
-hash, learning hash, ledger head, and exact training/baseline/learned receipt
-partitions; each child claim must match its report's requirement passes,
-metrics, boundary, and sources; and each learning certificate must match the
-report's learner snapshot, held-out metrics, hard-commit audit, and exact
-training/learned receipt partitions. The suite claim supports the objective
-only if every real backend supports its single-domain claim, every child
-certificate is report-consistent, and every domain reduces hard-verifier calls
-while preserving held-out success and zero invalid commits. On machines without
-the external toolchains and task roots, the suite must reject with G0 evidence.
+report hashes, manifest spec hashes, receipt hashes, baseline calls, learned
+calls, held-out successes, replay/rollback/ledger audit status, missing
+requirements, and invalid commits. It also rejects certificate mixing: each
+adapter evidence certificate must bind the report hash, backend identity, task
+split ids, claim hash, learning hash, ledger head, and exact
+training/baseline/learned receipt partitions, and that evidence must be covered
+by the manifest spec sources for the same domain; each child claim must match
+its report's requirement passes, metrics, boundary, and sources; and each
+learning certificate must match the report's learner snapshot, held-out metrics,
+hard-commit audit, and exact training/learned receipt partitions. The suite
+claim supports the objective only if every real backend supports its
+single-domain claim, every child certificate is report-consistent and
+manifest-covered, and every domain reduces hard-verifier calls while preserving
+held-out success and zero invalid commits. On machines without the external
+toolchains and task roots, the suite must reject with G0 evidence.

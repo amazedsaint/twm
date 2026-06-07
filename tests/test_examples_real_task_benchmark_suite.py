@@ -22,8 +22,10 @@ from examples.real_task_benchmark_suite import (
     validate_real_task_benchmark_suite_certificate,
     validate_real_task_benchmark_suite_report,
 )
+from examples.real_task_adapter_evidence import build_real_task_adapter_evidence_certificate
 from examples.robotics_motion_benchmark_adapter import (
     DeterministicMotionBenchmarkBackend,
+    _claim_for_report as _robotics_claim_for_report,
     run_robotics_motion_benchmark_adapter_experiment,
 )
 from trwm.claims import validate_claim_certificate
@@ -53,10 +55,13 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertTrue(report.all_child_claims_match_reports)
         self.assertTrue(report.all_adapter_evidence_certificates_valid)
         self.assertTrue(report.all_adapter_evidence_certificates_match_reports)
+        self.assertTrue(report.all_adapter_evidence_matches_manifest)
         self.assertTrue(all(row.child_claim_valid for row in report.rows))
         self.assertTrue(all(row.child_claim_matches_report for row in report.rows))
         self.assertTrue(all(row.adapter_evidence_certificate_valid for row in report.rows))
         self.assertTrue(all(row.adapter_evidence_certificate_matches_report for row in report.rows))
+        self.assertTrue(all(row.adapter_evidence_matches_manifest for row in report.rows))
+        self.assertTrue(all(len(row.manifest_spec_hash) == 64 for row in report.rows))
         self.assertTrue(report.all_learning_certificates_valid)
         self.assertTrue(report.all_learning_certificates_support_claim)
         self.assertTrue(report.all_learning_certificates_match_reports)
@@ -90,9 +95,14 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
             result.suite_certificate.adapter_evidence_certificate_hashes,
             tuple(row.adapter_evidence_certificate_hash for row in report.rows),
         )
+        self.assertEqual(
+            result.suite_certificate.manifest_spec_hashes,
+            tuple(row.manifest_spec_hash for row in report.rows),
+        )
         self.assertTrue(result.suite_certificate.all_child_claims_match_reports)
         self.assertTrue(result.suite_certificate.all_adapter_evidence_certificates_valid)
         self.assertTrue(result.suite_certificate.all_adapter_evidence_certificates_match_reports)
+        self.assertTrue(result.suite_certificate.all_adapter_evidence_matches_manifest)
         self.assertTrue(result.suite_certificate.all_learning_certificates_match_reports)
         self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, report))
         self.assertTrue(validate_claim_certificate(claim))
@@ -137,6 +147,7 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertFalse(result.report.all_child_claims_match_reports)
         self.assertFalse(result.report.all_adapter_evidence_certificates_valid)
         self.assertFalse(result.report.all_adapter_evidence_certificates_match_reports)
+        self.assertFalse(result.report.all_adapter_evidence_matches_manifest)
         self.assertTrue(validate_real_task_benchmark_suite_report(result.report))
         self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, result.report))
         self.assertEqual(result.claim_certificate.status, "rejected")
@@ -144,6 +155,7 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertIn("all_child_claims_match_reports", result.claim_certificate.failed_keys)
         self.assertIn("all_adapter_evidence_certificates_valid", result.claim_certificate.failed_keys)
         self.assertIn("all_adapter_evidence_certificates_match_reports", result.claim_certificate.failed_keys)
+        self.assertIn("all_adapter_evidence_matches_manifest", result.claim_certificate.failed_keys)
 
     def test_suite_rejects_valid_child_claim_that_does_not_match_report(self) -> None:
         results = _deterministic_adapter_results()
@@ -160,11 +172,44 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertFalse(result.report.all_child_claims_match_reports)
         self.assertFalse(result.report.all_adapter_evidence_certificates_valid)
         self.assertFalse(result.report.all_adapter_evidence_certificates_match_reports)
+        self.assertFalse(result.report.all_adapter_evidence_matches_manifest)
         self.assertTrue(validate_real_task_benchmark_suite_report(result.report))
         self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, result.report))
         self.assertEqual(result.claim_certificate.status, "rejected")
         self.assertIn("all_child_claims_match_reports", result.claim_certificate.failed_keys)
         self.assertIn("all_adapter_evidence_certificates_valid", result.claim_certificate.failed_keys)
+
+    def test_suite_rejects_valid_adapter_evidence_outside_manifest_sources(self) -> None:
+        results = _deterministic_adapter_results()
+        robotics = results["robotics"]
+        bad_report = replace(
+            robotics.report,
+            source_urls=(*robotics.report.source_urls, "https://example.invalid/not-in-real-task-manifest"),
+        )
+        bad_claim = _robotics_claim_for_report(bad_report)
+        bad_evidence = build_real_task_adapter_evidence_certificate(
+            domain="robotics",
+            report=bad_report,
+            learning_certificate=robotics.learning_certificate,
+            claim_certificate=bad_claim,
+        )
+        results["robotics"] = replace(
+            robotics,
+            report=bad_report,
+            evidence_certificate=bad_evidence,
+            claim_certificate=bad_claim,
+        )
+        result = build_real_task_benchmark_suite_result(results)
+
+        self.assertTrue(result.report.all_child_claims_valid)
+        self.assertTrue(result.report.all_child_claims_match_reports)
+        self.assertTrue(result.report.all_adapter_evidence_certificates_valid)
+        self.assertTrue(result.report.all_adapter_evidence_certificates_match_reports)
+        self.assertFalse(result.report.all_adapter_evidence_matches_manifest)
+        self.assertTrue(validate_real_task_benchmark_suite_report(result.report))
+        self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, result.report))
+        self.assertEqual(result.claim_certificate.status, "rejected")
+        self.assertIn("all_adapter_evidence_matches_manifest", result.claim_certificate.failed_keys)
 
     def test_suite_rejects_tampered_adapter_evidence_certificate(self) -> None:
         results = _deterministic_adapter_results()
@@ -179,6 +224,7 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertTrue(result.report.all_child_claims_match_reports)
         self.assertFalse(result.report.all_adapter_evidence_certificates_valid)
         self.assertFalse(result.report.all_adapter_evidence_certificates_match_reports)
+        self.assertFalse(result.report.all_adapter_evidence_matches_manifest)
         self.assertTrue(validate_real_task_benchmark_suite_report(result.report))
         self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, result.report))
         self.assertEqual(result.claim_certificate.status, "rejected")

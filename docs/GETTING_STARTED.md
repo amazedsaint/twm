@@ -21,8 +21,9 @@ reversibility alone improves held-out performance.
 The active real-task proof path is exposed by
 `python3 -m examples.real_task_benchmark_suite`. That command aggregates the
 robotics, hardware, program, and quantum benchmark adapters and rejects unless
-all real backends produce report-bound adapter evidence certificates, supported
-held-out call-reduction evidence, and zero invalid commits.
+all real backends produce manifest-covered, report-bound adapter evidence
+certificates, supported held-out call-reduction evidence, and zero invalid
+commits.
 
 The current implementation includes:
 

@@ -247,6 +247,7 @@ def build_real_task_benchmark_manifest() -> RealTaskBenchmarkManifest:
                 ),
                 source_urls=(
                     "https://github.com/rjust/defects4j",
+                    "https://defects4j.org/",
                     "https://defects4j.org/html_doc/defects4j.html",
                     "https://defects4j.org/html_doc/d4j/d4j-checkout.html",
                     "https://defects4j.org/html_doc/d4j/d4j-test.html",
@@ -273,7 +274,9 @@ def build_real_task_benchmark_manifest() -> RealTaskBenchmarkManifest:
                 ),
                 source_urls=(
                     "https://github.com/munich-quantum-toolkit/bench",
+                    "https://mqt.readthedocs.io/projects/bench/en/latest/usage.html",
                     "https://mqt.readthedocs.io/projects/qcec/en/stable/",
+                    "https://mqt.readthedocs.io/projects/qcec/en/v3.3.0/api/mqt/qcec/verify/index.html",
                     "https://www.revlib.org/",
                 ),
                 claim_boundary="Readiness only; not quantum compiler/equivalence evidence until QCEC receipts are produced.",
