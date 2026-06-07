@@ -1,0 +1,544 @@
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+import json
+from typing import Any, Mapping
+
+from examples.hardware_riscv_formal_adapter import run_hardware_riscv_formal_adapter_experiment
+from examples.program_defects4j_adapter import run_program_defects4j_adapter_experiment
+from examples.quantum_mqt_bench_adapter import run_quantum_mqt_bench_adapter_experiment
+from examples.real_task_benchmark_manifest import (
+    RealTaskBenchmarkManifest,
+    RealTaskBenchmarkManifestCertificate,
+    build_real_task_benchmark_manifest,
+    build_real_task_manifest_certificate,
+    build_real_task_preflight_report,
+    validate_real_task_manifest,
+    validate_real_task_manifest_certificate,
+)
+from examples.robotics_motion_benchmark_adapter import run_robotics_motion_benchmark_adapter_experiment
+from trwm.claims import ClaimCertificate, certify_claim, requirement, validate_claim_certificate
+from trwm.core import stable_hash
+from trwm.evaluation import validate_learning_evaluation_certificate, learning_evaluation_supports_claim
+
+
+REAL_TASK_BENCHMARK_SUITE_REPORT_SCHEMA = "trwm.real_task_benchmark_suite_report.v1"
+REAL_TASK_BENCHMARK_SUITE_CERTIFICATE_SCHEMA = "trwm.real_task_benchmark_suite_certificate.v1"
+REAL_TASK_BENCHMARK_SUITE_DOMAINS = ("robotics", "hardware", "program", "quantum")
+REAL_TASK_BENCHMARK_SUITE_CLAIM_BOUNDARY = (
+    "Four-domain real-task objective gate. A supported claim requires real robotics, hardware, "
+    "program, and quantum benchmark backends, held-out success preservation, reduced "
+    "hard-verifier calls, supported child claims, valid learning certificates, replay/rollback "
+    "and ledger audits, and zero invalid commits. Deterministic test doubles and missing "
+    "external toolchains must reject."
+)
+
+
+@dataclass(frozen=True)
+class RealTaskBenchmarkSuiteRow:
+    domain: str
+    report_schema_version: str
+    experiment_id: str
+    backend_id: str
+    backend_version: str
+    backend_available: bool
+    real_backend: bool
+    missing_requirements: tuple[str, ...]
+    child_claim_status: str
+    child_claim_hash: str
+    learning_certificate_hash: str
+    learning_certificate_valid: bool
+    learning_certificate_supports_claim: bool
+    train_task_ids: tuple[str, ...]
+    held_out_task_ids: tuple[str, ...]
+    receipt_count: int
+    training_receipt_count: int
+    baseline_receipt_count: int
+    learned_receipt_count: int
+    committed_count: int
+    rejected_count: int
+    invalid_commit_count: int
+    baseline_verifier_calls: int
+    learned_verifier_calls: int
+    baseline_success_count: int
+    learned_success_count: int
+    verifier_call_reduction: int
+    hard_commit_only: bool
+    replay_audit_ok: bool
+    rollback_audit_ok: bool
+    ledger_audit_ok: bool
+    receipt_hashes: tuple[str, ...]
+    source_urls: tuple[str, ...]
+    claim_boundary: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "missing_requirements", tuple(self.missing_requirements))
+        object.__setattr__(self, "train_task_ids", tuple(self.train_task_ids))
+        object.__setattr__(self, "held_out_task_ids", tuple(self.held_out_task_ids))
+        object.__setattr__(self, "receipt_hashes", tuple(self.receipt_hashes))
+        object.__setattr__(self, "source_urls", tuple(self.source_urls))
+
+
+@dataclass(frozen=True)
+class RealTaskBenchmarkSuiteReport:
+    schema_version: str
+    experiment_id: str
+    manifest_hash: str
+    manifest_certificate_hash: str
+    domain_count: int
+    domains: tuple[str, ...]
+    rows: tuple[RealTaskBenchmarkSuiteRow, ...]
+    all_child_claims_valid: bool
+    all_child_claims_supported: bool
+    all_learning_certificates_valid: bool
+    all_learning_certificates_support_claim: bool
+    all_backends_available: bool
+    all_real_backends: bool
+    all_receipt_counts_bound: bool
+    hard_verifier_calls_reduced: bool
+    success_preserved: bool
+    replay_rollback_ledger_ok: bool
+    no_invalid_commits: bool
+    total_receipt_count: int
+    total_training_receipt_count: int
+    total_baseline_receipt_count: int
+    total_learned_receipt_count: int
+    total_committed_count: int
+    total_rejected_count: int
+    total_invalid_commit_count: int
+    baseline_verifier_calls: int
+    learned_verifier_calls: int
+    baseline_success_count: int
+    learned_success_count: int
+    verifier_call_reduction: int
+    missing_requirements: tuple[str, ...]
+    aggregate_sources: tuple[str, ...]
+    claim_boundary: str
+
+    def __post_init__(self) -> None:
+        if self.schema_version != REAL_TASK_BENCHMARK_SUITE_REPORT_SCHEMA:
+            raise ValueError(f"invalid real-task suite report schema: {self.schema_version}")
+        object.__setattr__(self, "domains", tuple(self.domains))
+        object.__setattr__(self, "rows", tuple(self.rows))
+        object.__setattr__(self, "missing_requirements", tuple(self.missing_requirements))
+        object.__setattr__(self, "aggregate_sources", tuple(self.aggregate_sources))
+
+
+@dataclass(frozen=True)
+class RealTaskBenchmarkSuiteCertificate:
+    schema_version: str
+    experiment_id: str
+    report_hash: str
+    manifest_hash: str
+    manifest_certificate_hash: str
+    domain_count: int
+    domains: tuple[str, ...]
+    child_claim_hashes: tuple[str, ...]
+    learning_certificate_hashes: tuple[str, ...]
+    receipt_hashes: tuple[str, ...]
+    all_child_claims_valid: bool
+    all_child_claims_supported: bool
+    all_learning_certificates_valid: bool
+    all_real_backends: bool
+    all_receipt_counts_bound: bool
+    hard_verifier_calls_reduced: bool
+    success_preserved: bool
+    replay_rollback_ledger_ok: bool
+    no_invalid_commits: bool
+    certificate_hash: str = ""
+
+    def __post_init__(self) -> None:
+        if self.schema_version != REAL_TASK_BENCHMARK_SUITE_CERTIFICATE_SCHEMA:
+            raise ValueError(f"invalid real-task suite certificate schema: {self.schema_version}")
+        object.__setattr__(self, "domains", tuple(self.domains))
+        object.__setattr__(self, "child_claim_hashes", tuple(self.child_claim_hashes))
+        object.__setattr__(self, "learning_certificate_hashes", tuple(self.learning_certificate_hashes))
+        object.__setattr__(self, "receipt_hashes", tuple(self.receipt_hashes))
+        if not self.certificate_hash:
+            object.__setattr__(self, "certificate_hash", real_task_benchmark_suite_certificate_hash(self))
+
+    def without_hash(self) -> dict[str, Any]:
+        data = asdict(self)
+        data.pop("certificate_hash", None)
+        return data
+
+
+@dataclass(frozen=True)
+class RealTaskBenchmarkSuiteResult:
+    manifest: RealTaskBenchmarkManifest
+    manifest_certificate: RealTaskBenchmarkManifestCertificate
+    report: RealTaskBenchmarkSuiteReport
+    suite_certificate: RealTaskBenchmarkSuiteCertificate
+    claim_certificate: ClaimCertificate
+
+
+def run_real_task_benchmark_suite(
+    adapter_results: Mapping[str, Any] | None = None,
+) -> RealTaskBenchmarkSuiteResult:
+    results = adapter_results or {
+        "robotics": run_robotics_motion_benchmark_adapter_experiment(),
+        "hardware": run_hardware_riscv_formal_adapter_experiment(),
+        "program": run_program_defects4j_adapter_experiment(),
+        "quantum": run_quantum_mqt_bench_adapter_experiment(),
+    }
+    return build_real_task_benchmark_suite_result(results)
+
+
+def build_real_task_benchmark_suite_result(
+    adapter_results: Mapping[str, Any],
+) -> RealTaskBenchmarkSuiteResult:
+    manifest = build_real_task_benchmark_manifest()
+    preflight_report = build_real_task_preflight_report(manifest)
+    manifest_certificate = build_real_task_manifest_certificate(manifest, preflight_report)
+    rows = tuple(_suite_row(domain, adapter_results[domain]) for domain in REAL_TASK_BENCHMARK_SUITE_DOMAINS)
+    child_claims_valid = tuple(validate_claim_certificate(adapter_results[domain].claim_certificate) for domain in REAL_TASK_BENCHMARK_SUITE_DOMAINS)
+    child_claims_supported = tuple(
+        valid and adapter_results[domain].claim_certificate.status == "supported"
+        for domain, valid in zip(REAL_TASK_BENCHMARK_SUITE_DOMAINS, child_claims_valid)
+    )
+    report = _build_report(manifest, manifest_certificate, rows, child_claims_valid, child_claims_supported)
+    suite_certificate = build_real_task_benchmark_suite_certificate(report, manifest, manifest_certificate)
+    claim = certify_claim(
+        claim_id="receipt_trained_reversible_real_task_four_domain_call_reduction",
+        claim_text=(
+            "A receipt-trained reversible proposer reduces hard-verifier calls while preserving "
+            "zero invalid commits on held-out robotics, hardware, program, and quantum real-task "
+            "benchmarks."
+        ),
+        evidence_grade="G1" if report.all_real_backends and report.all_child_claims_supported else "G0",
+        scope="real_task_benchmark_suite",
+        requirements=(
+            requirement("manifest_valid", validate_real_task_manifest(manifest)),
+            requirement("manifest_certificate_valid", validate_real_task_manifest_certificate(manifest_certificate, manifest, preflight_report)),
+            requirement("suite_report_valid", validate_real_task_benchmark_suite_report(report)),
+            requirement("suite_certificate_valid", validate_real_task_benchmark_suite_certificate(suite_certificate, report)),
+            requirement("exactly_four_domains", report.domain_count == 4 and report.domains == REAL_TASK_BENCHMARK_SUITE_DOMAINS),
+            requirement("all_child_claims_valid", report.all_child_claims_valid),
+            requirement("all_child_claims_supported", report.all_child_claims_supported),
+            requirement("all_learning_certificates_valid", report.all_learning_certificates_valid),
+            requirement("all_learning_certificates_support_claim", report.all_learning_certificates_support_claim),
+            requirement("all_backends_available", report.all_backends_available, missing=report.missing_requirements),
+            requirement("all_real_backends", report.all_real_backends),
+            requirement("all_receipt_counts_bound", report.all_receipt_counts_bound),
+            requirement("hard_verifier_calls_reduced", report.hard_verifier_calls_reduced),
+            requirement("success_preserved", report.success_preserved),
+            requirement("replay_rollback_ledger_ok", report.replay_rollback_ledger_ok),
+            requirement("zero_invalid_commits", report.no_invalid_commits),
+        ),
+        metrics={
+            "domain_count": report.domain_count,
+            "baseline_verifier_calls": report.baseline_verifier_calls,
+            "learned_verifier_calls": report.learned_verifier_calls,
+            "verifier_call_reduction": report.verifier_call_reduction,
+            "baseline_success_count": report.baseline_success_count,
+            "learned_success_count": report.learned_success_count,
+            "total_invalid_commit_count": report.total_invalid_commit_count,
+            "total_receipt_count": report.total_receipt_count,
+        },
+        boundary=REAL_TASK_BENCHMARK_SUITE_CLAIM_BOUNDARY,
+        sources=report.aggregate_sources,
+    )
+    return RealTaskBenchmarkSuiteResult(
+        manifest=manifest,
+        manifest_certificate=manifest_certificate,
+        report=report,
+        suite_certificate=suite_certificate,
+        claim_certificate=claim,
+    )
+
+
+def build_real_task_benchmark_suite_certificate(
+    report: RealTaskBenchmarkSuiteReport,
+    manifest: RealTaskBenchmarkManifest,
+    manifest_certificate: RealTaskBenchmarkManifestCertificate,
+) -> RealTaskBenchmarkSuiteCertificate:
+    return RealTaskBenchmarkSuiteCertificate(
+        schema_version=REAL_TASK_BENCHMARK_SUITE_CERTIFICATE_SCHEMA,
+        experiment_id=report.experiment_id,
+        report_hash=real_task_benchmark_suite_report_hash(report),
+        manifest_hash=manifest.manifest_hash,
+        manifest_certificate_hash=manifest_certificate.certificate_hash,
+        domain_count=report.domain_count,
+        domains=report.domains,
+        child_claim_hashes=tuple(row.child_claim_hash for row in report.rows),
+        learning_certificate_hashes=tuple(row.learning_certificate_hash for row in report.rows if row.learning_certificate_hash),
+        receipt_hashes=tuple(receipt_hash for row in report.rows for receipt_hash in row.receipt_hashes),
+        all_child_claims_valid=report.all_child_claims_valid,
+        all_child_claims_supported=report.all_child_claims_supported,
+        all_learning_certificates_valid=report.all_learning_certificates_valid,
+        all_real_backends=report.all_real_backends,
+        all_receipt_counts_bound=report.all_receipt_counts_bound,
+        hard_verifier_calls_reduced=report.hard_verifier_calls_reduced,
+        success_preserved=report.success_preserved,
+        replay_rollback_ledger_ok=report.replay_rollback_ledger_ok,
+        no_invalid_commits=report.no_invalid_commits,
+    )
+
+
+def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteReport) -> bool:
+    try:
+        if report.schema_version != REAL_TASK_BENCHMARK_SUITE_REPORT_SCHEMA:
+            return False
+        if report.domain_count != 4 or report.domains != REAL_TASK_BENCHMARK_SUITE_DOMAINS:
+            return False
+        if len(report.rows) != 4 or tuple(row.domain for row in report.rows) != REAL_TASK_BENCHMARK_SUITE_DOMAINS:
+            return False
+        if not _is_hash(report.manifest_hash) or not _is_hash(report.manifest_certificate_hash):
+            return False
+        if not report.claim_boundary or not report.aggregate_sources:
+            return False
+        if any(not row.source_urls for row in report.rows):
+            return False
+        if any(not _is_hash(row.child_claim_hash) for row in report.rows):
+            return False
+        for row in report.rows:
+            if row.receipt_count != len(row.receipt_hashes):
+                return False
+            if any(not _is_hash(receipt_hash) for receipt_hash in row.receipt_hashes):
+                return False
+            if row.receipt_count > 0 and not _is_hash(row.learning_certificate_hash):
+                return False
+            if row.receipt_count == 0 and row.learning_certificate_hash:
+                return False
+            int_fields = (
+                row.receipt_count,
+                row.training_receipt_count,
+                row.baseline_receipt_count,
+                row.learned_receipt_count,
+                row.committed_count,
+                row.rejected_count,
+                row.invalid_commit_count,
+                row.baseline_verifier_calls,
+                row.learned_verifier_calls,
+                row.baseline_success_count,
+                row.learned_success_count,
+                row.verifier_call_reduction,
+            )
+            if any(isinstance(value, bool) or not isinstance(value, int) or value < 0 for value in int_fields):
+                return False
+            if row.verifier_call_reduction != row.baseline_verifier_calls - row.learned_verifier_calls:
+                return False
+        if report.total_receipt_count != sum(row.receipt_count for row in report.rows):
+            return False
+        if report.total_training_receipt_count != sum(row.training_receipt_count for row in report.rows):
+            return False
+        if report.total_baseline_receipt_count != sum(row.baseline_receipt_count for row in report.rows):
+            return False
+        if report.total_learned_receipt_count != sum(row.learned_receipt_count for row in report.rows):
+            return False
+        if report.total_committed_count != sum(row.committed_count for row in report.rows):
+            return False
+        if report.total_rejected_count != sum(row.rejected_count for row in report.rows):
+            return False
+        if report.total_invalid_commit_count != sum(row.invalid_commit_count for row in report.rows):
+            return False
+        if report.baseline_verifier_calls != sum(row.baseline_verifier_calls for row in report.rows):
+            return False
+        if report.learned_verifier_calls != sum(row.learned_verifier_calls for row in report.rows):
+            return False
+        if report.baseline_success_count != sum(row.baseline_success_count for row in report.rows):
+            return False
+        if report.learned_success_count != sum(row.learned_success_count for row in report.rows):
+            return False
+        if report.verifier_call_reduction != report.baseline_verifier_calls - report.learned_verifier_calls:
+            return False
+        if report.all_backends_available != all(row.backend_available for row in report.rows):
+            return False
+        if report.all_real_backends != all(row.real_backend for row in report.rows):
+            return False
+        if report.all_receipt_counts_bound != all(row.receipt_count == len(row.receipt_hashes) for row in report.rows):
+            return False
+        if report.hard_verifier_calls_reduced != all(row.learned_verifier_calls < row.baseline_verifier_calls for row in report.rows):
+            return False
+        if report.success_preserved != all(row.learned_success_count == row.baseline_success_count and row.learned_success_count > 0 for row in report.rows):
+            return False
+        if report.replay_rollback_ledger_ok != all(row.replay_audit_ok and row.rollback_audit_ok and row.ledger_audit_ok for row in report.rows):
+            return False
+        if report.no_invalid_commits != (report.total_invalid_commit_count == 0):
+            return False
+        expected_missing = tuple(
+            f"{row.domain}:{missing}" for row in report.rows for missing in row.missing_requirements
+        )
+        if report.missing_requirements != expected_missing:
+            return False
+        return True
+    except Exception:
+        return False
+
+
+def validate_real_task_benchmark_suite_certificate(
+    certificate: RealTaskBenchmarkSuiteCertificate,
+    report: RealTaskBenchmarkSuiteReport | None = None,
+) -> bool:
+    try:
+        if certificate.schema_version != REAL_TASK_BENCHMARK_SUITE_CERTIFICATE_SCHEMA:
+            return False
+        if certificate.domain_count != 4 or certificate.domains != REAL_TASK_BENCHMARK_SUITE_DOMAINS:
+            return False
+        for hash_value in (
+            certificate.report_hash,
+            certificate.manifest_hash,
+            certificate.manifest_certificate_hash,
+            certificate.certificate_hash,
+        ):
+            if not _is_hash(hash_value):
+                return False
+        if len(certificate.child_claim_hashes) != 4 or any(not _is_hash(row) for row in certificate.child_claim_hashes):
+            return False
+        if any(not _is_hash(row) for row in certificate.learning_certificate_hashes):
+            return False
+        if any(not _is_hash(row) for row in certificate.receipt_hashes):
+            return False
+        if not certificate.all_receipt_counts_bound and certificate.all_child_claims_supported:
+            return False
+        if certificate.all_child_claims_supported and not certificate.all_child_claims_valid:
+            return False
+        if report is not None:
+            if not validate_real_task_benchmark_suite_report(report):
+                return False
+            if certificate.report_hash != real_task_benchmark_suite_report_hash(report):
+                return False
+            if certificate.manifest_hash != report.manifest_hash:
+                return False
+            if certificate.manifest_certificate_hash != report.manifest_certificate_hash:
+                return False
+            if certificate.domains != report.domains:
+                return False
+            if certificate.child_claim_hashes != tuple(row.child_claim_hash for row in report.rows):
+                return False
+            if certificate.learning_certificate_hashes != tuple(row.learning_certificate_hash for row in report.rows if row.learning_certificate_hash):
+                return False
+            if certificate.receipt_hashes != tuple(receipt_hash for row in report.rows for receipt_hash in row.receipt_hashes):
+                return False
+            for field in (
+                "all_child_claims_valid",
+                "all_child_claims_supported",
+                "all_learning_certificates_valid",
+                "all_real_backends",
+                "all_receipt_counts_bound",
+                "hard_verifier_calls_reduced",
+                "success_preserved",
+                "replay_rollback_ledger_ok",
+                "no_invalid_commits",
+            ):
+                if getattr(certificate, field) != getattr(report, field):
+                    return False
+        return certificate.certificate_hash == real_task_benchmark_suite_certificate_hash(certificate)
+    except Exception:
+        return False
+
+
+def _build_report(
+    manifest: RealTaskBenchmarkManifest,
+    manifest_certificate: RealTaskBenchmarkManifestCertificate,
+    rows: tuple[RealTaskBenchmarkSuiteRow, ...],
+    child_claims_valid: tuple[bool, ...],
+    child_claims_supported: tuple[bool, ...],
+) -> RealTaskBenchmarkSuiteReport:
+    return RealTaskBenchmarkSuiteReport(
+        schema_version=REAL_TASK_BENCHMARK_SUITE_REPORT_SCHEMA,
+        experiment_id="receipt_trained_reversible_real_task_suite",
+        manifest_hash=manifest.manifest_hash,
+        manifest_certificate_hash=manifest_certificate.certificate_hash,
+        domain_count=len(rows),
+        domains=tuple(row.domain for row in rows),
+        rows=rows,
+        all_child_claims_valid=all(child_claims_valid),
+        all_child_claims_supported=all(child_claims_supported),
+        all_learning_certificates_valid=all(row.learning_certificate_valid for row in rows),
+        all_learning_certificates_support_claim=all(row.learning_certificate_supports_claim for row in rows),
+        all_backends_available=all(row.backend_available for row in rows),
+        all_real_backends=all(row.real_backend for row in rows),
+        all_receipt_counts_bound=all(row.receipt_count == len(row.receipt_hashes) for row in rows),
+        hard_verifier_calls_reduced=all(row.learned_verifier_calls < row.baseline_verifier_calls for row in rows),
+        success_preserved=all(row.learned_success_count == row.baseline_success_count and row.learned_success_count > 0 for row in rows),
+        replay_rollback_ledger_ok=all(row.replay_audit_ok and row.rollback_audit_ok and row.ledger_audit_ok for row in rows),
+        no_invalid_commits=sum(row.invalid_commit_count for row in rows) == 0,
+        total_receipt_count=sum(row.receipt_count for row in rows),
+        total_training_receipt_count=sum(row.training_receipt_count for row in rows),
+        total_baseline_receipt_count=sum(row.baseline_receipt_count for row in rows),
+        total_learned_receipt_count=sum(row.learned_receipt_count for row in rows),
+        total_committed_count=sum(row.committed_count for row in rows),
+        total_rejected_count=sum(row.rejected_count for row in rows),
+        total_invalid_commit_count=sum(row.invalid_commit_count for row in rows),
+        baseline_verifier_calls=sum(row.baseline_verifier_calls for row in rows),
+        learned_verifier_calls=sum(row.learned_verifier_calls for row in rows),
+        baseline_success_count=sum(row.baseline_success_count for row in rows),
+        learned_success_count=sum(row.learned_success_count for row in rows),
+        verifier_call_reduction=sum(row.verifier_call_reduction for row in rows),
+        missing_requirements=tuple(f"{row.domain}:{missing}" for row in rows for missing in row.missing_requirements),
+        aggregate_sources=tuple(sorted({source for row in rows for source in row.source_urls})),
+        claim_boundary=REAL_TASK_BENCHMARK_SUITE_CLAIM_BOUNDARY,
+    )
+
+
+def _suite_row(domain: str, result: Any) -> RealTaskBenchmarkSuiteRow:
+    report = result.report
+    learning_certificate = result.learning_certificate
+    learning_valid = False
+    learning_supports = False
+    learning_hash = ""
+    if learning_certificate is not None:
+        learning_valid = validate_learning_evaluation_certificate(learning_certificate)
+        learning_supports = learning_evaluation_supports_claim(learning_certificate)
+        learning_hash = learning_certificate.certificate_hash
+    return RealTaskBenchmarkSuiteRow(
+        domain=domain,
+        report_schema_version=str(report.schema_version),
+        experiment_id=str(report.experiment_id),
+        backend_id=str(report.backend_id),
+        backend_version=str(report.backend_version),
+        backend_available=bool(report.backend_available),
+        real_backend=bool(report.real_backend),
+        missing_requirements=tuple(str(row) for row in report.missing_requirements),
+        child_claim_status=str(result.claim_certificate.status),
+        child_claim_hash=str(result.claim_certificate.certificate_hash),
+        learning_certificate_hash=learning_hash,
+        learning_certificate_valid=learning_valid,
+        learning_certificate_supports_claim=learning_supports,
+        train_task_ids=tuple(str(row) for row in report.train_task_ids),
+        held_out_task_ids=tuple(str(row) for row in report.held_out_task_ids),
+        receipt_count=int(report.receipt_count),
+        training_receipt_count=int(report.training_receipt_count),
+        baseline_receipt_count=int(report.baseline_receipt_count),
+        learned_receipt_count=int(report.learned_receipt_count),
+        committed_count=int(report.committed_count),
+        rejected_count=int(report.rejected_count),
+        invalid_commit_count=int(report.invalid_commit_count),
+        baseline_verifier_calls=int(report.baseline_verifier_calls),
+        learned_verifier_calls=int(report.learned_verifier_calls),
+        baseline_success_count=int(report.baseline_success_count),
+        learned_success_count=int(report.learned_success_count),
+        verifier_call_reduction=int(report.verifier_call_reduction),
+        hard_commit_only=bool(report.hard_commit_only),
+        replay_audit_ok=bool(report.replay_audit_ok),
+        rollback_audit_ok=bool(report.rollback_audit_ok),
+        ledger_audit_ok=bool(report.ledger_audit_ok),
+        receipt_hashes=tuple(str(row) for row in report.receipt_hashes),
+        source_urls=tuple(str(row) for row in report.source_urls),
+        claim_boundary=str(report.claim_boundary),
+    )
+
+
+def real_task_benchmark_suite_report_hash(report: RealTaskBenchmarkSuiteReport) -> str:
+    return stable_hash(asdict(report))
+
+
+def real_task_benchmark_suite_certificate_hash(certificate: RealTaskBenchmarkSuiteCertificate) -> str:
+    return stable_hash(certificate.without_hash())
+
+
+def _is_hash(value: str) -> bool:
+    return isinstance(value, str) and len(value) == 64 and all(char in "0123456789abcdef" for char in value)
+
+
+def result_as_dict(result: RealTaskBenchmarkSuiteResult) -> dict[str, Any]:
+    return asdict(result)
+
+
+def main() -> None:
+    print(json.dumps(result_as_dict(run_real_task_benchmark_suite()), indent=2, sort_keys=True))
+
+
+if __name__ == "__main__":
+    main()

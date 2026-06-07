@@ -1,0 +1,128 @@
+from __future__ import annotations
+
+from dataclasses import replace
+import unittest
+
+from examples.hardware_riscv_formal_adapter import (
+    DeterministicRiscVFormalBackend,
+    run_hardware_riscv_formal_adapter_experiment,
+)
+from examples.program_defects4j_adapter import (
+    DeterministicDefects4JBackend,
+    run_program_defects4j_adapter_experiment,
+)
+from examples.quantum_mqt_bench_adapter import (
+    DeterministicQuantumEquivalenceBackend,
+    run_quantum_mqt_bench_adapter_experiment,
+)
+from examples.real_task_benchmark_suite import (
+    REAL_TASK_BENCHMARK_SUITE_DOMAINS,
+    build_real_task_benchmark_suite_result,
+    run_real_task_benchmark_suite,
+    validate_real_task_benchmark_suite_certificate,
+    validate_real_task_benchmark_suite_report,
+)
+from examples.robotics_motion_benchmark_adapter import (
+    DeterministicMotionBenchmarkBackend,
+    run_robotics_motion_benchmark_adapter_experiment,
+)
+from trwm.claims import validate_claim_certificate
+
+
+def _deterministic_adapter_results() -> dict[str, object]:
+    return {
+        "robotics": run_robotics_motion_benchmark_adapter_experiment(DeterministicMotionBenchmarkBackend()),
+        "hardware": run_hardware_riscv_formal_adapter_experiment(DeterministicRiscVFormalBackend()),
+        "program": run_program_defects4j_adapter_experiment(DeterministicDefects4JBackend()),
+        "quantum": run_quantum_mqt_bench_adapter_experiment(DeterministicQuantumEquivalenceBackend()),
+    }
+
+
+class RealTaskBenchmarkSuiteTests(unittest.TestCase):
+    def test_suite_aggregates_four_domain_adapter_metrics_but_rejects_test_doubles(self) -> None:
+        result = run_real_task_benchmark_suite(_deterministic_adapter_results())
+        report = result.report
+        claim = result.claim_certificate
+
+        self.assertEqual(report.schema_version, "trwm.real_task_benchmark_suite_report.v1")
+        self.assertEqual(report.domains, REAL_TASK_BENCHMARK_SUITE_DOMAINS)
+        self.assertEqual(report.domain_count, 4)
+        self.assertEqual(len(report.rows), 4)
+        self.assertTrue(report.all_child_claims_valid)
+        self.assertFalse(report.all_child_claims_supported)
+        self.assertTrue(report.all_learning_certificates_valid)
+        self.assertTrue(report.all_learning_certificates_support_claim)
+        self.assertTrue(report.all_backends_available)
+        self.assertFalse(report.all_real_backends)
+        self.assertTrue(report.all_receipt_counts_bound)
+        self.assertTrue(report.hard_verifier_calls_reduced)
+        self.assertTrue(report.success_preserved)
+        self.assertTrue(report.replay_rollback_ledger_ok)
+        self.assertTrue(report.no_invalid_commits)
+        self.assertEqual(report.total_receipt_count, 32)
+        self.assertEqual(report.total_training_receipt_count, 8)
+        self.assertEqual(report.total_baseline_receipt_count, 16)
+        self.assertEqual(report.total_learned_receipt_count, 8)
+        self.assertEqual(report.total_committed_count, 20)
+        self.assertEqual(report.total_rejected_count, 12)
+        self.assertEqual(report.total_invalid_commit_count, 0)
+        self.assertEqual(report.baseline_verifier_calls, 16)
+        self.assertEqual(report.learned_verifier_calls, 8)
+        self.assertEqual(report.verifier_call_reduction, 8)
+        self.assertEqual(report.baseline_success_count, 8)
+        self.assertEqual(report.learned_success_count, 8)
+
+        self.assertTrue(validate_real_task_benchmark_suite_report(report))
+        self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, report))
+        self.assertTrue(validate_claim_certificate(claim))
+        self.assertEqual(claim.status, "rejected")
+        self.assertEqual(claim.evidence_grade, "G0")
+        self.assertIn("all_child_claims_supported", claim.failed_keys)
+        self.assertIn("all_real_backends", claim.failed_keys)
+
+    def test_suite_rejects_unavailable_adapters_with_zero_receipts(self) -> None:
+        results = {
+            "robotics": run_robotics_motion_benchmark_adapter_experiment(DeterministicMotionBenchmarkBackend(available=False)),
+            "hardware": run_hardware_riscv_formal_adapter_experiment(DeterministicRiscVFormalBackend(available=False)),
+            "program": run_program_defects4j_adapter_experiment(DeterministicDefects4JBackend(available=False)),
+            "quantum": run_quantum_mqt_bench_adapter_experiment(DeterministicQuantumEquivalenceBackend(available=False)),
+        }
+        result = build_real_task_benchmark_suite_result(results)
+
+        self.assertEqual(result.report.total_receipt_count, 0)
+        self.assertFalse(result.report.all_backends_available)
+        self.assertFalse(result.report.hard_verifier_calls_reduced)
+        self.assertFalse(result.report.success_preserved)
+        self.assertTrue(result.report.missing_requirements)
+        self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, result.report))
+        self.assertEqual(result.claim_certificate.status, "rejected")
+        self.assertIn("all_backends_available", result.claim_certificate.failed_keys)
+        self.assertIn("hard_verifier_calls_reduced", result.claim_certificate.failed_keys)
+
+    def test_suite_rejects_tampered_child_claim_certificate(self) -> None:
+        results = _deterministic_adapter_results()
+        robotics = results["robotics"]
+        results["robotics"] = replace(
+            robotics,
+            claim_certificate=replace(robotics.claim_certificate, certificate_hash="0" * 64),
+        )
+        result = build_real_task_benchmark_suite_result(results)
+
+        self.assertFalse(result.report.all_child_claims_valid)
+        self.assertTrue(validate_real_task_benchmark_suite_report(result.report))
+        self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, result.report))
+        self.assertEqual(result.claim_certificate.status, "rejected")
+        self.assertIn("all_child_claims_valid", result.claim_certificate.failed_keys)
+
+    def test_suite_report_validation_rejects_missing_receipt_hash(self) -> None:
+        result = run_real_task_benchmark_suite(_deterministic_adapter_results())
+        first = result.report.rows[0]
+        bad_first = replace(first, receipt_hashes=first.receipt_hashes[:-1])
+        bad_report = replace(result.report, rows=(bad_first, *result.report.rows[1:]))
+
+        self.assertFalse(validate_real_task_benchmark_suite_report(bad_report))
+        self.assertFalse(validate_real_task_benchmark_suite_certificate(result.suite_certificate, bad_report))
+
+
+if __name__ == "__main__":
+    unittest.main()

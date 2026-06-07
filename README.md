@@ -94,6 +94,7 @@ python3 -m examples.robotics_motion_benchmark_adapter
 python3 -m examples.hardware_riscv_formal_adapter
 python3 -m examples.program_defects4j_adapter
 python3 -m examples.quantum_mqt_bench_adapter
+python3 -m examples.real_task_benchmark_suite
 python3 -m examples.branch_history_frontier
 python3 -m examples.programmable_world_model_frontier
 ```
@@ -195,7 +196,11 @@ through Defects4J compile/relevant-test execution when the CLI is available and
 otherwise rejects cleanly; the
 quantum MQT adapter runs the same receipt-trained call-reduction path against
 MQT Bench/QCEC when those optional packages are installed and otherwise
-rejects cleanly; the
+rejects cleanly; the real-task benchmark suite aggregates the four adapter
+outputs and rejects the final objective unless every real backend has supported
+child evidence with reduced hard-verifier calls, preserved held-out success,
+valid learning certificates, replay/rollback/ledger audit, and zero invalid
+commits; the
 residual-template example turns a
 source residual/repair pair into a named repair-template proposal without
 transferring commit authority; the boundary-bracket example uses source

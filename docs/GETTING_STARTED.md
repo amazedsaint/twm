@@ -18,6 +18,12 @@ tests, browser demos, and local synthetic experiments. It is not a learned-model
 safety proof, a robotics safety case, a public benchmark result, or a claim that
 reversibility alone improves held-out performance.
 
+The active real-task proof path is exposed by
+`python3 -m examples.real_task_benchmark_suite`. That command aggregates the
+robotics, hardware, program, and quantum benchmark adapters and rejects unless
+all real backends produce supported held-out call-reduction evidence with zero
+invalid commits.
+
 The current implementation includes:
 
 - a Python package under `trwm/`,

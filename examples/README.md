@@ -64,6 +64,7 @@ python3 -m examples.robotics_motion_benchmark_adapter
 python3 -m examples.hardware_riscv_formal_adapter
 python3 -m examples.program_defects4j_adapter
 python3 -m examples.quantum_mqt_bench_adapter
+python3 -m examples.real_task_benchmark_suite
 python3 -m examples.branch_history_frontier
 python3 -m examples.programmable_world_model_frontier
 ```
@@ -1439,3 +1440,26 @@ replay/rollback audits pass, and invalid commits remain zero.
 The deterministic backend used by tests exercises the transaction, receipt,
 learning, replay, and claim-boundary mechanics. It cannot support a real
 quantum benchmark claim.
+
+## Real-Task Benchmark Suite Gate
+
+Run:
+
+```bash
+python3 -m examples.real_task_benchmark_suite
+```
+
+This emits JSON with top-level `manifest`, `manifest_certificate`, `report`,
+`suite_certificate`, and `claim_certificate`. It runs the four optional real
+adapters, validates their child claim certificates and learning certificates,
+and aggregates the exact receipt counts, baseline calls, learned calls,
+held-out successes, replay/rollback/ledger status, missing requirements, and
+invalid-commit counts.
+
+The suite claim is intentionally stricter than adapter readiness. It is
+supported only when all four domains use real backends, all child claims are
+supported, all learning certificates support call reduction, held-out success is
+preserved, hard-verifier calls are reduced in every domain, replay/rollback and
+ledger audits pass, receipt counts bind exact receipt hashes, and invalid
+commits remain zero. Missing external tools or deterministic test doubles
+produce a rejected G0 claim rather than weakening the final objective.

@@ -874,3 +874,19 @@ four goal-domain adapter shapes now exist. The remaining work is real
 task-root/toolchain execution, broader hardware suites, deeper Defects4J
 patch-candidate receipts, independent audit verifiers, and aggregate
 four-domain receipts before the proof is attempted.
+
+The real-task benchmark suite adds the aggregate promotion gate for the active
+objective. It composes the robotics, hardware, program, and quantum adapter
+reports into one `trwm.real_task_benchmark_suite_report.v1` report plus a
+`trwm.real_task_benchmark_suite_certificate.v1` certificate. The suite binds
+the readiness manifest, child claim hashes, learning certificate hashes,
+receipt hashes, missing requirements, verifier-call totals, held-out success
+totals, replay/rollback/ledger status, and invalid-commit totals.
+
+That changes the proof boundary again: single-domain adapter success is no
+longer enough. The final claim is supported only if all four real backends are
+available, all child claims are supported, all learning certificates support
+call reduction, every domain reduces hard-verifier calls while preserving
+held-out success, all receipt counts bind exact receipt hashes, and invalid
+commits remain zero. On the current local machine the suite correctly rejects
+with G0 because the external toolchains and task roots are missing.
