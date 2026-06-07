@@ -11,7 +11,11 @@ from typing import Any, Mapping, Protocol
 from examples.real_task_adapter_evidence import (
     RealTaskAdapterEvidenceCertificate,
     build_real_task_adapter_evidence_certificate,
+    learner_snapshot_bound_to_training,
+    learner_snapshot_receipt_hashes,
+    learner_snapshot_row_hashes,
     path_fingerprint_hash,
+    proposer_rank_audit,
     real_task_adapter_claim_evidence_grade,
     receipt_backend_execution_evidence,
     receipt_artifact_provenance_hashes,
@@ -131,6 +135,9 @@ class RoboticsMotionBenchmarkAdapterReport:
     held_out_task_ids: tuple[str, ...]
     rows: tuple[RoboticsMotionBenchmarkTaskRow, ...]
     learner_snapshot_hash: str
+    learner_snapshot_valid: bool
+    learner_snapshot_receipt_hashes: tuple[str, ...]
+    learner_snapshot_row_hashes: tuple[str, ...]
     learning_certificate_hash: str
     learning_certificate_valid: bool
     learning_certificate_supports_claim: bool
@@ -150,6 +157,8 @@ class RoboticsMotionBenchmarkAdapterReport:
     hard_commit_only: bool
     train_eval_disjoint: bool
     heldout_arm_isolated: bool
+    proposer_rank_audit_ok: bool
+    proposer_rank_audit_hashes: tuple[str, ...]
     replay_audit_ok: bool
     rollback_audit_ok: bool
     ledger_audit_ok: bool
@@ -452,30 +461,48 @@ def _run_available_backend(backend: RoboticsBenchmarkBackend) -> RoboticsMotionB
             proposer.update(receipt)
 
     snapshot = proposer.snapshot()
+    snapshot_receipt_hashes = learner_snapshot_receipt_hashes(snapshot)
+    snapshot_row_hashes = learner_snapshot_row_hashes(snapshot)
+    snapshot_valid = learner_snapshot_bound_to_training(snapshot, training_receipts)
     baseline_engine = TransactionEngine(RoboticsMotionBenchmarkAdapter(backend))
     learned_engine = TransactionEngine(RoboticsMotionBenchmarkAdapter(backend))
     baseline_state: Mapping[str, Any] = training_state
     learned_state: Mapping[str, Any] = training_state
     heldout_arm_start_hashes: list[tuple[str, str]] = []
+    rank_audit_checks: list[bool] = []
+    rank_audit_hashes: list[str] = []
     for spec in heldout_specs:
         heldout_arm_start_hashes.append((
             StateSnapshot.capture(baseline_state).state_hash,
             StateSnapshot.capture(learned_state).state_hash,
         ))
+        candidate_order = _ordered_candidates(spec, bundles[spec.task_id])
         baseline = _submit_until_commit(
             baseline_engine,
             baseline_state,
             spec,
             bundles[spec.task_id],
             arm="baseline",
-            candidates=_ordered_candidates(spec, bundles[spec.task_id]),
+            candidates=candidate_order,
         )
         baseline_state = baseline.state
         baseline_by_task[spec.task_id] = baseline.receipts
-        learned_candidates = tuple(proposer.rank("robotics_motion_benchmark", _ordered_candidates(spec, bundles[spec.task_id])))
+        learned_candidates = tuple(proposer.rank("robotics_motion_benchmark", candidate_order))
         learned = _submit_until_commit(learned_engine, learned_state, spec, bundles[spec.task_id], arm="learned", candidates=learned_candidates)
         learned_state = learned.state
         learned_by_task[spec.task_id] = learned.receipts
+        audit_ok, audit_hash = proposer_rank_audit(
+            domain="robotics",
+            task_id=spec.task_id,
+            context="robotics_motion_benchmark",
+            learner_snapshot_hash=snapshot.snapshot_hash,
+            learner_snapshot_receipt_hashes=snapshot_receipt_hashes,
+            input_candidates=candidate_order,
+            ranked_candidates=learned_candidates,
+            learned_receipts=learned.receipts,
+        )
+        rank_audit_checks.append(audit_ok)
+        rank_audit_hashes.append(audit_hash)
 
     baseline_receipts = tuple(receipt for receipts in baseline_by_task.values() for receipt in receipts)
     learned_receipts = tuple(receipt for receipts in learned_by_task.values() for receipt in receipts)
@@ -547,6 +574,9 @@ def _run_available_backend(backend: RoboticsBenchmarkBackend) -> RoboticsMotionB
         held_out_task_ids=tuple(spec.task_id for spec in heldout_specs),
         rows=tuple(_task_row(spec, baseline_by_task[spec.task_id], learned_by_task[spec.task_id]) for spec in heldout_specs),
         learner_snapshot_hash=snapshot.snapshot_hash,
+        learner_snapshot_valid=snapshot_valid,
+        learner_snapshot_receipt_hashes=snapshot_receipt_hashes,
+        learner_snapshot_row_hashes=snapshot_row_hashes,
         learning_certificate_hash=learning_certificate.certificate_hash,
         learning_certificate_valid=validate_learning_evaluation_certificate(learning_certificate),
         learning_certificate_supports_claim=learning_evaluation_supports_claim(learning_certificate),
@@ -566,6 +596,8 @@ def _run_available_backend(backend: RoboticsBenchmarkBackend) -> RoboticsMotionB
         hard_commit_only=learning_certificate.hard_commit_only,
         train_eval_disjoint=learning_certificate.train_eval_disjoint,
         heldout_arm_isolated=heldout_arm_isolated,
+        proposer_rank_audit_ok=bool(rank_audit_checks) and all(rank_audit_checks),
+        proposer_rank_audit_hashes=tuple(rank_audit_hashes),
         replay_audit_ok=replay_ok,
         rollback_audit_ok=rollback_ok,
         ledger_audit_ok=ledger_audit_ok,
@@ -752,6 +784,12 @@ def _claim_for_report(report: RoboticsMotionBenchmarkAdapterReport) -> ClaimCert
                 report.backend_execution_evidence_ok,
                 evidence_hashes=report.backend_execution_evidence_hashes,
             ),
+            requirement(
+                "learner_snapshot_bound",
+                report.learner_snapshot_valid,
+                receipt_hashes=report.learner_snapshot_receipt_hashes,
+                row_hashes=report.learner_snapshot_row_hashes,
+            ),
             requirement("learning_certificate_valid", report.learning_certificate_valid),
             requirement("learning_certificate_supports_claim", report.learning_certificate_supports_claim),
             requirement("hard_verifier_calls_reduced", report.learned_verifier_calls < report.baseline_verifier_calls),
@@ -760,6 +798,11 @@ def _claim_for_report(report: RoboticsMotionBenchmarkAdapterReport) -> ClaimCert
             requirement("hard_commit_only", report.hard_commit_only),
             requirement("train_eval_disjoint", report.train_eval_disjoint),
             requirement("heldout_arm_isolated", report.heldout_arm_isolated),
+            requirement(
+                "proposer_rank_audit_bound",
+                report.proposer_rank_audit_ok,
+                audit_hashes=report.proposer_rank_audit_hashes,
+            ),
             requirement("replay_rollback_ok", report.replay_audit_ok and report.rollback_audit_ok and report.ledger_audit_ok),
         ),
         metrics={
@@ -789,6 +832,9 @@ def _empty_report(backend: RoboticsBenchmarkBackend, *, backend_error: str = "")
         held_out_task_ids=(),
         rows=(),
         learner_snapshot_hash="",
+        learner_snapshot_valid=False,
+        learner_snapshot_receipt_hashes=(),
+        learner_snapshot_row_hashes=(),
         learning_certificate_hash="",
         learning_certificate_valid=False,
         learning_certificate_supports_claim=False,
@@ -808,6 +854,8 @@ def _empty_report(backend: RoboticsBenchmarkBackend, *, backend_error: str = "")
         hard_commit_only=False,
         train_eval_disjoint=False,
         heldout_arm_isolated=False,
+        proposer_rank_audit_ok=False,
+        proposer_rank_audit_hashes=(),
         replay_audit_ok=False,
         rollback_audit_ok=False,
         ledger_audit_ok=False,

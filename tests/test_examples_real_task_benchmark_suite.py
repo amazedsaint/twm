@@ -85,6 +85,8 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertTrue(report.all_adapter_task_splits_match_manifest)
         self.assertTrue(all(row.adapter_task_splits_match_manifest for row in report.rows))
         self.assertTrue(all(len(row.manifest_spec_hash) == 64 for row in report.rows))
+        self.assertTrue(report.all_learner_snapshots_bound)
+        self.assertTrue(all(row.learner_snapshot_valid for row in report.rows))
         self.assertTrue(report.all_learning_certificates_valid)
         self.assertTrue(report.all_learning_certificates_support_claim)
         self.assertTrue(report.all_learning_certificates_match_reports)
@@ -97,6 +99,7 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertFalse(report.all_receipt_artifacts_cover_manifest_assets)
         self.assertTrue(report.all_backend_execution_evidence_bound)
         self.assertTrue(report.heldout_arms_isolated)
+        self.assertTrue(report.all_proposer_rank_audits_bound)
         self.assertTrue(report.hard_verifier_calls_reduced)
         self.assertTrue(report.success_preserved)
         self.assertTrue(report.replay_rollback_ledger_ok)
@@ -134,6 +137,10 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
             self.assertEqual(len(row.baseline_receipt_hashes), row.baseline_receipt_count)
             self.assertEqual(len(row.learned_receipt_hashes), row.learned_receipt_count)
             self.assertEqual(row.receipt_hashes, row.training_receipt_hashes + row.baseline_receipt_hashes + row.learned_receipt_hashes)
+            self.assertEqual(row.learner_snapshot_receipt_hashes, row.training_receipt_hashes)
+            self.assertTrue(row.learner_snapshot_row_hashes)
+            self.assertTrue(row.proposer_rank_audit_ok)
+            self.assertEqual(len(row.proposer_rank_audit_hashes), len(row.held_out_task_ids))
             self.assertEqual(row.manifest_runtime_requirement_count, expected_runtime_counts[row.domain])
             self.assertEqual(row.adapter_runtime_requirement_evidence_hashes, ())
             self.assertFalse(row.adapter_runtime_requirements_match_preflight)
@@ -200,6 +207,18 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
             tuple(evidence_hash for row in report.rows for evidence_hash in row.adapter_runtime_requirement_evidence_hashes),
         )
         self.assertEqual(
+            result.suite_certificate.learner_snapshot_hashes,
+            tuple(row.learner_snapshot_hash for row in report.rows if row.learner_snapshot_hash),
+        )
+        self.assertEqual(
+            result.suite_certificate.learner_snapshot_receipt_hashes,
+            tuple(receipt_hash for row in report.rows for receipt_hash in row.learner_snapshot_receipt_hashes),
+        )
+        self.assertEqual(
+            result.suite_certificate.learner_snapshot_row_hashes,
+            tuple(row_hash for row in report.rows for row_hash in row.learner_snapshot_row_hashes),
+        )
+        self.assertEqual(
             result.suite_certificate.receipt_hashes,
             tuple(receipt_hash for row in report.rows for receipt_hash in row.receipt_hashes),
         )
@@ -239,11 +258,16 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
             result.suite_certificate.backend_execution_evidence_hashes,
             tuple(evidence_hash for row in report.rows for evidence_hash in row.backend_execution_evidence_hashes),
         )
+        self.assertEqual(
+            result.suite_certificate.proposer_rank_audit_hashes,
+            tuple(audit_hash for row in report.rows for audit_hash in row.proposer_rank_audit_hashes),
+        )
         self.assertTrue(result.suite_certificate.all_child_claims_match_reports)
         self.assertTrue(result.suite_certificate.all_adapter_evidence_certificates_valid)
         self.assertTrue(result.suite_certificate.all_adapter_evidence_certificates_match_reports)
         self.assertTrue(result.suite_certificate.all_adapter_evidence_matches_manifest)
         self.assertTrue(result.suite_certificate.all_adapter_task_splits_match_manifest)
+        self.assertTrue(result.suite_certificate.all_learner_snapshots_bound)
         self.assertTrue(result.suite_certificate.all_backends_available)
         self.assertTrue(result.suite_certificate.all_learning_certificates_support_claim)
         self.assertTrue(result.suite_certificate.all_learning_certificates_match_reports)
@@ -252,6 +276,7 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertFalse(result.suite_certificate.all_receipt_artifacts_cover_manifest_assets)
         self.assertTrue(result.suite_certificate.all_backend_execution_evidence_bound)
         self.assertTrue(result.suite_certificate.heldout_arms_isolated)
+        self.assertTrue(result.suite_certificate.all_proposer_rank_audits_bound)
         self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, report))
         self.assertTrue(validate_claim_certificate(claim))
         self.assertEqual(claim.status, "rejected")

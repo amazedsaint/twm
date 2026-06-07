@@ -25,12 +25,22 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
         self.assertEqual(certificate.backend_error, result.report.backend_error)
         self.assertEqual(certificate.runtime_requirement_evidence_hashes, result.report.runtime_requirement_evidence_hashes)
         self.assertEqual(certificate.runtime_requirement_evidence_hashes, ())
+        self.assertTrue(certificate.learner_snapshot_valid)
+        self.assertEqual(certificate.learner_snapshot_valid, result.report.learner_snapshot_valid)
+        self.assertEqual(certificate.learner_snapshot_receipt_hashes, certificate.training_receipt_hashes)
+        self.assertEqual(certificate.learner_snapshot_receipt_hashes, result.report.learner_snapshot_receipt_hashes)
+        self.assertEqual(certificate.learner_snapshot_row_hashes, result.report.learner_snapshot_row_hashes)
+        self.assertTrue(certificate.learner_snapshot_row_hashes)
         self.assertEqual(certificate.receipt_count, result.report.receipt_count)
         self.assertEqual(certificate.training_receipt_count, result.report.training_receipt_count)
         self.assertEqual(certificate.baseline_receipt_count, result.report.baseline_receipt_count)
         self.assertEqual(certificate.learned_receipt_count, result.report.learned_receipt_count)
         self.assertTrue(certificate.heldout_arm_isolated)
         self.assertEqual(certificate.heldout_arm_isolated, result.report.heldout_arm_isolated)
+        self.assertTrue(certificate.proposer_rank_audit_ok)
+        self.assertEqual(certificate.proposer_rank_audit_ok, result.report.proposer_rank_audit_ok)
+        self.assertEqual(certificate.proposer_rank_audit_hashes, result.report.proposer_rank_audit_hashes)
+        self.assertEqual(len(certificate.proposer_rank_audit_hashes), len(certificate.held_out_task_ids))
         self.assertEqual(certificate.typed_candidate_hashes, result.report.typed_candidate_hashes)
         self.assertEqual(certificate.hard_result_hashes, result.report.hard_result_hashes)
         self.assertEqual(certificate.hard_metadata_hashes, result.report.hard_metadata_hashes)
@@ -70,6 +80,9 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
         self.assertEqual(certificate.hard_result_hashes, ())
         self.assertEqual(certificate.hard_metadata_hashes, ())
         self.assertEqual(certificate.runtime_requirement_evidence_hashes, ())
+        self.assertFalse(certificate.learner_snapshot_valid)
+        self.assertEqual(certificate.learner_snapshot_receipt_hashes, ())
+        self.assertEqual(certificate.learner_snapshot_row_hashes, ())
         self.assertFalse(certificate.receipt_artifacts_bound)
         self.assertEqual(certificate.receipt_artifact_hashes, ())
         self.assertEqual(certificate.receipt_artifact_value_hashes, ())
@@ -77,6 +90,8 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
         self.assertEqual(certificate.backend_execution_evidence_hashes, ())
         self.assertEqual(certificate.learning_certificate_hash, "")
         self.assertFalse(certificate.heldout_arm_isolated)
+        self.assertFalse(certificate.proposer_rank_audit_ok)
+        self.assertEqual(certificate.proposer_rank_audit_hashes, ())
         self.assertEqual(certificate.heldout_arm_isolated, result.report.heldout_arm_isolated)
         self.assertTrue(
             validate_real_task_adapter_evidence_certificate(
@@ -132,6 +147,32 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
     def test_tampered_report_runtime_requirement_evidence_hash_fails(self) -> None:
         result = run_robotics_motion_benchmark_adapter_experiment(DeterministicMotionBenchmarkBackend())
         bad_report = replace(result.report, runtime_requirement_evidence_hashes=("f" * 64,))
+
+        self.assertFalse(
+            validate_real_task_adapter_evidence_certificate(
+                result.evidence_certificate,
+                report=bad_report,
+                learning_certificate=result.learning_certificate,
+                claim_certificate=result.claim_certificate,
+            )
+        )
+
+    def test_tampered_report_learner_snapshot_hashes_fail(self) -> None:
+        result = run_robotics_motion_benchmark_adapter_experiment(DeterministicMotionBenchmarkBackend())
+        bad_report = replace(result.report, learner_snapshot_receipt_hashes=("0" * 64, *result.report.learner_snapshot_receipt_hashes[1:]))
+
+        self.assertFalse(
+            validate_real_task_adapter_evidence_certificate(
+                result.evidence_certificate,
+                report=bad_report,
+                learning_certificate=result.learning_certificate,
+                claim_certificate=result.claim_certificate,
+            )
+        )
+
+    def test_tampered_report_proposer_rank_audit_hash_fails(self) -> None:
+        result = run_robotics_motion_benchmark_adapter_experiment(DeterministicMotionBenchmarkBackend())
+        bad_report = replace(result.report, proposer_rank_audit_hashes=("0" * 64, *result.report.proposer_rank_audit_hashes[1:]))
 
         self.assertFalse(
             validate_real_task_adapter_evidence_certificate(

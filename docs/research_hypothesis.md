@@ -1011,3 +1011,11 @@ runtime requirement hash, task-asset content hash, aggregate suite command, and
 final evidence-bundle command. This does not add performance evidence, but it
 removes ambiguity about which provisioned external run can produce admissible
 real-task receipts.
+
+The next hardening step made the "receipt-trained" part auditable. Adapter
+reports now bind the learner snapshot validity, the snapshot receipt hashes,
+snapshot row hashes, and held-out proposer-rank audit hashes. The rank audit
+checks that the learned arm submits the prefix of the candidate order produced
+by the snapshot-trained proposer. The aggregate suite now exposes
+`all_learner_snapshots_bound` and `all_proposer_rank_audits_bound`; both must
+hold before any four-domain G1 real-task call-reduction claim can promote.

@@ -973,3 +973,14 @@ probe hash, runtime requirement hash, task-asset content hash, aggregate suite
 command, and evidence-bundle command. That makes the remaining external work
 concrete: a provisioned runner must first make this plan ready, then produce a
 validated evidence bundle from the same manifest-bound commands.
+
+The real-task adapters and aggregate suite now also bind the learned proposer
+path itself. Each receipt-bearing adapter report includes a valid
+receipt-trained reversible proposer snapshot, the snapshot's training receipt
+hashes and row hashes, and one proposer-rank audit hash per held-out task. The
+audit proves the learned arm submitted the prefix of the candidate order ranked
+from the training snapshot. The suite lifts these into
+`all_learner_snapshots_bound` and `all_proposer_rank_audits_bound`, so a
+real-task G1 promotion now requires not only fewer verifier calls and zero
+invalid commits, but also a certificate-bound explanation of why the learned
+arm made fewer calls.

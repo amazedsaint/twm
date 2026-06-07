@@ -13,6 +13,7 @@ from trwm.evaluation import (
     learning_evaluation_supports_claim,
     validate_learning_evaluation_certificate,
 )
+from trwm.learning import validate_receipt_trained_reversible_proposer_snapshot
 
 
 REAL_TASK_ADAPTER_EVIDENCE_CERTIFICATE_SCHEMA = "trwm.real_task_adapter_evidence_certificate.v1"
@@ -37,6 +38,9 @@ class RealTaskAdapterEvidenceCertificate:
     train_task_ids: tuple[str, ...]
     held_out_task_ids: tuple[str, ...]
     learner_snapshot_hash: str
+    learner_snapshot_valid: bool
+    learner_snapshot_receipt_hashes: tuple[str, ...]
+    learner_snapshot_row_hashes: tuple[str, ...]
     learning_certificate_hash: str
     learning_certificate_valid: bool
     learning_certificate_supports_claim: bool
@@ -70,6 +74,8 @@ class RealTaskAdapterEvidenceCertificate:
     hard_commit_only: bool
     train_eval_disjoint: bool
     heldout_arm_isolated: bool
+    proposer_rank_audit_ok: bool
+    proposer_rank_audit_hashes: tuple[str, ...]
     replay_audit_ok: bool
     rollback_audit_ok: bool
     ledger_audit_ok: bool
@@ -85,6 +91,8 @@ class RealTaskAdapterEvidenceCertificate:
         object.__setattr__(self, "runtime_requirement_evidence_hashes", tuple(self.runtime_requirement_evidence_hashes))
         object.__setattr__(self, "train_task_ids", tuple(self.train_task_ids))
         object.__setattr__(self, "held_out_task_ids", tuple(self.held_out_task_ids))
+        object.__setattr__(self, "learner_snapshot_receipt_hashes", tuple(self.learner_snapshot_receipt_hashes))
+        object.__setattr__(self, "learner_snapshot_row_hashes", tuple(self.learner_snapshot_row_hashes))
         object.__setattr__(self, "receipt_hashes", tuple(self.receipt_hashes))
         object.__setattr__(self, "typed_candidate_hashes", tuple(self.typed_candidate_hashes))
         object.__setattr__(self, "hard_result_hashes", tuple(self.hard_result_hashes))
@@ -95,6 +103,7 @@ class RealTaskAdapterEvidenceCertificate:
         object.__setattr__(self, "training_receipt_hashes", tuple(self.training_receipt_hashes))
         object.__setattr__(self, "baseline_receipt_hashes", tuple(self.baseline_receipt_hashes))
         object.__setattr__(self, "learned_receipt_hashes", tuple(self.learned_receipt_hashes))
+        object.__setattr__(self, "proposer_rank_audit_hashes", tuple(self.proposer_rank_audit_hashes))
         object.__setattr__(self, "source_urls", tuple(self.source_urls))
         if not self.certificate_hash:
             object.__setattr__(self, "certificate_hash", real_task_adapter_evidence_certificate_hash(self))
@@ -147,6 +156,9 @@ def build_real_task_adapter_evidence_certificate(
         train_task_ids=tuple(str(row) for row in report_data["train_task_ids"]),
         held_out_task_ids=tuple(str(row) for row in report_data["held_out_task_ids"]),
         learner_snapshot_hash=str(report_data["learner_snapshot_hash"]),
+        learner_snapshot_valid=bool(report_data["learner_snapshot_valid"]),
+        learner_snapshot_receipt_hashes=tuple(str(row) for row in report_data["learner_snapshot_receipt_hashes"]),
+        learner_snapshot_row_hashes=tuple(str(row) for row in report_data["learner_snapshot_row_hashes"]),
         learning_certificate_hash=learning_hash,
         learning_certificate_valid=learning_valid,
         learning_certificate_supports_claim=learning_supports,
@@ -180,6 +192,8 @@ def build_real_task_adapter_evidence_certificate(
         hard_commit_only=bool(report_data["hard_commit_only"]),
         train_eval_disjoint=bool(report_data["train_eval_disjoint"]),
         heldout_arm_isolated=bool(report_data["heldout_arm_isolated"]),
+        proposer_rank_audit_ok=bool(report_data["proposer_rank_audit_ok"]),
+        proposer_rank_audit_hashes=tuple(str(row) for row in report_data["proposer_rank_audit_hashes"]),
         replay_audit_ok=bool(report_data["replay_audit_ok"]),
         rollback_audit_ok=bool(report_data["rollback_audit_ok"]),
         ledger_audit_ok=bool(report_data["ledger_audit_ok"]),
@@ -197,6 +211,9 @@ def real_task_adapter_claim_evidence_grade(report: Any) -> str:
             bool(data["backend_available"])
             and bool(data["real_backend"])
             and bool(data["runtime_requirement_evidence_hashes"])
+            and bool(data["learner_snapshot_valid"])
+            and bool(data["learner_snapshot_receipt_hashes"])
+            and bool(data["learner_snapshot_row_hashes"])
             and bool(data["receipt_artifacts_bound"])
             and bool(data["backend_execution_evidence_ok"])
             and bool(data["learning_certificate_valid"])
@@ -208,6 +225,8 @@ def real_task_adapter_claim_evidence_grade(report: Any) -> str:
             and bool(data["hard_commit_only"])
             and bool(data["train_eval_disjoint"])
             and bool(data["heldout_arm_isolated"])
+            and bool(data["proposer_rank_audit_ok"])
+            and bool(data["proposer_rank_audit_hashes"])
             and bool(data["replay_audit_ok"])
             and bool(data["rollback_audit_ok"])
             and bool(data["ledger_audit_ok"])
@@ -266,7 +285,11 @@ def validate_real_task_adapter_evidence_certificate(
             return False
         if not isinstance(certificate.learning_certificate_supports_claim, bool):
             return False
+        if not isinstance(certificate.learner_snapshot_valid, bool):
+            return False
         if not isinstance(certificate.heldout_arm_isolated, bool):
+            return False
+        if not isinstance(certificate.proposer_rank_audit_ok, bool):
             return False
         if certificate.claim_certificate_status == "supported" and not certificate.claim_certificate_valid:
             return False
@@ -347,6 +370,75 @@ def receipt_artifacts_are_bound(receipts: Any) -> bool:
     return bool(rows) and all(_artifact_hashes_valid(_artifact_hashes(receipt)) for receipt in rows)
 
 
+def learner_snapshot_receipt_hashes(snapshot: Any) -> tuple[str, ...]:
+    return tuple(str(row) for row in getattr(snapshot, "receipt_hashes", ()))
+
+
+def learner_snapshot_row_hashes(snapshot: Any) -> tuple[str, ...]:
+    return tuple(stable_hash(row) for row in getattr(snapshot, "rows", ()))
+
+
+def learner_snapshot_bound_to_training(snapshot: Any, training_receipts: Any) -> bool:
+    receipt_hashes = tuple(str(receipt.receipt_hash) for receipt in tuple(training_receipts))
+    return (
+        validate_receipt_trained_reversible_proposer_snapshot(snapshot)
+        and bool(receipt_hashes)
+        and learner_snapshot_receipt_hashes(snapshot) == receipt_hashes
+        and bool(learner_snapshot_row_hashes(snapshot))
+    )
+
+
+def proposer_rank_audit(
+    *,
+    domain: str,
+    task_id: str,
+    context: str,
+    learner_snapshot_hash: str,
+    learner_snapshot_receipt_hashes: tuple[str, ...],
+    input_candidates: Any,
+    ranked_candidates: Any,
+    learned_receipts: Any,
+) -> tuple[bool, str]:
+    input_rows = tuple(input_candidates)
+    ranked_rows = tuple(ranked_candidates)
+    receipt_rows = tuple(learned_receipts)
+    input_hashes = tuple(_candidate_hash(candidate) for candidate in input_rows)
+    ranked_hashes = tuple(_candidate_hash(candidate) for candidate in ranked_rows)
+    learned_hashes = tuple(str(receipt.typed_candidate_hash) for receipt in receipt_rows)
+    row = {
+        "schema_version": "trwm.real_task_proposer_rank_audit.v1",
+        "domain": domain,
+        "task_id": task_id,
+        "context": context,
+        "learner_snapshot_hash": learner_snapshot_hash,
+        "learner_snapshot_receipt_hashes": tuple(learner_snapshot_receipt_hashes),
+        "input_candidate_hashes": input_hashes,
+        "input_actions": tuple(_candidate_action(candidate) for candidate in input_rows),
+        "ranked_candidate_hashes": ranked_hashes,
+        "ranked_actions": tuple(_candidate_action(candidate) for candidate in ranked_rows),
+        "learned_receipt_hashes": tuple(str(receipt.receipt_hash) for receipt in receipt_rows),
+        "learned_candidate_hashes": learned_hashes,
+        "learned_actions": tuple(_receipt_action(receipt) for receipt in receipt_rows),
+        "top_ranked_candidate_hash": ranked_hashes[0] if ranked_hashes else "",
+        "top_ranked_action": _candidate_action(ranked_rows[0]) if ranked_rows else "",
+    }
+    audit_ok = (
+        domain in REAL_TASK_ADAPTER_EVIDENCE_DOMAINS
+        and _nonempty_string(task_id)
+        and _nonempty_string(context)
+        and _is_hash(learner_snapshot_hash)
+        and bool(learner_snapshot_receipt_hashes)
+        and all(_is_hash(row_hash) for row_hash in learner_snapshot_receipt_hashes)
+        and bool(input_hashes)
+        and len(set(input_hashes)) == len(input_hashes)
+        and sorted(input_hashes) == sorted(ranked_hashes)
+        and bool(receipt_rows)
+        and learned_hashes == ranked_hashes[: len(learned_hashes)]
+        and all(_is_hash(receipt_hash) for receipt_hash in row["learned_receipt_hashes"])
+    )
+    return audit_ok, stable_hash({**row, "audit_ok": audit_ok})
+
+
 def path_fingerprint_hash(path: str | Path) -> str:
     candidate = Path(path)
     if not candidate.exists():
@@ -417,6 +509,12 @@ def _counts_and_partitions_are_valid(certificate: RealTaskAdapterEvidenceCertifi
         return False
     if any(not _is_hash(row) for row in certificate.backend_execution_evidence_hashes):
         return False
+    if any(not _is_hash(row) for row in certificate.learner_snapshot_receipt_hashes):
+        return False
+    if any(not _is_hash(row) for row in certificate.learner_snapshot_row_hashes):
+        return False
+    if any(not _is_hash(row) for row in certificate.proposer_rank_audit_hashes):
+        return False
     if certificate.receipt_artifacts_bound and certificate.receipt_count == 0:
         return False
     if certificate.receipt_artifacts_bound and not certificate.receipt_artifact_value_hashes:
@@ -445,6 +543,9 @@ def _counts_and_partitions_are_valid(certificate: RealTaskAdapterEvidenceCertifi
             and certificate.learned_verifier_calls == 0
             and certificate.runtime_requirement_evidence_hashes == ()
             and certificate.learner_snapshot_hash == ""
+            and not certificate.learner_snapshot_valid
+            and certificate.learner_snapshot_receipt_hashes == ()
+            and certificate.learner_snapshot_row_hashes == ()
             and certificate.learning_certificate_hash == ""
             and certificate.ledger_head == ""
             and not certificate.receipt_artifacts_bound
@@ -452,8 +553,17 @@ def _counts_and_partitions_are_valid(certificate: RealTaskAdapterEvidenceCertifi
             and not certificate.backend_execution_evidence_ok
             and not certificate.learning_certificate_valid
             and not certificate.learning_certificate_supports_claim
+            and not certificate.proposer_rank_audit_ok
+            and certificate.proposer_rank_audit_hashes == ()
         )
-    return bool(certificate.ledger_head and certificate.learner_snapshot_hash and certificate.learning_certificate_hash)
+    return (
+        bool(certificate.ledger_head and certificate.learner_snapshot_hash and certificate.learning_certificate_hash)
+        and certificate.learner_snapshot_valid
+        and certificate.learner_snapshot_receipt_hashes == certificate.training_receipt_hashes
+        and bool(certificate.learner_snapshot_row_hashes)
+        and certificate.proposer_rank_audit_ok
+        and len(certificate.proposer_rank_audit_hashes) == len(certificate.held_out_task_ids)
+    )
 
 
 def _g1_supported(certificate: RealTaskAdapterEvidenceCertificate) -> bool:
@@ -462,6 +572,9 @@ def _g1_supported(certificate: RealTaskAdapterEvidenceCertificate) -> bool:
         and certificate.real_backend
         and certificate.claim_certificate_valid
         and certificate.claim_certificate_status == "supported"
+        and certificate.learner_snapshot_valid
+        and certificate.learner_snapshot_receipt_hashes == certificate.training_receipt_hashes
+        and bool(certificate.learner_snapshot_row_hashes)
         and certificate.learning_certificate_valid
         and certificate.learning_certificate_supports_claim
         and bool(certificate.runtime_requirement_evidence_hashes)
@@ -474,6 +587,8 @@ def _g1_supported(certificate: RealTaskAdapterEvidenceCertificate) -> bool:
         and certificate.hard_commit_only
         and certificate.train_eval_disjoint
         and certificate.heldout_arm_isolated
+        and certificate.proposer_rank_audit_ok
+        and len(certificate.proposer_rank_audit_hashes) == len(certificate.held_out_task_ids)
         and certificate.replay_audit_ok
         and certificate.rollback_audit_ok
         and certificate.ledger_audit_ok
@@ -494,6 +609,9 @@ def _report_matches(certificate: RealTaskAdapterEvidenceCertificate, report: Any
         "train_task_ids",
         "held_out_task_ids",
         "learner_snapshot_hash",
+        "learner_snapshot_valid",
+        "learner_snapshot_receipt_hashes",
+        "learner_snapshot_row_hashes",
         "learning_certificate_hash",
         "learning_certificate_valid",
         "learning_certificate_supports_claim",
@@ -520,6 +638,8 @@ def _report_matches(certificate: RealTaskAdapterEvidenceCertificate, report: Any
         "hard_commit_only",
         "train_eval_disjoint",
         "heldout_arm_isolated",
+        "proposer_rank_audit_ok",
+        "proposer_rank_audit_hashes",
         "replay_audit_ok",
         "rollback_audit_ok",
         "ledger_audit_ok",
@@ -576,6 +696,22 @@ def _claim_matches_report(claim: ClaimCertificate, report_data: Mapping[str, Any
         return False
     if tuple(artifact_requirement.evidence.get("artifact_hashes", ())) != tuple(report_data["receipt_artifact_hashes"]):
         return False
+    snapshot_requirement = requirements.get("learner_snapshot_bound")
+    if snapshot_requirement is None:
+        return False
+    if snapshot_requirement.passed != bool(report_data["learner_snapshot_valid"]):
+        return False
+    if tuple(snapshot_requirement.evidence.get("receipt_hashes", ())) != tuple(report_data["learner_snapshot_receipt_hashes"]):
+        return False
+    if tuple(snapshot_requirement.evidence.get("row_hashes", ())) != tuple(report_data["learner_snapshot_row_hashes"]):
+        return False
+    rank_requirement = requirements.get("proposer_rank_audit_bound")
+    if rank_requirement is None:
+        return False
+    if rank_requirement.passed != bool(report_data["proposer_rank_audit_ok"]):
+        return False
+    if tuple(rank_requirement.evidence.get("audit_hashes", ())) != tuple(report_data["proposer_rank_audit_hashes"]):
+        return False
     real_backend_requirements = tuple(key for key in requirements if key.startswith("real_"))
     if len(real_backend_requirements) != 1:
         return False
@@ -585,6 +721,7 @@ def _claim_matches_report(claim: ClaimCertificate, report_data: Mapping[str, Any
         "runtime_requirements_bound": (not bool(report_data["real_backend"])) or bool(report_data["runtime_requirement_evidence_hashes"]),
         "receipt_artifacts_bound": bool(report_data["receipt_artifacts_bound"]),
         "backend_execution_evidence_bound": bool(report_data["backend_execution_evidence_ok"]),
+        "learner_snapshot_bound": bool(report_data["learner_snapshot_valid"]),
         "learning_certificate_valid": bool(report_data["learning_certificate_valid"]),
         "learning_certificate_supports_claim": bool(report_data["learning_certificate_supports_claim"]),
         "hard_verifier_calls_reduced": int(report_data["learned_verifier_calls"]) < int(report_data["baseline_verifier_calls"]),
@@ -594,6 +731,7 @@ def _claim_matches_report(claim: ClaimCertificate, report_data: Mapping[str, Any
         "hard_commit_only": bool(report_data["hard_commit_only"]),
         "train_eval_disjoint": bool(report_data["train_eval_disjoint"]),
         "heldout_arm_isolated": bool(report_data["heldout_arm_isolated"]),
+        "proposer_rank_audit_bound": bool(report_data["proposer_rank_audit_ok"]),
         "replay_rollback_ok": bool(report_data["replay_audit_ok"])
         and bool(report_data["rollback_audit_ok"])
         and bool(report_data["ledger_audit_ok"]),
@@ -661,6 +799,26 @@ def _nonempty_string(value: Any) -> bool:
 
 def _is_hash(value: str) -> bool:
     return isinstance(value, str) and len(value) == 64 and all(char in "0123456789abcdef" for char in value)
+
+
+def _candidate_hash(candidate: Any) -> str:
+    return str(getattr(candidate, "candidate_hash", ""))
+
+
+def _candidate_action(candidate: Any) -> str:
+    payload = getattr(candidate, "payload", {})
+    if isinstance(payload, Mapping):
+        return str(payload.get("action", ""))
+    return ""
+
+
+def _receipt_action(receipt: Any) -> str:
+    bundle = getattr(receipt, "replay_bundle", {})
+    bundle = bundle if isinstance(bundle, Mapping) else {}
+    payload = bundle.get("candidate_payload", {})
+    if isinstance(payload, Mapping):
+        return str(payload.get("action", ""))
+    return ""
 
 
 def _backend_execution_evidence_row(domain: str, receipt: Any) -> dict[str, Any]:

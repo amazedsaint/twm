@@ -1489,6 +1489,8 @@ manifest split task hashes, exact manifest and adapter train/held-out task
 ids, exact receipt counts, separate training/baseline/learned receipt hash
 partitions, typed-candidate hashes, hard-result hashes,
 hard-metadata hashes, receipt artifact hashes, receipt artifact value hashes,
+learner snapshot hashes, learner snapshot receipt hashes, learner snapshot row
+hashes, held-out proposer-rank audit hashes,
 manifest runtime requirement evidence hashes, adapter runtime requirement
 evidence hashes, manifest task-asset content hashes, backend execution evidence
 hashes, baseline calls, learned calls, held-out successes,
@@ -1516,6 +1518,9 @@ training, baseline, and learned receipt partitions plus any backend execution er
 before the manifest cross-check proves the adapter evidence sources are covered
 by the domain's real-task manifest spec. The learning cross-check then binds
 the baseline and learned receipt partitions into the learning certificate.
+The learner-snapshot cross-check binds the proposer snapshot to the training
+receipt partition, and the rank-audit lane binds each held-out learned arm to
+the prefix of the candidate order produced by that snapshot-trained proposer.
 Each child report also binds `heldout_arm_isolated`: after training, the
 baseline and learned held-out arms must start from the same frozen
 post-training state but run on separate ledgers, so neither arm inherits state
@@ -1524,8 +1529,9 @@ Each single-domain child claim uses the same strict G1 predicate: real backend,
 runtime hashes, receipt artifacts, backend execution evidence, valid learning
 support, reduced hard-verifier calls, held-out success preservation, zero
 invalid commits, hard-commit-only receipts, train/evaluation disjointness,
-held-out arm isolation, and replay, rollback, and ledger audits. Provenance alone can
-therefore produce reviewable evidence, but not a G1 child claim.
+learner snapshot binding, proposer-rank audit binding, held-out arm isolation,
+and replay, rollback, and ledger audits. Provenance alone can therefore produce
+reviewable evidence, but not a G1 child claim.
 
 The suite claim is intentionally stricter than adapter readiness. It is
 supported only when all four domains use real backends, all child claims are
@@ -1533,7 +1539,9 @@ supported, every adapter evidence certificate and child claim matches its
 report and real-task manifest spec, and the suite certificate directly binds
 the aggregate backend-availability and learning-support gates. All learning
 certificates must support call reduction, every learning certificate must match
-its report, all held-out arms are isolated, held-out success is preserved,
+its report, all learner snapshots must bind to their training receipts, all
+proposer-rank audits must bind to the learned held-out receipt prefixes, all
+held-out arms are isolated, held-out success is preserved,
 hard-verifier calls are reduced in every domain, replay/rollback and ledger
 audits pass, receipt and
 execution-provenance counts bind exact hash lanes, training/baseline/learned

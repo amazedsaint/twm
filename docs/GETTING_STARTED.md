@@ -28,7 +28,9 @@ those exact child results, and rejects unless all real backends produce
 manifest-covered, report-bound adapter evidence certificates, compact
 receipt-bound execution provenance hashes, normalized backend execution
 evidence hashes, receipt-bound task/candidate artifact hashes, supported
-held-out call-reduction evidence, and zero invalid commits.
+held-out call-reduction evidence, learner snapshots bound to training receipts,
+held-out proposer-rank audits bound to learned receipt prefixes, and zero
+invalid commits.
 
 The current implementation includes:
 

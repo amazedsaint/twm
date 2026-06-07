@@ -99,6 +99,10 @@ class RealTaskBenchmarkSuiteRow:
     child_claim_status: str
     child_claim_hash: str
     child_claim_matches_report: bool
+    learner_snapshot_hash: str
+    learner_snapshot_valid: bool
+    learner_snapshot_receipt_hashes: tuple[str, ...]
+    learner_snapshot_row_hashes: tuple[str, ...]
     learning_certificate_hash: str
     learning_certificate_valid: bool
     learning_certificate_supports_claim: bool
@@ -119,6 +123,8 @@ class RealTaskBenchmarkSuiteRow:
     verifier_call_reduction: int
     hard_commit_only: bool
     heldout_arm_isolated: bool
+    proposer_rank_audit_ok: bool
+    proposer_rank_audit_hashes: tuple[str, ...]
     replay_audit_ok: bool
     rollback_audit_ok: bool
     ledger_audit_ok: bool
@@ -146,6 +152,8 @@ class RealTaskBenchmarkSuiteRow:
         object.__setattr__(self, "manifest_train_task_ids", tuple(self.manifest_train_task_ids))
         object.__setattr__(self, "manifest_held_out_task_ids", tuple(self.manifest_held_out_task_ids))
         object.__setattr__(self, "manifest_task_asset_content_hashes", tuple(self.manifest_task_asset_content_hashes))
+        object.__setattr__(self, "learner_snapshot_receipt_hashes", tuple(self.learner_snapshot_receipt_hashes))
+        object.__setattr__(self, "learner_snapshot_row_hashes", tuple(self.learner_snapshot_row_hashes))
         object.__setattr__(self, "train_task_ids", tuple(self.train_task_ids))
         object.__setattr__(self, "held_out_task_ids", tuple(self.held_out_task_ids))
         object.__setattr__(self, "receipt_hashes", tuple(self.receipt_hashes))
@@ -159,6 +167,7 @@ class RealTaskBenchmarkSuiteRow:
         object.__setattr__(self, "training_receipt_hashes", tuple(self.training_receipt_hashes))
         object.__setattr__(self, "baseline_receipt_hashes", tuple(self.baseline_receipt_hashes))
         object.__setattr__(self, "learned_receipt_hashes", tuple(self.learned_receipt_hashes))
+        object.__setattr__(self, "proposer_rank_audit_hashes", tuple(self.proposer_rank_audit_hashes))
 
 
 @dataclass(frozen=True)
@@ -178,6 +187,7 @@ class RealTaskBenchmarkSuiteReport:
     all_adapter_evidence_certificates_match_reports: bool
     all_adapter_evidence_matches_manifest: bool
     all_adapter_task_splits_match_manifest: bool
+    all_learner_snapshots_bound: bool
     all_learning_certificates_valid: bool
     all_learning_certificates_support_claim: bool
     all_learning_certificates_match_reports: bool
@@ -189,6 +199,7 @@ class RealTaskBenchmarkSuiteReport:
     all_receipt_artifacts_cover_manifest_assets: bool
     all_backend_execution_evidence_bound: bool
     heldout_arms_isolated: bool
+    all_proposer_rank_audits_bound: bool
     hard_verifier_calls_reduced: bool
     success_preserved: bool
     replay_rollback_ledger_ok: bool
@@ -240,6 +251,9 @@ class RealTaskBenchmarkSuiteCertificate:
     child_report_hashes: tuple[str, ...]
     adapter_evidence_certificate_hashes: tuple[str, ...]
     child_claim_hashes: tuple[str, ...]
+    learner_snapshot_hashes: tuple[str, ...]
+    learner_snapshot_receipt_hashes: tuple[str, ...]
+    learner_snapshot_row_hashes: tuple[str, ...]
     learning_certificate_hashes: tuple[str, ...]
     training_receipt_hashes: tuple[str, ...]
     baseline_receipt_hashes: tuple[str, ...]
@@ -251,6 +265,7 @@ class RealTaskBenchmarkSuiteCertificate:
     receipt_artifact_hashes: tuple[str, ...]
     receipt_artifact_value_hashes: tuple[str, ...]
     backend_execution_evidence_hashes: tuple[str, ...]
+    proposer_rank_audit_hashes: tuple[str, ...]
     all_child_claims_valid: bool
     all_child_claims_supported: bool
     all_child_claims_match_reports: bool
@@ -258,6 +273,7 @@ class RealTaskBenchmarkSuiteCertificate:
     all_adapter_evidence_certificates_match_reports: bool
     all_adapter_evidence_matches_manifest: bool
     all_adapter_task_splits_match_manifest: bool
+    all_learner_snapshots_bound: bool
     all_learning_certificates_valid: bool
     all_learning_certificates_support_claim: bool
     all_learning_certificates_match_reports: bool
@@ -269,6 +285,7 @@ class RealTaskBenchmarkSuiteCertificate:
     all_receipt_artifacts_cover_manifest_assets: bool
     all_backend_execution_evidence_bound: bool
     heldout_arms_isolated: bool
+    all_proposer_rank_audits_bound: bool
     hard_verifier_calls_reduced: bool
     success_preserved: bool
     replay_rollback_ledger_ok: bool
@@ -291,6 +308,9 @@ class RealTaskBenchmarkSuiteCertificate:
         object.__setattr__(self, "child_report_hashes", tuple(self.child_report_hashes))
         object.__setattr__(self, "adapter_evidence_certificate_hashes", tuple(self.adapter_evidence_certificate_hashes))
         object.__setattr__(self, "child_claim_hashes", tuple(self.child_claim_hashes))
+        object.__setattr__(self, "learner_snapshot_hashes", tuple(self.learner_snapshot_hashes))
+        object.__setattr__(self, "learner_snapshot_receipt_hashes", tuple(self.learner_snapshot_receipt_hashes))
+        object.__setattr__(self, "learner_snapshot_row_hashes", tuple(self.learner_snapshot_row_hashes))
         object.__setattr__(self, "learning_certificate_hashes", tuple(self.learning_certificate_hashes))
         object.__setattr__(self, "training_receipt_hashes", tuple(self.training_receipt_hashes))
         object.__setattr__(self, "baseline_receipt_hashes", tuple(self.baseline_receipt_hashes))
@@ -302,6 +322,7 @@ class RealTaskBenchmarkSuiteCertificate:
         object.__setattr__(self, "receipt_artifact_hashes", tuple(self.receipt_artifact_hashes))
         object.__setattr__(self, "receipt_artifact_value_hashes", tuple(self.receipt_artifact_value_hashes))
         object.__setattr__(self, "backend_execution_evidence_hashes", tuple(self.backend_execution_evidence_hashes))
+        object.__setattr__(self, "proposer_rank_audit_hashes", tuple(self.proposer_rank_audit_hashes))
         if not self.certificate_hash:
             object.__setattr__(self, "certificate_hash", real_task_benchmark_suite_certificate_hash(self))
 
@@ -366,6 +387,7 @@ def build_real_task_benchmark_suite_result(
                 and report.all_adapter_evidence_certificates_match_reports
                 and report.all_adapter_evidence_matches_manifest
                 and report.all_adapter_task_splits_match_manifest
+                and report.all_learner_snapshots_bound
                 and report.all_learning_certificates_valid
                 and report.all_learning_certificates_support_claim
                 and report.all_learning_certificates_match_reports
@@ -376,6 +398,7 @@ def build_real_task_benchmark_suite_result(
                 and report.all_receipt_artifacts_cover_manifest_assets
                 and report.all_backend_execution_evidence_bound
                 and report.heldout_arms_isolated
+                and report.all_proposer_rank_audits_bound
                 and report.hard_verifier_calls_reduced
                 and report.success_preserved
                 and report.replay_rollback_ledger_ok
@@ -402,6 +425,7 @@ def build_real_task_benchmark_suite_result(
             requirement("all_adapter_evidence_certificates_match_reports", report.all_adapter_evidence_certificates_match_reports),
             requirement("all_adapter_evidence_matches_manifest", report.all_adapter_evidence_matches_manifest),
             requirement("all_adapter_task_splits_match_manifest", report.all_adapter_task_splits_match_manifest),
+            requirement("all_learner_snapshots_bound", report.all_learner_snapshots_bound),
             requirement("all_learning_certificates_valid", report.all_learning_certificates_valid),
             requirement("all_learning_certificates_support_claim", report.all_learning_certificates_support_claim),
             requirement("all_learning_certificates_match_reports", report.all_learning_certificates_match_reports),
@@ -413,6 +437,7 @@ def build_real_task_benchmark_suite_result(
             requirement("all_receipt_artifacts_cover_manifest_assets", report.all_receipt_artifacts_cover_manifest_assets),
             requirement("all_backend_execution_evidence_bound", report.all_backend_execution_evidence_bound),
             requirement("heldout_arms_isolated", report.heldout_arms_isolated),
+            requirement("all_proposer_rank_audits_bound", report.all_proposer_rank_audits_bound),
             requirement("hard_verifier_calls_reduced", report.hard_verifier_calls_reduced),
             requirement("success_preserved", report.success_preserved),
             requirement("replay_rollback_ledger_ok", report.replay_rollback_ledger_ok),
@@ -428,6 +453,8 @@ def build_real_task_benchmark_suite_result(
             "total_invalid_commit_count": report.total_invalid_commit_count,
             "total_receipt_count": report.total_receipt_count,
             "heldout_arms_isolated": report.heldout_arms_isolated,
+            "learner_snapshots_bound": report.all_learner_snapshots_bound,
+            "proposer_rank_audits_bound": report.all_proposer_rank_audits_bound,
             "task_splits_match_manifest": report.all_adapter_task_splits_match_manifest,
             "runtime_requirements_match_preflight": report.all_runtime_requirements_match_preflight,
             "receipt_artifacts_cover_manifest_assets": report.all_receipt_artifacts_cover_manifest_assets,
@@ -477,6 +504,11 @@ def build_real_task_benchmark_suite_certificate(
         child_report_hashes=tuple(row.child_report_hash for row in report.rows),
         adapter_evidence_certificate_hashes=tuple(row.adapter_evidence_certificate_hash for row in report.rows),
         child_claim_hashes=tuple(row.child_claim_hash for row in report.rows),
+        learner_snapshot_hashes=tuple(row.learner_snapshot_hash for row in report.rows if row.learner_snapshot_hash),
+        learner_snapshot_receipt_hashes=tuple(
+            receipt_hash for row in report.rows for receipt_hash in row.learner_snapshot_receipt_hashes
+        ),
+        learner_snapshot_row_hashes=tuple(row_hash for row in report.rows for row_hash in row.learner_snapshot_row_hashes),
         learning_certificate_hashes=tuple(row.learning_certificate_hash for row in report.rows if row.learning_certificate_hash),
         training_receipt_hashes=tuple(receipt_hash for row in report.rows for receipt_hash in row.training_receipt_hashes),
         baseline_receipt_hashes=tuple(receipt_hash for row in report.rows for receipt_hash in row.baseline_receipt_hashes),
@@ -490,6 +522,7 @@ def build_real_task_benchmark_suite_certificate(
             artifact_hash for row in report.rows for artifact_hash in row.receipt_artifact_value_hashes
         ),
         backend_execution_evidence_hashes=tuple(evidence_hash for row in report.rows for evidence_hash in row.backend_execution_evidence_hashes),
+        proposer_rank_audit_hashes=tuple(audit_hash for row in report.rows for audit_hash in row.proposer_rank_audit_hashes),
         all_child_claims_valid=report.all_child_claims_valid,
         all_child_claims_supported=report.all_child_claims_supported,
         all_child_claims_match_reports=report.all_child_claims_match_reports,
@@ -497,6 +530,7 @@ def build_real_task_benchmark_suite_certificate(
         all_adapter_evidence_certificates_match_reports=report.all_adapter_evidence_certificates_match_reports,
         all_adapter_evidence_matches_manifest=report.all_adapter_evidence_matches_manifest,
         all_adapter_task_splits_match_manifest=report.all_adapter_task_splits_match_manifest,
+        all_learner_snapshots_bound=report.all_learner_snapshots_bound,
         all_learning_certificates_valid=report.all_learning_certificates_valid,
         all_learning_certificates_support_claim=report.all_learning_certificates_support_claim,
         all_learning_certificates_match_reports=report.all_learning_certificates_match_reports,
@@ -508,6 +542,7 @@ def build_real_task_benchmark_suite_certificate(
         all_receipt_artifacts_cover_manifest_assets=report.all_receipt_artifacts_cover_manifest_assets,
         all_backend_execution_evidence_bound=report.all_backend_execution_evidence_bound,
         heldout_arms_isolated=report.heldout_arms_isolated,
+        all_proposer_rank_audits_bound=report.all_proposer_rank_audits_bound,
         hard_verifier_calls_reduced=report.hard_verifier_calls_reduced,
         success_preserved=report.success_preserved,
         replay_rollback_ledger_ok=report.replay_rollback_ledger_ok,
@@ -581,7 +616,11 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
             return False
         if any(not isinstance(row.learning_certificate_matches_report, bool) for row in report.rows):
             return False
+        if any(not isinstance(row.learner_snapshot_valid, bool) for row in report.rows):
+            return False
         if any(not isinstance(row.heldout_arm_isolated, bool) for row in report.rows):
+            return False
+        if any(not isinstance(row.proposer_rank_audit_ok, bool) for row in report.rows):
             return False
         if any(not isinstance(row.receipt_artifacts_bound, bool) for row in report.rows):
             return False
@@ -599,6 +638,10 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
             return False
         if not isinstance(report.all_backend_execution_evidence_bound, bool):
             return False
+        if not isinstance(report.all_learner_snapshots_bound, bool):
+            return False
+        if not isinstance(report.all_proposer_rank_audits_bound, bool):
+            return False
         if report.all_child_claims_valid != all(row.child_claim_valid for row in report.rows):
             return False
         if report.all_child_claims_match_reports != all(row.child_claim_matches_report for row in report.rows):
@@ -610,6 +653,8 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
         if report.all_adapter_evidence_matches_manifest != all(row.adapter_evidence_matches_manifest for row in report.rows):
             return False
         if report.all_adapter_task_splits_match_manifest != all(row.adapter_task_splits_match_manifest for row in report.rows):
+            return False
+        if report.all_learner_snapshots_bound != all(row.learner_snapshot_valid for row in report.rows):
             return False
         if report.all_learning_certificates_match_reports != all(row.learning_certificate_matches_report for row in report.rows):
             return False
@@ -662,6 +707,12 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
                 return False
             if any(not _is_hash(evidence_hash) for evidence_hash in row.backend_execution_evidence_hashes):
                 return False
+            if any(not _is_hash(receipt_hash) for receipt_hash in row.learner_snapshot_receipt_hashes):
+                return False
+            if any(not _is_hash(row_hash) for row_hash in row.learner_snapshot_row_hashes):
+                return False
+            if any(not _is_hash(audit_hash) for audit_hash in row.proposer_rank_audit_hashes):
+                return False
             if row.receipt_artifacts_bound and row.receipt_count == 0:
                 return False
             if row.receipt_artifacts_bound and not row.receipt_artifact_value_hashes:
@@ -674,7 +725,24 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
                 return False
             if row.receipt_count > 0 and not _is_hash(row.learning_certificate_hash):
                 return False
+            if row.receipt_count > 0 and not _is_hash(row.learner_snapshot_hash):
+                return False
+            if row.receipt_count > 0 and row.learner_snapshot_receipt_hashes != row.training_receipt_hashes:
+                return False
+            if row.receipt_count > 0 and not row.learner_snapshot_row_hashes:
+                return False
+            if row.receipt_count > 0 and len(row.proposer_rank_audit_hashes) != len(row.held_out_task_ids):
+                return False
             if row.receipt_count == 0 and row.learning_certificate_hash:
+                return False
+            if row.receipt_count == 0 and (
+                row.learner_snapshot_hash
+                or row.learner_snapshot_valid
+                or row.learner_snapshot_receipt_hashes
+                or row.learner_snapshot_row_hashes
+                or row.proposer_rank_audit_ok
+                or row.proposer_rank_audit_hashes
+            ):
                 return False
             int_fields = (
                 row.receipt_count,
@@ -740,6 +808,8 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
             return False
         if report.heldout_arms_isolated != all(row.heldout_arm_isolated for row in report.rows):
             return False
+        if report.all_proposer_rank_audits_bound != all(row.proposer_rank_audit_ok for row in report.rows):
+            return False
         if report.hard_verifier_calls_reduced != all(row.learned_verifier_calls < row.baseline_verifier_calls for row in report.rows):
             return False
         if report.success_preserved != all(row.learned_success_count == row.baseline_success_count and row.learned_success_count > 0 for row in report.rows):
@@ -802,6 +872,12 @@ def validate_real_task_benchmark_suite_certificate(
             return False
         if len(certificate.child_claim_hashes) != 4 or any(not _is_hash(row) for row in certificate.child_claim_hashes):
             return False
+        if any(not _is_hash(row) for row in certificate.learner_snapshot_hashes):
+            return False
+        if any(not _is_hash(row) for row in certificate.learner_snapshot_receipt_hashes):
+            return False
+        if any(not _is_hash(row) for row in certificate.learner_snapshot_row_hashes):
+            return False
         if any(not _is_hash(row) for row in certificate.learning_certificate_hashes):
             return False
         if any(not _is_hash(row) for row in certificate.training_receipt_hashes):
@@ -823,6 +899,8 @@ def validate_real_task_benchmark_suite_certificate(
         if any(not _is_hash(row) for row in certificate.receipt_artifact_value_hashes):
             return False
         if any(not _is_hash(row) for row in certificate.backend_execution_evidence_hashes):
+            return False
+        if any(not _is_hash(row) for row in certificate.proposer_rank_audit_hashes):
             return False
         if not (
             len(certificate.receipt_hashes)
@@ -848,13 +926,21 @@ def validate_real_task_benchmark_suite_certificate(
             return False
         if certificate.all_child_claims_supported and not certificate.all_learning_certificates_support_claim:
             return False
+        if certificate.all_child_claims_supported and not certificate.all_learner_snapshots_bound:
+            return False
+        if certificate.all_child_claims_supported and not certificate.all_proposer_rank_audits_bound:
+            return False
         if not isinstance(certificate.heldout_arms_isolated, bool):
             return False
         if not isinstance(certificate.all_backends_available, bool):
             return False
         if not isinstance(certificate.all_learning_certificates_support_claim, bool):
             return False
+        if not isinstance(certificate.all_learner_snapshots_bound, bool):
+            return False
         if not isinstance(certificate.all_backend_execution_evidence_bound, bool):
+            return False
+        if not isinstance(certificate.all_proposer_rank_audits_bound, bool):
             return False
         if not isinstance(certificate.all_runtime_requirements_match_preflight, bool):
             return False
@@ -921,6 +1007,14 @@ def validate_real_task_benchmark_suite_certificate(
                 return False
             if certificate.child_claim_hashes != tuple(row.child_claim_hash for row in report.rows):
                 return False
+            if certificate.learner_snapshot_hashes != tuple(row.learner_snapshot_hash for row in report.rows if row.learner_snapshot_hash):
+                return False
+            if certificate.learner_snapshot_receipt_hashes != tuple(
+                receipt_hash for row in report.rows for receipt_hash in row.learner_snapshot_receipt_hashes
+            ):
+                return False
+            if certificate.learner_snapshot_row_hashes != tuple(row_hash for row in report.rows for row_hash in row.learner_snapshot_row_hashes):
+                return False
             if certificate.learning_certificate_hashes != tuple(row.learning_certificate_hash for row in report.rows if row.learning_certificate_hash):
                 return False
             if certificate.training_receipt_hashes != tuple(receipt_hash for row in report.rows for receipt_hash in row.training_receipt_hashes):
@@ -945,6 +1039,8 @@ def validate_real_task_benchmark_suite_certificate(
                 return False
             if certificate.backend_execution_evidence_hashes != tuple(evidence_hash for row in report.rows for evidence_hash in row.backend_execution_evidence_hashes):
                 return False
+            if certificate.proposer_rank_audit_hashes != tuple(audit_hash for row in report.rows for audit_hash in row.proposer_rank_audit_hashes):
+                return False
             for field in (
                 "all_child_claims_valid",
                 "all_child_claims_supported",
@@ -953,6 +1049,7 @@ def validate_real_task_benchmark_suite_certificate(
                 "all_adapter_evidence_certificates_match_reports",
                 "all_adapter_evidence_matches_manifest",
                 "all_adapter_task_splits_match_manifest",
+                "all_learner_snapshots_bound",
                 "all_learning_certificates_valid",
                 "all_learning_certificates_support_claim",
                 "all_learning_certificates_match_reports",
@@ -964,6 +1061,7 @@ def validate_real_task_benchmark_suite_certificate(
                 "all_receipt_artifacts_cover_manifest_assets",
                 "all_backend_execution_evidence_bound",
                 "heldout_arms_isolated",
+                "all_proposer_rank_audits_bound",
                 "hard_verifier_calls_reduced",
                 "success_preserved",
                 "replay_rollback_ledger_ok",
@@ -1000,6 +1098,7 @@ def _build_report(
         all_adapter_evidence_certificates_match_reports=all(row.adapter_evidence_certificate_matches_report for row in rows),
         all_adapter_evidence_matches_manifest=all(row.adapter_evidence_matches_manifest for row in rows),
         all_adapter_task_splits_match_manifest=all(row.adapter_task_splits_match_manifest for row in rows),
+        all_learner_snapshots_bound=all(row.learner_snapshot_valid for row in rows),
         all_learning_certificates_valid=all(row.learning_certificate_valid for row in rows),
         all_learning_certificates_support_claim=all(row.learning_certificate_supports_claim for row in rows),
         all_learning_certificates_match_reports=all(row.learning_certificate_matches_report for row in rows),
@@ -1011,6 +1110,7 @@ def _build_report(
         all_receipt_artifacts_cover_manifest_assets=all(row.receipt_artifacts_cover_manifest_assets for row in rows),
         all_backend_execution_evidence_bound=all(row.backend_execution_evidence_ok for row in rows),
         heldout_arms_isolated=all(row.heldout_arm_isolated for row in rows),
+        all_proposer_rank_audits_bound=all(row.proposer_rank_audit_ok for row in rows),
         hard_verifier_calls_reduced=all(row.learned_verifier_calls < row.baseline_verifier_calls for row in rows),
         success_preserved=all(row.learned_success_count == row.baseline_success_count and row.learned_success_count > 0 for row in rows),
         replay_rollback_ledger_ok=all(row.replay_audit_ok and row.rollback_audit_ok and row.ledger_audit_ok for row in rows),
@@ -1132,6 +1232,10 @@ def _suite_row(
         child_claim_status=str(child_claim.status),
         child_claim_hash=str(child_claim.certificate_hash),
         child_claim_matches_report=_child_claim_matches_report(domain, report, child_claim),
+        learner_snapshot_hash=str(report.learner_snapshot_hash),
+        learner_snapshot_valid=bool(report.learner_snapshot_valid),
+        learner_snapshot_receipt_hashes=tuple(str(row) for row in report.learner_snapshot_receipt_hashes),
+        learner_snapshot_row_hashes=tuple(str(row) for row in report.learner_snapshot_row_hashes),
         learning_certificate_hash=learning_hash,
         learning_certificate_valid=learning_valid,
         learning_certificate_supports_claim=learning_supports,
@@ -1152,6 +1256,8 @@ def _suite_row(
         verifier_call_reduction=int(report.verifier_call_reduction),
         hard_commit_only=bool(report.hard_commit_only),
         heldout_arm_isolated=bool(report.heldout_arm_isolated),
+        proposer_rank_audit_ok=bool(report.proposer_rank_audit_ok),
+        proposer_rank_audit_hashes=tuple(str(row) for row in report.proposer_rank_audit_hashes),
         replay_audit_ok=bool(report.replay_audit_ok),
         rollback_audit_ok=bool(report.rollback_audit_ok),
         ledger_audit_ok=bool(report.ledger_audit_ok),
@@ -1216,6 +1322,7 @@ def _child_claim_matches_report(domain: str, report: Any, claim: ClaimCertificat
         "runtime_requirements_bound",
         "receipt_artifacts_bound",
         "backend_execution_evidence_bound",
+        "learner_snapshot_bound",
         "learning_certificate_valid",
         "learning_certificate_supports_claim",
         "hard_verifier_calls_reduced",
@@ -1224,6 +1331,7 @@ def _child_claim_matches_report(domain: str, report: Any, claim: ClaimCertificat
         "hard_commit_only",
         "train_eval_disjoint",
         "heldout_arm_isolated",
+        "proposer_rank_audit_bound",
         "replay_rollback_ok",
     )
     if tuple(row.key for row in claim.requirements) != expected_requirement_keys:
@@ -1243,12 +1351,21 @@ def _child_claim_matches_report(domain: str, report: Any, claim: ClaimCertificat
     artifact_requirement = requirements["receipt_artifacts_bound"]
     if tuple(artifact_requirement.evidence.get("artifact_hashes", ())) != tuple(report.receipt_artifact_hashes):
         return False
+    snapshot_requirement = requirements["learner_snapshot_bound"]
+    if tuple(snapshot_requirement.evidence.get("receipt_hashes", ())) != tuple(report.learner_snapshot_receipt_hashes):
+        return False
+    if tuple(snapshot_requirement.evidence.get("row_hashes", ())) != tuple(report.learner_snapshot_row_hashes):
+        return False
+    rank_requirement = requirements["proposer_rank_audit_bound"]
+    if tuple(rank_requirement.evidence.get("audit_hashes", ())) != tuple(report.proposer_rank_audit_hashes):
+        return False
     expected_passes = {
         "backend_available": bool(report.backend_available),
         real_backend_requirement: bool(report.real_backend),
         "runtime_requirements_bound": (not bool(report.real_backend)) or bool(report.runtime_requirement_evidence_hashes),
         "receipt_artifacts_bound": bool(report.receipt_artifacts_bound),
         "backend_execution_evidence_bound": bool(report.backend_execution_evidence_ok),
+        "learner_snapshot_bound": bool(report.learner_snapshot_valid),
         "learning_certificate_valid": bool(report.learning_certificate_valid),
         "learning_certificate_supports_claim": bool(report.learning_certificate_supports_claim),
         "hard_verifier_calls_reduced": report.learned_verifier_calls < report.baseline_verifier_calls,
@@ -1257,6 +1374,7 @@ def _child_claim_matches_report(domain: str, report: Any, claim: ClaimCertificat
         "hard_commit_only": bool(report.hard_commit_only),
         "train_eval_disjoint": bool(report.train_eval_disjoint),
         "heldout_arm_isolated": bool(report.heldout_arm_isolated),
+        "proposer_rank_audit_bound": bool(report.proposer_rank_audit_ok),
         "replay_rollback_ok": bool(report.replay_audit_ok and report.rollback_audit_ok and report.ledger_audit_ok),
     }
     if any(requirements[key].passed != expected_passes[key] for key in expected_requirement_keys):
@@ -1287,9 +1405,14 @@ def _learning_certificate_matches_report(report: Any, learning_certificate: Any 
             and report.baseline_receipt_count == 0
             and report.learned_receipt_count == 0
             and report.learner_snapshot_hash == ""
+            and not report.learner_snapshot_valid
+            and report.learner_snapshot_receipt_hashes == ()
+            and report.learner_snapshot_row_hashes == ()
             and report.learning_certificate_hash == ""
             and not report.learning_certificate_valid
             and not report.learning_certificate_supports_claim
+            and not report.proposer_rank_audit_ok
+            and report.proposer_rank_audit_hashes == ()
         )
     if not validate_learning_evaluation_certificate(learning_certificate):
         return False
@@ -1309,6 +1432,9 @@ def _learning_certificate_matches_report(report: Any, learning_certificate: Any 
         learning_certificate.certificate_hash == report.learning_certificate_hash
         and learning_certificate.learner_snapshot_hash == report.learner_snapshot_hash
         and learning_certificate.training_receipt_hashes == training_hashes
+        and report.learner_snapshot_valid
+        and report.learner_snapshot_receipt_hashes == training_hashes
+        and bool(report.learner_snapshot_row_hashes)
         and learning_certificate.baseline_receipt_hashes == baseline_hashes
         and learning_certificate.evaluation_receipt_hashes == learned_hashes
         and len(learning_certificate.training_receipt_hashes) == report.training_receipt_count
@@ -1327,6 +1453,8 @@ def _learning_certificate_matches_report(report: Any, learning_certificate: Any 
         and learning_certificate.ledger_audit == report.ledger_audit_ok
         and learning_certificate.replay_rollback_rate == (1.0 if report.replay_audit_ok and report.rollback_audit_ok else 0.0)
         and learning_certificate.metrics == expected_metrics
+        and report.proposer_rank_audit_ok
+        and len(report.proposer_rank_audit_hashes) == len(report.held_out_task_ids)
         and report.learning_certificate_valid == validate_learning_evaluation_certificate(learning_certificate)
         and report.learning_certificate_supports_claim == learning_evaluation_supports_claim(learning_certificate)
     )
