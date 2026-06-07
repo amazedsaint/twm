@@ -21,9 +21,11 @@ from examples.real_task_benchmark_suite import REAL_TASK_BENCHMARK_SUITE_DOMAINS
 from examples.real_task_evidence_bundle import (
     REAL_TASK_EVIDENCE_BUNDLE_CERTIFICATE_SCHEMA,
     RealTaskEvidenceBundleResult,
+    real_task_evidence_bundle_certificate_from_dict,
     result_as_dict,
     run_real_task_evidence_bundle,
     validate_real_task_evidence_bundle,
+    validate_real_task_evidence_bundle_certificate,
 )
 from examples.robotics_motion_benchmark_adapter import (
     DeterministicMotionBenchmarkBackend,
@@ -98,6 +100,23 @@ class RealTaskEvidenceBundleTests(unittest.TestCase):
         self.assertEqual(certificate.missing_requirements, result.suite_result.preflight_report.missing_requirements)
         self.assertTrue(validate_real_task_evidence_bundle(result))
         json.dumps(result_as_dict(result), sort_keys=True)
+
+    def test_portable_bundle_certificate_json_validates(self) -> None:
+        result = run_real_task_evidence_bundle(_deterministic_adapter_results())
+        payload = json.loads(json.dumps(result_as_dict(result), sort_keys=True))
+        certificate = real_task_evidence_bundle_certificate_from_dict(payload)
+
+        self.assertEqual(certificate.certificate_hash, result.bundle_certificate.certificate_hash)
+        self.assertTrue(validate_real_task_evidence_bundle_certificate(certificate))
+        self.assertTrue(validate_real_task_evidence_bundle_certificate(payload["bundle_certificate"]))
+
+    def test_tampered_portable_bundle_certificate_json_fails(self) -> None:
+        result = run_real_task_evidence_bundle(_deterministic_adapter_results())
+        payload = result_as_dict(result)["bundle_certificate"]
+        payload = dict(payload)
+        payload["child_learner_snapshot_hashes"] = ("0" * 64, *payload["child_learner_snapshot_hashes"][1:])
+
+        self.assertFalse(validate_real_task_evidence_bundle_certificate(payload))
 
     def test_unavailable_bundle_fails_closed_with_zero_receipts(self) -> None:
         result = run_real_task_evidence_bundle(_unavailable_adapter_results())

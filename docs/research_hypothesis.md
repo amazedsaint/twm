@@ -1022,3 +1022,6 @@ hold before any four-domain G1 real-task call-reduction claim can promote.
 The final evidence bundle now carries the same compact lanes, so downstream
 review can validate the learner-snapshot and rank-audit gates from the portable
 bundle certificate rather than re-opening every child report first.
+The bundle also has a standalone certificate-level JSON validator; full
+child-result replay remains the stricter validation path, but external runs now
+have an immediate hash-bound review gate.

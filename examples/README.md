@@ -1593,3 +1593,7 @@ gates, and the final zero-invalid-commit gate. It then
 rebuilds the aggregate suite from the included child results during validation,
 so a valid bundle cannot mix a suite result from one run with child evidence
 from another run.
+For external JSON handoff, `real_task_evidence_bundle_certificate_from_dict`
+and `validate_real_task_evidence_bundle_certificate` provide a standalone
+certificate-level check over the portable bundle certificate before a reviewer
+reconstructs the full child result objects.

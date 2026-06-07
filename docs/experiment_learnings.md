@@ -991,3 +991,8 @@ child proposer-rank audit hashes, `all_learner_snapshots_bound`, and
 `all_proposer_rank_audits_bound`. That closes the handoff gap where the suite
 could validate the learned proposer path but the final bundle did not expose
 the compact hashes needed for downstream review.
+
+The bundle module now also exposes a portable certificate parser and validator
+for external JSON handoff. This is intentionally certificate-level: it checks
+schema, self-hash, count lanes, snapshot lanes, rank-audit lanes, and supported
+claim gates before full child-result reconstruction is attempted.

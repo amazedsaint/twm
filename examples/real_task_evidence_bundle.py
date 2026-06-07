@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields
 import json
 from typing import Any, Mapping
 
@@ -218,13 +218,57 @@ def validate_real_task_evidence_bundle(
         certificate = result.bundle_certificate
         suite_result = result.suite_result
         child_results = result.child_results
+        if not validate_real_task_evidence_bundle_certificate(certificate):
+            return False
+        if set(child_results) != set(REAL_TASK_BENCHMARK_SUITE_DOMAINS):
+            return False
+        expected_suite_result = build_real_task_benchmark_suite_result(child_results)
+        if real_task_benchmark_suite_report_hash(expected_suite_result.report) != certificate.suite_report_hash:
+            return False
+        if expected_suite_result.suite_certificate.certificate_hash != certificate.suite_certificate_hash:
+            return False
+        if expected_suite_result.claim_certificate.certificate_hash != certificate.aggregate_claim_hash:
+            return False
+        if real_task_benchmark_suite_report_hash(suite_result.report) != certificate.suite_report_hash:
+            return False
+        if suite_result.suite_certificate.certificate_hash != certificate.suite_certificate_hash:
+            return False
+        if suite_result.claim_certificate.certificate_hash != certificate.aggregate_claim_hash:
+            return False
+        expected_certificate = build_real_task_evidence_bundle_certificate(suite_result, child_results)
+        if certificate.without_hash() != expected_certificate.without_hash():
+            return False
+        if certificate.aggregate_claim_status == "supported" and not _supported_bundle(certificate):
+            return False
+        return certificate.certificate_hash == real_task_evidence_bundle_certificate_hash(certificate)
+    except Exception:
+        return False
+
+
+def real_task_evidence_bundle_certificate_hash(certificate: RealTaskEvidenceBundleCertificate) -> str:
+    return stable_hash(certificate.without_hash())
+
+
+def real_task_evidence_bundle_certificate_from_dict(data: Mapping[str, Any]) -> RealTaskEvidenceBundleCertificate:
+    payload = data.get("bundle_certificate", data) if isinstance(data, Mapping) else data
+    if not isinstance(payload, Mapping):
+        raise TypeError("bundle certificate payload must be a mapping")
+    field_names = tuple(field.name for field in fields(RealTaskEvidenceBundleCertificate))
+    missing = tuple(name for name in field_names if name not in payload)
+    if missing:
+        raise ValueError(f"missing bundle certificate fields: {missing}")
+    return RealTaskEvidenceBundleCertificate(**{name: payload[name] for name in field_names})
+
+
+def validate_real_task_evidence_bundle_certificate(certificate: RealTaskEvidenceBundleCertificate | Mapping[str, Any]) -> bool:
+    try:
+        if isinstance(certificate, Mapping):
+            certificate = real_task_evidence_bundle_certificate_from_dict(certificate)
         if certificate.schema_version != REAL_TASK_EVIDENCE_BUNDLE_CERTIFICATE_SCHEMA:
             return False
         if certificate.experiment_id != "receipt_trained_reversible_real_task_evidence_bundle":
             return False
         if certificate.domains != REAL_TASK_BENCHMARK_SUITE_DOMAINS:
-            return False
-        if set(child_results) != set(REAL_TASK_BENCHMARK_SUITE_DOMAINS):
             return False
         if not _hash_tuple(certificate.child_report_hashes, size=4):
             return False
@@ -288,31 +332,11 @@ def validate_real_task_evidence_bundle(
             return False
         if not certificate.source_urls or any(not isinstance(source, str) or not source for source in certificate.source_urls):
             return False
-        expected_suite_result = build_real_task_benchmark_suite_result(child_results)
-        if real_task_benchmark_suite_report_hash(expected_suite_result.report) != certificate.suite_report_hash:
-            return False
-        if expected_suite_result.suite_certificate.certificate_hash != certificate.suite_certificate_hash:
-            return False
-        if expected_suite_result.claim_certificate.certificate_hash != certificate.aggregate_claim_hash:
-            return False
-        if real_task_benchmark_suite_report_hash(suite_result.report) != certificate.suite_report_hash:
-            return False
-        if suite_result.suite_certificate.certificate_hash != certificate.suite_certificate_hash:
-            return False
-        if suite_result.claim_certificate.certificate_hash != certificate.aggregate_claim_hash:
-            return False
-        expected_certificate = build_real_task_evidence_bundle_certificate(suite_result, child_results)
-        if certificate.without_hash() != expected_certificate.without_hash():
-            return False
         if certificate.aggregate_claim_status == "supported" and not _supported_bundle(certificate):
             return False
         return certificate.certificate_hash == real_task_evidence_bundle_certificate_hash(certificate)
     except Exception:
         return False
-
-
-def real_task_evidence_bundle_certificate_hash(certificate: RealTaskEvidenceBundleCertificate) -> str:
-    return stable_hash(certificate.without_hash())
 
 
 def result_as_dict(result: RealTaskEvidenceBundleResult) -> dict[str, Any]:
