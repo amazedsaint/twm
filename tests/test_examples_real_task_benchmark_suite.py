@@ -85,6 +85,11 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertEqual(report.verifier_call_reduction, 8)
         self.assertEqual(report.baseline_success_count, 8)
         self.assertEqual(report.learned_success_count, 8)
+        for row in report.rows:
+            self.assertEqual(len(row.receipt_hashes), row.receipt_count)
+            self.assertEqual(len(row.typed_candidate_hashes), row.receipt_count)
+            self.assertEqual(len(row.hard_result_hashes), row.receipt_count)
+            self.assertEqual(len(row.hard_metadata_hashes), row.receipt_count)
 
         self.assertTrue(validate_real_task_benchmark_suite_report(report))
         self.assertEqual(
@@ -98,6 +103,22 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertEqual(
             result.suite_certificate.manifest_spec_hashes,
             tuple(row.manifest_spec_hash for row in report.rows),
+        )
+        self.assertEqual(
+            result.suite_certificate.receipt_hashes,
+            tuple(receipt_hash for row in report.rows for receipt_hash in row.receipt_hashes),
+        )
+        self.assertEqual(
+            result.suite_certificate.typed_candidate_hashes,
+            tuple(candidate_hash for row in report.rows for candidate_hash in row.typed_candidate_hashes),
+        )
+        self.assertEqual(
+            result.suite_certificate.hard_result_hashes,
+            tuple(result_hash for row in report.rows for result_hash in row.hard_result_hashes),
+        )
+        self.assertEqual(
+            result.suite_certificate.hard_metadata_hashes,
+            tuple(metadata_hash for row in report.rows for metadata_hash in row.hard_metadata_hashes),
         )
         self.assertTrue(result.suite_certificate.all_child_claims_match_reports)
         self.assertTrue(result.suite_certificate.all_adapter_evidence_certificates_valid)
@@ -121,6 +142,10 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         result = build_real_task_benchmark_suite_result(results)
 
         self.assertEqual(result.report.total_receipt_count, 0)
+        self.assertEqual(result.suite_certificate.receipt_hashes, ())
+        self.assertEqual(result.suite_certificate.typed_candidate_hashes, ())
+        self.assertEqual(result.suite_certificate.hard_result_hashes, ())
+        self.assertEqual(result.suite_certificate.hard_metadata_hashes, ())
         self.assertFalse(result.report.all_backends_available)
         self.assertTrue(result.report.all_child_claims_match_reports)
         self.assertTrue(result.report.all_adapter_evidence_certificates_valid)
@@ -276,6 +301,21 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
 
         self.assertFalse(validate_real_task_benchmark_suite_report(bad_report))
         self.assertFalse(validate_real_task_benchmark_suite_certificate(result.suite_certificate, bad_report))
+
+    def test_suite_report_validation_rejects_missing_execution_provenance_hash(self) -> None:
+        result = run_real_task_benchmark_suite(_deterministic_adapter_results())
+        first = result.report.rows[0]
+        bad_first = replace(first, hard_metadata_hashes=first.hard_metadata_hashes[:-1])
+        bad_report = replace(result.report, rows=(bad_first, *result.report.rows[1:]))
+
+        self.assertFalse(validate_real_task_benchmark_suite_report(bad_report))
+        self.assertFalse(validate_real_task_benchmark_suite_certificate(result.suite_certificate, bad_report))
+
+    def test_suite_certificate_binds_execution_provenance_hashes(self) -> None:
+        result = run_real_task_benchmark_suite(_deterministic_adapter_results())
+        bad_certificate = replace(result.suite_certificate, hard_result_hashes=result.suite_certificate.hard_result_hashes[:-1], certificate_hash="")
+
+        self.assertFalse(validate_real_task_benchmark_suite_certificate(bad_certificate, result.report))
 
 
 if __name__ == "__main__":

@@ -911,6 +911,7 @@ available, all child claims are supported, all learning certificates support
 call reduction, every adapter evidence certificate is report-consistent and
 manifest-covered, every child claim and learning certificate is
 report-consistent, every domain reduces hard-verifier calls while preserving
-held-out success, all receipt counts bind exact receipt hashes, and invalid
-commits remain zero. On the current local machine the suite correctly rejects
-with G0 because the external toolchains and task roots are missing.
+held-out success, all receipt and execution-provenance counts bind exact hash
+lanes, and invalid commits remain zero. On the current local machine the suite
+correctly rejects with G0 because the external toolchains and task roots are
+missing.

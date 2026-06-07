@@ -1462,15 +1462,15 @@ adapters, validates their adapter evidence certificates, child claim
 certificates, and learning certificates, cross-checks each certificate against
 its child report and manifest spec, and aggregates manifest spec hashes,
 adapter evidence certificate hashes, child report hashes, exact receipt counts,
-baseline calls, learned calls, held-out successes, replay/rollback/ledger
-status, missing requirements, and invalid-commit counts. Adapter reports and
-evidence certificates also bind typed-candidate hashes, hard-result hashes, and
-hard-metadata hashes for every receipt, so external command/QCEC/test metadata
-has a compact audit lane without bloating the aggregate report. The adapter
-evidence cross-check binds exact training, baseline, and learned receipt partitions
-before the manifest cross-check proves the adapter evidence sources are covered
-by the domain's real-task manifest spec. The learning cross-check then binds
-the learned receipt partition into the learning certificate.
+typed-candidate hashes, hard-result hashes, hard-metadata hashes, baseline
+calls, learned calls, held-out successes, replay/rollback/ledger status,
+missing requirements, and invalid-commit counts. Those compact hash lanes keep
+external command/QCEC/test metadata auditable without bloating the aggregate
+report. The adapter evidence cross-check binds exact training, baseline, and
+learned receipt partitions before the manifest cross-check proves the adapter
+evidence sources are covered by the domain's real-task manifest spec. The
+learning cross-check then binds the learned receipt partition into the learning
+certificate.
 
 The suite claim is intentionally stricter than adapter readiness. It is
 supported only when all four domains use real backends, all child claims are
@@ -1478,6 +1478,7 @@ supported, every adapter evidence certificate and child claim matches its
 report and real-task manifest spec, all learning certificates support call
 reduction, every learning certificate matches its report, held-out success is
 preserved, hard-verifier calls are reduced in every domain, replay/rollback and
-ledger audits pass, receipt counts bind exact receipt hashes, and invalid
-commits remain zero. Missing external tools or deterministic test doubles
-produce a rejected G0 claim rather than weakening the final objective.
+ledger audits pass, receipt and execution-provenance counts bind exact hash
+lanes, and invalid commits remain zero. Missing external tools or deterministic
+test doubles produce a rejected G0 claim rather than weakening the final
+objective.

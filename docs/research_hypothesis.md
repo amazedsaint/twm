@@ -948,5 +948,6 @@ hard-commit audit, and exact training/learned receipt partitions. The suite
 claim supports the objective only if every real backend supports its
 single-domain claim, every child certificate is report-consistent and
 manifest-covered, and every domain reduces hard-verifier calls while preserving
-held-out success and zero invalid commits. On machines without the external
-toolchains and task roots, the suite must reject with G0 evidence.
+held-out success, exact receipt/provenance hash-lane counts, and zero invalid
+commits. On machines without the external toolchains and task roots, the suite
+must reject with G0 evidence.

@@ -100,6 +100,9 @@ class RealTaskBenchmarkSuiteRow:
     rollback_audit_ok: bool
     ledger_audit_ok: bool
     receipt_hashes: tuple[str, ...]
+    typed_candidate_hashes: tuple[str, ...]
+    hard_result_hashes: tuple[str, ...]
+    hard_metadata_hashes: tuple[str, ...]
     source_urls: tuple[str, ...]
     claim_boundary: str
 
@@ -108,6 +111,9 @@ class RealTaskBenchmarkSuiteRow:
         object.__setattr__(self, "train_task_ids", tuple(self.train_task_ids))
         object.__setattr__(self, "held_out_task_ids", tuple(self.held_out_task_ids))
         object.__setattr__(self, "receipt_hashes", tuple(self.receipt_hashes))
+        object.__setattr__(self, "typed_candidate_hashes", tuple(self.typed_candidate_hashes))
+        object.__setattr__(self, "hard_result_hashes", tuple(self.hard_result_hashes))
+        object.__setattr__(self, "hard_metadata_hashes", tuple(self.hard_metadata_hashes))
         object.__setattr__(self, "source_urls", tuple(self.source_urls))
 
 
@@ -176,6 +182,9 @@ class RealTaskBenchmarkSuiteCertificate:
     child_claim_hashes: tuple[str, ...]
     learning_certificate_hashes: tuple[str, ...]
     receipt_hashes: tuple[str, ...]
+    typed_candidate_hashes: tuple[str, ...]
+    hard_result_hashes: tuple[str, ...]
+    hard_metadata_hashes: tuple[str, ...]
     all_child_claims_valid: bool
     all_child_claims_supported: bool
     all_child_claims_match_reports: bool
@@ -202,6 +211,9 @@ class RealTaskBenchmarkSuiteCertificate:
         object.__setattr__(self, "child_claim_hashes", tuple(self.child_claim_hashes))
         object.__setattr__(self, "learning_certificate_hashes", tuple(self.learning_certificate_hashes))
         object.__setattr__(self, "receipt_hashes", tuple(self.receipt_hashes))
+        object.__setattr__(self, "typed_candidate_hashes", tuple(self.typed_candidate_hashes))
+        object.__setattr__(self, "hard_result_hashes", tuple(self.hard_result_hashes))
+        object.__setattr__(self, "hard_metadata_hashes", tuple(self.hard_metadata_hashes))
         if not self.certificate_hash:
             object.__setattr__(self, "certificate_hash", real_task_benchmark_suite_certificate_hash(self))
 
@@ -332,6 +344,9 @@ def build_real_task_benchmark_suite_certificate(
         child_claim_hashes=tuple(row.child_claim_hash for row in report.rows),
         learning_certificate_hashes=tuple(row.learning_certificate_hash for row in report.rows if row.learning_certificate_hash),
         receipt_hashes=tuple(receipt_hash for row in report.rows for receipt_hash in row.receipt_hashes),
+        typed_candidate_hashes=tuple(candidate_hash for row in report.rows for candidate_hash in row.typed_candidate_hashes),
+        hard_result_hashes=tuple(result_hash for row in report.rows for result_hash in row.hard_result_hashes),
+        hard_metadata_hashes=tuple(metadata_hash for row in report.rows for metadata_hash in row.hard_metadata_hashes),
         all_child_claims_valid=report.all_child_claims_valid,
         all_child_claims_supported=report.all_child_claims_supported,
         all_child_claims_match_reports=report.all_child_claims_match_reports,
@@ -404,9 +419,21 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
         for row in report.rows:
             if row.receipt_count != len(row.receipt_hashes):
                 return False
+            if row.receipt_count != len(row.typed_candidate_hashes):
+                return False
+            if row.receipt_count != len(row.hard_result_hashes):
+                return False
+            if row.receipt_count != len(row.hard_metadata_hashes):
+                return False
             if row.receipt_count != row.training_receipt_count + row.baseline_receipt_count + row.learned_receipt_count:
                 return False
             if any(not _is_hash(receipt_hash) for receipt_hash in row.receipt_hashes):
+                return False
+            if any(not _is_hash(candidate_hash) for candidate_hash in row.typed_candidate_hashes):
+                return False
+            if any(not _is_hash(result_hash) for result_hash in row.hard_result_hashes):
+                return False
+            if any(not _is_hash(metadata_hash) for metadata_hash in row.hard_metadata_hashes):
                 return False
             if row.receipt_count > 0 and not _is_hash(row.learning_certificate_hash):
                 return False
@@ -464,7 +491,7 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
             return False
         if report.all_learning_certificates_support_claim != all(row.learning_certificate_supports_claim for row in report.rows):
             return False
-        if report.all_receipt_counts_bound != all(row.receipt_count == len(row.receipt_hashes) for row in report.rows):
+        if report.all_receipt_counts_bound != all(_row_receipt_counts_bound(row) for row in report.rows):
             return False
         if report.hard_verifier_calls_reduced != all(row.learned_verifier_calls < row.baseline_verifier_calls for row in report.rows):
             return False
@@ -515,6 +542,19 @@ def validate_real_task_benchmark_suite_certificate(
             return False
         if any(not _is_hash(row) for row in certificate.receipt_hashes):
             return False
+        if any(not _is_hash(row) for row in certificate.typed_candidate_hashes):
+            return False
+        if any(not _is_hash(row) for row in certificate.hard_result_hashes):
+            return False
+        if any(not _is_hash(row) for row in certificate.hard_metadata_hashes):
+            return False
+        if not (
+            len(certificate.receipt_hashes)
+            == len(certificate.typed_candidate_hashes)
+            == len(certificate.hard_result_hashes)
+            == len(certificate.hard_metadata_hashes)
+        ):
+            return False
         if not certificate.all_receipt_counts_bound and certificate.all_child_claims_supported:
             return False
         if certificate.all_child_claims_supported and not certificate.all_child_claims_valid:
@@ -541,6 +581,12 @@ def validate_real_task_benchmark_suite_certificate(
             if certificate.learning_certificate_hashes != tuple(row.learning_certificate_hash for row in report.rows if row.learning_certificate_hash):
                 return False
             if certificate.receipt_hashes != tuple(receipt_hash for row in report.rows for receipt_hash in row.receipt_hashes):
+                return False
+            if certificate.typed_candidate_hashes != tuple(candidate_hash for row in report.rows for candidate_hash in row.typed_candidate_hashes):
+                return False
+            if certificate.hard_result_hashes != tuple(result_hash for row in report.rows for result_hash in row.hard_result_hashes):
+                return False
+            if certificate.hard_metadata_hashes != tuple(metadata_hash for row in report.rows for metadata_hash in row.hard_metadata_hashes):
                 return False
             for field in (
                 "all_child_claims_valid",
@@ -591,7 +637,7 @@ def _build_report(
         all_learning_certificates_match_reports=all(row.learning_certificate_matches_report for row in rows),
         all_backends_available=all(row.backend_available for row in rows),
         all_real_backends=all(row.real_backend for row in rows),
-        all_receipt_counts_bound=all(row.receipt_count == len(row.receipt_hashes) for row in rows),
+        all_receipt_counts_bound=all(_row_receipt_counts_bound(row) for row in rows),
         hard_verifier_calls_reduced=all(row.learned_verifier_calls < row.baseline_verifier_calls for row in rows),
         success_preserved=all(row.learned_success_count == row.baseline_success_count and row.learned_success_count > 0 for row in rows),
         replay_rollback_ledger_ok=all(row.replay_audit_ok and row.rollback_audit_ok and row.ledger_audit_ok for row in rows),
@@ -688,6 +734,9 @@ def _suite_row(domain: str, result: Any, manifest_spec: RealTaskBenchmarkSpec) -
         rollback_audit_ok=bool(report.rollback_audit_ok),
         ledger_audit_ok=bool(report.ledger_audit_ok),
         receipt_hashes=tuple(str(row) for row in report.receipt_hashes),
+        typed_candidate_hashes=tuple(str(row) for row in report.typed_candidate_hashes),
+        hard_result_hashes=tuple(str(row) for row in report.hard_result_hashes),
+        hard_metadata_hashes=tuple(str(row) for row in report.hard_metadata_hashes),
         source_urls=tuple(str(row) for row in report.source_urls),
         claim_boundary=str(report.claim_boundary),
     )
@@ -828,6 +877,16 @@ def real_task_benchmark_suite_report_hash(report: RealTaskBenchmarkSuiteReport) 
 
 def real_task_benchmark_suite_certificate_hash(certificate: RealTaskBenchmarkSuiteCertificate) -> str:
     return stable_hash(certificate.without_hash())
+
+
+def _row_receipt_counts_bound(row: RealTaskBenchmarkSuiteRow) -> bool:
+    return (
+        row.receipt_count
+        == len(row.receipt_hashes)
+        == len(row.typed_candidate_hashes)
+        == len(row.hard_result_hashes)
+        == len(row.hard_metadata_hashes)
+    )
 
 
 def _is_hash(value: str) -> bool:
