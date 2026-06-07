@@ -833,8 +833,9 @@ baseline and learned arms were isolated from the same frozen post-training
 state, plus typed-candidate hashes, hard-result hashes, and hard-metadata
 hashes for every receipt, which turns command output summaries, QCEC
 equivalence metadata, and test-verifier metadata into compact certificate
-lanes. It now also binds normalized backend execution evidence hashes for every
-receipt, so a supported real-backend claim must expose the expected
+lanes. It now also binds receipt artifact hashes for every receipt and
+normalized backend execution evidence hashes for every receipt, so a supported
+real-backend claim must expose both the task/candidate inputs and the expected
 domain-specific execution shape rather than only a raw metadata hash. Missing
 real backends can still produce a valid G0 zero-receipt evidence certificate;
 only real-backend supported claims can produce G1 adapter evidence.
@@ -910,10 +911,10 @@ reports into one `trwm.real_task_benchmark_suite_report.v1` report plus a
 the readiness manifest, preflight report hash, manifest spec hashes, child
 adapter report hashes, adapter evidence certificate hashes, child claim hashes,
 learning certificate hashes, receipt hashes, typed-candidate hashes,
-hard-result hashes, hard-metadata hashes, missing requirements, backend errors,
-backend execution evidence hashes, verifier-call totals, held-out success
-totals, replay/rollback/ledger status, and invalid-commit totals. It also binds
-the aggregate `heldout_arms_isolated`
+hard-result hashes, hard-metadata hashes, receipt artifact hashes, missing
+requirements, backend errors, backend execution evidence hashes,
+verifier-call totals, held-out success totals, replay/rollback/ledger status,
+and invalid-commit totals. It also binds the aggregate `heldout_arms_isolated`
 gate, which requires every child baseline and learned evaluation arm to start
 from the same frozen post-training state on separate ledgers. It also
 cross-checks that each adapter evidence
@@ -931,7 +932,8 @@ call reduction, every adapter evidence certificate is report-consistent and
 manifest-covered, every child claim and learning certificate is
 report-consistent, every held-out arm comparison is isolated, every domain
 reduces hard-verifier calls while preserving held-out success, all receipt and
-execution-provenance counts bind exact hash lanes, all backend execution
-evidence lanes bind exact receipt counts, and invalid commits remain zero. On
-the current local machine the suite correctly rejects with G0 because the
-external toolchains and task roots are missing.
+execution-provenance counts bind exact hash lanes, all receipt artifact lanes
+bind exact receipt counts, all backend execution evidence lanes bind exact
+receipt counts, and invalid commits remain zero. On the current local machine
+the suite correctly rejects with G0 because the external toolchains and task
+roots are missing.

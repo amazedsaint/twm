@@ -23,8 +23,8 @@ The active real-task proof path is exposed by
 robotics, hardware, program, and quantum benchmark adapters and rejects unless
 all real backends produce manifest-covered, report-bound adapter evidence
 certificates, compact receipt-bound execution provenance hashes, normalized
-backend execution evidence hashes, supported held-out call-reduction evidence,
-and zero invalid commits.
+backend execution evidence hashes, receipt-bound task/candidate artifact
+hashes, supported held-out call-reduction evidence, and zero invalid commits.
 
 The current implementation includes:
 

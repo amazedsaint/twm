@@ -1480,16 +1480,21 @@ certificates, cross-checks each certificate against its child report and
 manifest spec, and aggregates the preflight report hash,
 manifest spec hashes, adapter evidence certificate hashes, child report hashes,
 exact receipt counts, typed-candidate hashes, hard-result hashes,
-hard-metadata hashes, backend execution evidence hashes, baseline calls,
-learned calls, held-out successes, replay/rollback/ledger status, missing
-requirements, backend errors, and invalid-commit counts. Those compact hash
-lanes keep external command/QCEC/test metadata and readiness probes auditable
-without bloating the aggregate report. The normalized execution-evidence lane
-also requires the expected domain shape before any supported real-backend child
-claim can promote: robotics binds `roslaunch` plus benchmark-result evidence,
-hardware binds riscv-formal command execution, program repair binds Defects4J
-checkout/compile/relevant-test commands, and quantum binds QCEC equivalence
-metadata. The adapter evidence cross-check binds exact training,
+hard-metadata hashes, receipt artifact hashes, backend execution evidence
+hashes, baseline calls, learned calls, held-out successes,
+replay/rollback/ledger status, missing requirements, backend errors, and
+invalid-commit counts. Those compact hash lanes keep external
+command/QCEC/test metadata, task/candidate artifact inputs, and readiness probes
+auditable without bloating the aggregate report. The normalized
+execution-evidence lane also requires the expected domain shape before any
+supported real-backend child claim can promote: robotics binds `roslaunch` plus
+benchmark-result evidence, hardware binds riscv-formal command execution,
+program repair binds Defects4J checkout/compile/relevant-test commands, and
+quantum binds QCEC equivalence metadata. The receipt artifact lane binds the
+task/candidate inputs: candidate directories and command configs for robotics,
+candidate directories and `genchecks.py` for hardware, project/bug/version and
+verifier scope for Defects4J, and original/candidate circuit programs for MQT.
+The adapter evidence cross-check binds exact training,
 baseline, and learned receipt partitions plus any backend execution error
 before the manifest cross-check proves the adapter evidence sources are covered
 by the domain's real-task manifest spec. The learning cross-check then binds
@@ -1506,7 +1511,8 @@ report and real-task manifest spec, all learning certificates support call
 reduction, every learning certificate matches its report, all held-out arms are
 isolated, held-out success is preserved, hard-verifier calls are reduced in
 every domain, replay/rollback and ledger audits pass, receipt and
-execution-provenance counts bind exact hash lanes, backend execution evidence
-counts bind exact receipt counts, and invalid commits remain zero. Missing
-external tools or deterministic test doubles produce a rejected G0 claim rather
-than weakening the final objective.
+execution-provenance counts bind exact hash lanes, receipt artifact counts bind
+exact receipt counts, backend execution evidence counts bind exact receipt
+counts, and invalid commits remain zero. Missing external tools or
+deterministic test doubles produce a rejected G0 claim rather than weakening the
+final objective.

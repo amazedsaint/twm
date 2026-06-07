@@ -954,13 +954,14 @@ certificate must bind the report hash, backend identity, task split ids, claim
 hash, learning hash, ledger head, and exact training/baseline/learned receipt
 partitions plus any backend execution error. It must also bind that baseline
 and learned held-out arms started from the same frozen post-training state on
-separate ledgers, and bind hard-result and hard-metadata hashes so external
-command, QCEC, and relevant-test execution metadata stay receipt-bound without
-expanding the certificate into raw logs. A separate normalized backend
-execution evidence lane now checks the expected domain shape: `roslaunch` plus
-benchmark result evidence for robotics, riscv-formal `make`/generated-check
-commands for hardware, Defects4J checkout/compile/relevant-test commands for
-program repair, and MQT QCEC equivalence metadata for quantum.
+separate ledgers, and bind hard-result, hard-metadata, and receipt-artifact
+hashes so external command, QCEC, relevant-test, task-directory, version, and
+circuit-program inputs stay receipt-bound without expanding the certificate
+into raw logs. A separate normalized backend execution evidence lane now checks
+the expected domain shape: `roslaunch` plus benchmark result evidence for
+robotics, riscv-formal `make`/generated-check commands for hardware, Defects4J
+checkout/compile/relevant-test commands for program repair, and MQT QCEC
+equivalence metadata for quantum.
 That evidence must be covered by the
 manifest spec sources for the same domain; each child claim must match
 its report's requirement passes, metrics, boundary, and sources; and each
@@ -970,6 +971,7 @@ claim supports the objective only if every real backend supports its
 single-domain claim, every child certificate is report-consistent and
 manifest-covered, and every domain reduces hard-verifier calls while preserving
 held-out success under isolated evaluation arms, exact receipt/provenance
-hash-lane counts, exact backend execution evidence hash-lane counts, and zero
-invalid commits. On machines without the external toolchains and task roots,
-the suite must reject with G0 evidence.
+hash-lane counts, exact receipt artifact hash-lane counts, exact backend
+execution evidence hash-lane counts, and zero invalid commits. On machines
+without the external toolchains and task roots, the suite must reject with G0
+evidence.

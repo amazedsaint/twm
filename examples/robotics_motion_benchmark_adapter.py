@@ -11,7 +11,10 @@ from typing import Any, Mapping, Protocol
 from examples.real_task_adapter_evidence import (
     RealTaskAdapterEvidenceCertificate,
     build_real_task_adapter_evidence_certificate,
+    path_fingerprint_hash,
     receipt_backend_execution_evidence,
+    receipt_artifact_provenance_hashes,
+    receipt_artifacts_are_bound,
     receipt_execution_provenance_hashes,
 )
 from trwm.claims import ClaimCertificate, certify_claim, requirement
@@ -151,6 +154,8 @@ class RoboticsMotionBenchmarkAdapterReport:
     typed_candidate_hashes: tuple[str, ...]
     hard_result_hashes: tuple[str, ...]
     hard_metadata_hashes: tuple[str, ...]
+    receipt_artifacts_bound: bool
+    receipt_artifact_hashes: tuple[str, ...]
     backend_execution_evidence_ok: bool
     backend_execution_evidence_hashes: tuple[str, ...]
     source_urls: tuple[str, ...]
@@ -471,6 +476,8 @@ def _run_available_backend(backend: RoboticsBenchmarkBackend) -> RoboticsMotionB
     learned_receipts = tuple(receipt for receipts in learned_by_task.values() for receipt in receipts)
     all_receipts = (*tuple(training_receipts), *baseline_receipts, *learned_receipts)
     typed_candidate_hashes, hard_result_hashes, hard_metadata_hashes = receipt_execution_provenance_hashes(all_receipts)
+    receipt_artifact_hashes = receipt_artifact_provenance_hashes(all_receipts)
+    receipt_artifacts_bound = receipt_artifacts_are_bound(all_receipts)
     backend_execution_evidence_ok, backend_execution_evidence_hashes = receipt_backend_execution_evidence("robotics", all_receipts)
     replay_ok, rollback_ok = _audit_replay_rollback_many(
         (training_engine, seed_state),
@@ -558,6 +565,8 @@ def _run_available_backend(backend: RoboticsBenchmarkBackend) -> RoboticsMotionB
         typed_candidate_hashes=typed_candidate_hashes,
         hard_result_hashes=hard_result_hashes,
         hard_metadata_hashes=hard_metadata_hashes,
+        receipt_artifacts_bound=receipt_artifacts_bound,
+        receipt_artifact_hashes=receipt_artifact_hashes,
         backend_execution_evidence_ok=backend_execution_evidence_ok,
         backend_execution_evidence_hashes=backend_execution_evidence_hashes,
         source_urls=ROBOTICS_MOTION_BENCHMARK_SOURCES,
@@ -651,7 +660,22 @@ def _candidate(spec: RoboticsTaskSpec, bundle: RoboticsCandidateBundle, *, actio
         payload=payload,
         type_name="robotics.motion_benchmark.candidate",
         schema_version="robotics.motion_benchmark.candidate.v1",
+        hashes=_candidate_artifact_hashes(payload, bundle, candidate_dir),
     )
+
+
+def _candidate_artifact_hashes(payload: Mapping[str, Any], bundle: RoboticsCandidateBundle, candidate_dir: str) -> Mapping[str, str]:
+    hashes = {
+        "candidate_payload_hash": stable_hash(payload),
+        "task_bundle_metadata_hash": stable_hash(bundle.metadata),
+    }
+    candidate_dir_hash = path_fingerprint_hash(candidate_dir)
+    if candidate_dir_hash:
+        hashes["candidate_dir_fingerprint_hash"] = candidate_dir_hash
+    command_hash = path_fingerprint_hash(Path(candidate_dir) / "command.json")
+    if command_hash:
+        hashes["command_config_hash"] = command_hash
+    return hashes
 
 
 def _task_specs() -> tuple[RoboticsTaskSpec, ...]:
@@ -689,11 +713,20 @@ def _claim_for_report(report: RoboticsMotionBenchmarkAdapterReport) -> ClaimCert
             "On held-out MotionBenchMaker/MoveIt/OMPL robotics tasks, a receipt-trained reversible "
             "proposer reduces hard-verifier calls while preserving zero invalid commits."
         ),
-        evidence_grade="G1" if report.backend_available and report.real_backend and report.backend_execution_evidence_ok else "G0",
+        evidence_grade=(
+            "G1"
+            if report.backend_available and report.real_backend and report.receipt_artifacts_bound and report.backend_execution_evidence_ok
+            else "G0"
+        ),
         scope="robotics_motion_benchmark_adapter",
         requirements=(
             requirement("backend_available", report.backend_available, missing=report.missing_requirements, error=report.backend_error),
             requirement("real_motion_benchmark_backend", report.real_backend),
+            requirement(
+                "receipt_artifacts_bound",
+                report.receipt_artifacts_bound,
+                artifact_hashes=report.receipt_artifact_hashes,
+            ),
             requirement(
                 "backend_execution_evidence_bound",
                 report.backend_execution_evidence_ok,
@@ -760,6 +793,8 @@ def _empty_report(backend: RoboticsBenchmarkBackend, *, backend_error: str = "")
         typed_candidate_hashes=(),
         hard_result_hashes=(),
         hard_metadata_hashes=(),
+        receipt_artifacts_bound=False,
+        receipt_artifact_hashes=(),
         backend_execution_evidence_ok=False,
         backend_execution_evidence_hashes=(),
         source_urls=ROBOTICS_MOTION_BENCHMARK_SOURCES,

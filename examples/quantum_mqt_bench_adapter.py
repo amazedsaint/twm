@@ -11,6 +11,8 @@ from examples.real_task_adapter_evidence import (
     RealTaskAdapterEvidenceCertificate,
     build_real_task_adapter_evidence_certificate,
     receipt_backend_execution_evidence,
+    receipt_artifact_provenance_hashes,
+    receipt_artifacts_are_bound,
     receipt_execution_provenance_hashes,
 )
 from trwm.claims import ClaimCertificate, certify_claim, requirement
@@ -140,6 +142,8 @@ class QuantumMqtBenchAdapterReport:
     typed_candidate_hashes: tuple[str, ...]
     hard_result_hashes: tuple[str, ...]
     hard_metadata_hashes: tuple[str, ...]
+    receipt_artifacts_bound: bool
+    receipt_artifact_hashes: tuple[str, ...]
     backend_execution_evidence_ok: bool
     backend_execution_evidence_hashes: tuple[str, ...]
     source_urls: tuple[str, ...]
@@ -372,6 +376,8 @@ def _run_available_backend(backend: QuantumEquivalenceBackend) -> QuantumMqtBenc
     learned_receipts = tuple(receipt for receipts in learned_by_task.values() for receipt in receipts)
     all_receipts = (*tuple(training_receipts), *baseline_receipts, *learned_receipts)
     typed_candidate_hashes, hard_result_hashes, hard_metadata_hashes = receipt_execution_provenance_hashes(all_receipts)
+    receipt_artifact_hashes = receipt_artifact_provenance_hashes(all_receipts)
+    receipt_artifacts_bound = receipt_artifacts_are_bound(all_receipts)
     backend_execution_evidence_ok, backend_execution_evidence_hashes = receipt_backend_execution_evidence("quantum", all_receipts)
     replay_ok, rollback_ok = _audit_replay_rollback_many(
         (training_engine, seed_state),
@@ -459,6 +465,8 @@ def _run_available_backend(backend: QuantumEquivalenceBackend) -> QuantumMqtBenc
         typed_candidate_hashes=typed_candidate_hashes,
         hard_result_hashes=hard_result_hashes,
         hard_metadata_hashes=hard_metadata_hashes,
+        receipt_artifacts_bound=receipt_artifacts_bound,
+        receipt_artifact_hashes=receipt_artifact_hashes,
         backend_execution_evidence_ok=backend_execution_evidence_ok,
         backend_execution_evidence_hashes=backend_execution_evidence_hashes,
         source_urls=QUANTUM_MQT_SOURCES,
@@ -550,7 +558,24 @@ def _candidate(
         },
         type_name="quantum.mqt.equivalence_candidate",
         schema_version="quantum.mqt.equivalence_candidate.v1",
+        hashes=_candidate_artifact_hashes(bundle, candidate_program),
     )
+
+
+def _candidate_artifact_hashes(bundle: QuantumProgramBundle, candidate_program: str) -> Mapping[str, str]:
+    return {
+        "candidate_payload_hash": stable_hash(
+            {
+                "task_id": bundle.task_id,
+                "benchmark": bundle.benchmark,
+                "circuit_size": bundle.circuit_size,
+                "candidate_program_hash": stable_hash(candidate_program),
+            }
+        ),
+        "task_bundle_metadata_hash": stable_hash(bundle.metadata),
+        "original_program_hash": stable_hash(bundle.original_program),
+        "candidate_program_hash": stable_hash(candidate_program),
+    }
 
 
 def _task_specs() -> tuple[QuantumTaskSpec, ...]:
@@ -583,11 +608,20 @@ def _claim_for_report(report: QuantumMqtBenchAdapterReport) -> ClaimCertificate:
             "On held-out MQT Bench/QCEC quantum tasks, a receipt-trained reversible proposer "
             "reduces hard-verifier calls while preserving zero invalid commits."
         ),
-        evidence_grade="G1" if report.backend_available and report.real_backend and report.backend_execution_evidence_ok else "G0",
+        evidence_grade=(
+            "G1"
+            if report.backend_available and report.real_backend and report.receipt_artifacts_bound and report.backend_execution_evidence_ok
+            else "G0"
+        ),
         scope="quantum_mqt_bench_adapter",
         requirements=(
             requirement("backend_available", report.backend_available, missing=report.missing_requirements, error=report.backend_error),
             requirement("real_mqt_backend", report.real_backend),
+            requirement(
+                "receipt_artifacts_bound",
+                report.receipt_artifacts_bound,
+                artifact_hashes=report.receipt_artifact_hashes,
+            ),
             requirement(
                 "backend_execution_evidence_bound",
                 report.backend_execution_evidence_ok,
@@ -655,6 +689,8 @@ def _empty_report(backend: QuantumEquivalenceBackend, *, backend_error: str = ""
         typed_candidate_hashes=(),
         hard_result_hashes=(),
         hard_metadata_hashes=(),
+        receipt_artifacts_bound=False,
+        receipt_artifact_hashes=(),
         backend_execution_evidence_ok=False,
         backend_execution_evidence_hashes=(),
         source_urls=QUANTUM_MQT_SOURCES,

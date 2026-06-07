@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, is_dataclass
+from hashlib import sha256
+import os
+from pathlib import Path
 from typing import Any, Mapping
 
 from trwm.claims import CLAIM_STATUSES, ClaimCertificate, validate_claim_certificate
@@ -43,6 +46,8 @@ class RealTaskAdapterEvidenceCertificate:
     typed_candidate_hashes: tuple[str, ...]
     hard_result_hashes: tuple[str, ...]
     hard_metadata_hashes: tuple[str, ...]
+    receipt_artifacts_bound: bool
+    receipt_artifact_hashes: tuple[str, ...]
     backend_execution_evidence_ok: bool
     backend_execution_evidence_hashes: tuple[str, ...]
     training_receipt_hashes: tuple[str, ...]
@@ -81,6 +86,7 @@ class RealTaskAdapterEvidenceCertificate:
         object.__setattr__(self, "typed_candidate_hashes", tuple(self.typed_candidate_hashes))
         object.__setattr__(self, "hard_result_hashes", tuple(self.hard_result_hashes))
         object.__setattr__(self, "hard_metadata_hashes", tuple(self.hard_metadata_hashes))
+        object.__setattr__(self, "receipt_artifact_hashes", tuple(self.receipt_artifact_hashes))
         object.__setattr__(self, "backend_execution_evidence_hashes", tuple(self.backend_execution_evidence_hashes))
         object.__setattr__(self, "training_receipt_hashes", tuple(self.training_receipt_hashes))
         object.__setattr__(self, "baseline_receipt_hashes", tuple(self.baseline_receipt_hashes))
@@ -146,6 +152,8 @@ def build_real_task_adapter_evidence_certificate(
         typed_candidate_hashes=tuple(str(row) for row in report_data["typed_candidate_hashes"]),
         hard_result_hashes=tuple(str(row) for row in report_data["hard_result_hashes"]),
         hard_metadata_hashes=tuple(str(row) for row in report_data["hard_metadata_hashes"]),
+        receipt_artifacts_bound=bool(report_data["receipt_artifacts_bound"]),
+        receipt_artifact_hashes=tuple(str(row) for row in report_data["receipt_artifact_hashes"]),
         backend_execution_evidence_ok=bool(report_data["backend_execution_evidence_ok"]),
         backend_execution_evidence_hashes=tuple(str(row) for row in report_data["backend_execution_evidence_hashes"]),
         training_receipt_hashes=training_receipts,
@@ -210,6 +218,8 @@ def validate_real_task_adapter_evidence_certificate(
         if certificate.ledger_head and not _is_hash(certificate.ledger_head):
             return False
         if not isinstance(certificate.backend_available, bool) or not isinstance(certificate.real_backend, bool):
+            return False
+        if not isinstance(certificate.receipt_artifacts_bound, bool):
             return False
         if not isinstance(certificate.backend_execution_evidence_ok, bool):
             return False
@@ -283,6 +293,22 @@ def receipt_backend_execution_evidence(
     return all(bool(row["execution_evidence_ok"]) for row in rows), tuple(stable_hash(row) for row in rows)
 
 
+def receipt_artifact_provenance_hashes(receipts: Any) -> tuple[str, ...]:
+    return tuple(stable_hash(_artifact_hashes(receipt)) for receipt in tuple(receipts))
+
+
+def receipt_artifacts_are_bound(receipts: Any) -> bool:
+    rows = tuple(receipts)
+    return bool(rows) and all(_artifact_hashes_valid(_artifact_hashes(receipt)) for receipt in rows)
+
+
+def path_fingerprint_hash(path: str | Path) -> str:
+    candidate = Path(path)
+    if not candidate.exists():
+        return ""
+    return stable_hash(_path_fingerprint(candidate))
+
+
 def _report_as_dict(report: Any) -> dict[str, Any]:
     if is_dataclass(report):
         return asdict(report)
@@ -316,6 +342,8 @@ def _counts_and_partitions_are_valid(certificate: RealTaskAdapterEvidenceCertifi
         return False
     if certificate.receipt_count != len(certificate.hard_metadata_hashes):
         return False
+    if certificate.receipt_count != len(certificate.receipt_artifact_hashes):
+        return False
     if certificate.receipt_count != len(certificate.backend_execution_evidence_hashes):
         return False
     if certificate.training_receipt_count != len(certificate.training_receipt_hashes):
@@ -338,7 +366,11 @@ def _counts_and_partitions_are_valid(certificate: RealTaskAdapterEvidenceCertifi
         return False
     if any(not _is_hash(row) for row in certificate.hard_metadata_hashes):
         return False
+    if any(not _is_hash(row) for row in certificate.receipt_artifact_hashes):
+        return False
     if any(not _is_hash(row) for row in certificate.backend_execution_evidence_hashes):
+        return False
+    if certificate.receipt_artifacts_bound and certificate.receipt_count == 0:
         return False
     if len(set(certificate.receipt_hashes)) != len(certificate.receipt_hashes):
         return False
@@ -365,6 +397,7 @@ def _counts_and_partitions_are_valid(certificate: RealTaskAdapterEvidenceCertifi
             and certificate.learner_snapshot_hash == ""
             and certificate.learning_certificate_hash == ""
             and certificate.ledger_head == ""
+            and not certificate.receipt_artifacts_bound
             and not certificate.backend_execution_evidence_ok
             and not certificate.learning_certificate_valid
             and not certificate.learning_certificate_supports_claim
@@ -380,6 +413,7 @@ def _g1_supported(certificate: RealTaskAdapterEvidenceCertificate) -> bool:
         and certificate.claim_certificate_status == "supported"
         and certificate.learning_certificate_valid
         and certificate.learning_certificate_supports_claim
+        and certificate.receipt_artifacts_bound
         and certificate.backend_execution_evidence_ok
         and certificate.learned_verifier_calls < certificate.baseline_verifier_calls
         and certificate.learned_success_count == certificate.baseline_success_count
@@ -414,6 +448,8 @@ def _report_matches(certificate: RealTaskAdapterEvidenceCertificate, report: Any
         "typed_candidate_hashes",
         "hard_result_hashes",
         "hard_metadata_hashes",
+        "receipt_artifacts_bound",
+        "receipt_artifact_hashes",
         "backend_execution_evidence_ok",
         "backend_execution_evidence_hashes",
         "training_receipt_count",
@@ -474,6 +510,13 @@ def _claim_matches_report(claim: ClaimCertificate, report_data: Mapping[str, Any
         return False
     if tuple(execution_requirement.evidence.get("evidence_hashes", ())) != tuple(report_data["backend_execution_evidence_hashes"]):
         return False
+    artifact_requirement = requirements.get("receipt_artifacts_bound")
+    if artifact_requirement is None:
+        return False
+    if artifact_requirement.passed != bool(report_data["receipt_artifacts_bound"]):
+        return False
+    if tuple(artifact_requirement.evidence.get("artifact_hashes", ())) != tuple(report_data["receipt_artifact_hashes"]):
+        return False
     return (
         claim.metrics == expected_metrics
         and claim.boundary == str(report_data["claim_boundary"])
@@ -532,6 +575,7 @@ def _is_hash(value: str) -> bool:
 
 def _backend_execution_evidence_row(domain: str, receipt: Any) -> dict[str, Any]:
     metadata = _metadata(receipt)
+    artifacts = _artifact_hashes(receipt)
     real_backend = metadata.get("real_backend")
     common = {
         "schema_version": "trwm.real_task_backend_execution_evidence.v1",
@@ -549,6 +593,8 @@ def _backend_execution_evidence_row(domain: str, receipt: Any) -> dict[str, Any]
         "candidate_hash": str(metadata.get("candidate_hash", "")),
         "residual_kind": _residual_kind(receipt),
         "metadata_hash": stable_hash(metadata),
+        "artifact_hashes_hash": stable_hash(artifacts),
+        "artifact_hash_keys": tuple(sorted(artifacts)),
     }
     common_ok = (
         _is_hash(common["receipt_hash"])
@@ -558,13 +604,18 @@ def _backend_execution_evidence_row(domain: str, receipt: Any) -> dict[str, Any]
         and _nonempty_string(common["backend_version"])
         and isinstance(real_backend, bool)
         and _nonempty_string(common["task_id"])
+        and _artifact_hashes_valid(artifacts)
     )
     if not real_backend:
         return {
             **common,
             "evidence_kind": "deterministic_testdouble",
             "deterministic_testdouble": metadata.get("deterministic_testdouble") is True,
-            "execution_evidence_ok": common_ok and metadata.get("deterministic_testdouble") is True,
+            "execution_evidence_ok": (
+                common_ok
+                and metadata.get("deterministic_testdouble") is True
+                and _artifact_keys_present(artifacts, ("candidate_payload_hash", "task_bundle_metadata_hash"))
+            ),
         }
     if domain == "robotics":
         command = metadata.get("command")
@@ -587,6 +638,15 @@ def _backend_execution_evidence_row(domain: str, receipt: Any) -> dict[str, Any]
             and _nonempty_string(row["scene_id"])
             and _nonempty_string(row["query_id"])
             and _nonempty_string(row["candidate_dir"])
+            and _artifact_keys_present(
+                artifacts,
+                (
+                    "candidate_payload_hash",
+                    "task_bundle_metadata_hash",
+                    "candidate_dir_fingerprint_hash",
+                    "command_config_hash",
+                ),
+            )
             and _command_result_ok(command, executable="roslaunch")
             and ("benchmark_result" in metadata or common["residual_kind"] == "motion_benchmark_launch_failed")
         )
@@ -610,6 +670,15 @@ def _backend_execution_evidence_row(domain: str, receipt: Any) -> dict[str, Any]
             and _nonempty_string(row["check_family"])
             and _nonempty_string(row["make_target"])
             and _nonempty_string(row["candidate_dir"])
+            and _artifact_keys_present(
+                artifacts,
+                (
+                    "candidate_payload_hash",
+                    "task_bundle_metadata_hash",
+                    "candidate_dir_fingerprint_hash",
+                    "genchecks_hash",
+                ),
+            )
             and bool(commands)
             and all(_command_result_ok(command) for command in commands)
             and any(_command_executable(command) == "make" for command in commands)
@@ -636,6 +705,15 @@ def _backend_execution_evidence_row(domain: str, receipt: Any) -> dict[str, Any]
             and _nonempty_string(row["project_id"])
             and row["bug_id"] >= 0
             and _nonempty_string(row["version_id"])
+            and _artifact_keys_present(
+                artifacts,
+                (
+                    "candidate_payload_hash",
+                    "task_bundle_metadata_hash",
+                    "defects4j_version_hash",
+                    "verifier_scope_hash",
+                ),
+            )
             and _command_result_ok(checkout, executable="defects4j")
             and _command_result_ok(compile_result, executable="defects4j")
             and _command_result_ok(test_result, executable="defects4j")
@@ -654,6 +732,15 @@ def _backend_execution_evidence_row(domain: str, receipt: Any) -> dict[str, Any]
             and _is_hash(row["original_hash"])
             and _is_hash(common["candidate_hash"])
             and common["action"] in {"non_equivalent_rewrite", "equivalence_preserving_rewrite"}
+            and _artifact_keys_present(
+                artifacts,
+                (
+                    "candidate_payload_hash",
+                    "task_bundle_metadata_hash",
+                    "original_program_hash",
+                    "candidate_program_hash",
+                ),
+            )
             and _nonempty_string(row["qcec_equivalence"])
         )
         return row
@@ -663,6 +750,21 @@ def _backend_execution_evidence_row(domain: str, receipt: Any) -> dict[str, Any]
 def _metadata(receipt: Any) -> dict[str, Any]:
     metadata = getattr(getattr(receipt, "hard_result", None), "metadata", {})
     return dict(metadata) if isinstance(metadata, Mapping) else {}
+
+
+def _artifact_hashes(receipt: Any) -> dict[str, str]:
+    artifact_hashes = getattr(receipt, "artifact_hashes", {})
+    if not isinstance(artifact_hashes, Mapping):
+        return {}
+    return {str(key): str(value) for key, value in artifact_hashes.items()}
+
+
+def _artifact_hashes_valid(artifact_hashes: Mapping[str, str]) -> bool:
+    return bool(artifact_hashes) and all(_nonempty_string(key) and _is_hash(value) for key, value in artifact_hashes.items())
+
+
+def _artifact_keys_present(artifact_hashes: Mapping[str, str], keys: tuple[str, ...]) -> bool:
+    return all(_is_hash(str(artifact_hashes.get(key, ""))) for key in keys)
 
 
 def _residual_kind(receipt: Any) -> str:
@@ -697,3 +799,38 @@ def _safe_int(value: Any) -> int:
         return int(value)
     except (TypeError, ValueError):
         return -1
+
+
+def _path_fingerprint(path: Path) -> Mapping[str, object]:
+    if path.is_file():
+        return {
+            "kind": "file",
+            "path": str(path),
+            "size": path.stat().st_size,
+            "sha256": _file_sha256(path),
+        }
+    if path.is_dir():
+        entries: list[Mapping[str, object]] = []
+        for idx, child in enumerate(sorted(path.rglob("*"), key=lambda item: str(item.relative_to(path)))):
+            if idx >= 200:
+                entries.append({"truncated_after": 200})
+                break
+            relative = str(child.relative_to(path))
+            if child.is_file():
+                entries.append({"path": relative, "kind": "file", "size": child.stat().st_size, "sha256": _file_sha256(child)})
+            elif child.is_dir():
+                entries.append({"path": relative, "kind": "dir"})
+            elif child.is_symlink():
+                entries.append({"path": relative, "kind": "symlink", "target": os.readlink(child)})
+            else:
+                entries.append({"path": relative, "kind": "other"})
+        return {"kind": "dir", "path": str(path), "entries": tuple(entries)}
+    return {"kind": "missing", "path": str(path)}
+
+
+def _file_sha256(path: Path) -> str:
+    digest = sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()

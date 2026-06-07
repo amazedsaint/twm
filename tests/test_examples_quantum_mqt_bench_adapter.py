@@ -43,6 +43,8 @@ class QuantumMqtBenchAdapterTests(unittest.TestCase):
         self.assertEqual(report.typed_candidate_hashes, ())
         self.assertEqual(report.hard_result_hashes, ())
         self.assertEqual(report.hard_metadata_hashes, ())
+        self.assertFalse(report.receipt_artifacts_bound)
+        self.assertEqual(report.receipt_artifact_hashes, ())
         self.assertFalse(report.backend_execution_evidence_ok)
         self.assertEqual(report.backend_execution_evidence_hashes, ())
         self.assertFalse(report.heldout_arm_isolated)
@@ -69,6 +71,8 @@ class QuantumMqtBenchAdapterTests(unittest.TestCase):
         self.assertEqual(report.missing_requirements, ())
         self.assertIn("RuntimeError:cannot generate train-ghz-3", report.backend_error)
         self.assertEqual(report.receipt_count, 0)
+        self.assertFalse(report.receipt_artifacts_bound)
+        self.assertEqual(report.receipt_artifact_hashes, ())
         self.assertFalse(report.backend_execution_evidence_ok)
         self.assertEqual(report.backend_execution_evidence_hashes, ())
         self.assertFalse(report.heldout_arm_isolated)
@@ -116,6 +120,7 @@ class QuantumMqtBenchAdapterTests(unittest.TestCase):
         self.assertTrue(report.replay_audit_ok)
         self.assertTrue(report.rollback_audit_ok)
         self.assertTrue(report.ledger_audit_ok)
+        self.assertTrue(report.receipt_artifacts_bound)
         self.assertTrue(report.backend_execution_evidence_ok)
         self.assertTrue(report.learning_certificate_valid)
         self.assertTrue(report.learning_certificate_supports_claim)
@@ -134,6 +139,7 @@ class QuantumMqtBenchAdapterTests(unittest.TestCase):
         self.assertEqual(result.evidence_certificate.typed_candidate_hashes, report.typed_candidate_hashes)
         self.assertEqual(result.evidence_certificate.hard_result_hashes, report.hard_result_hashes)
         self.assertEqual(result.evidence_certificate.hard_metadata_hashes, report.hard_metadata_hashes)
+        self.assertEqual(result.evidence_certificate.receipt_artifact_hashes, report.receipt_artifact_hashes)
         self.assertEqual(result.evidence_certificate.backend_execution_evidence_hashes, report.backend_execution_evidence_hashes)
         self.assertTrue(validate_learning_evaluation_certificate(result.learning_certificate))
         self.assertTrue(learning_evaluation_supports_claim(result.learning_certificate))
@@ -143,6 +149,7 @@ class QuantumMqtBenchAdapterTests(unittest.TestCase):
         self.assertEqual(len(report.typed_candidate_hashes), report.receipt_count)
         self.assertEqual(len(report.hard_result_hashes), report.receipt_count)
         self.assertEqual(len(report.hard_metadata_hashes), report.receipt_count)
+        self.assertEqual(len(report.receipt_artifact_hashes), report.receipt_count)
         self.assertEqual(len(report.backend_execution_evidence_hashes), report.receipt_count)
         for row in report.rows:
             self.assertEqual(row.baseline_verifier_calls, 2)
@@ -159,6 +166,7 @@ class QuantumMqtBenchAdapterTests(unittest.TestCase):
         self.assertEqual(result.claim_certificate.status, "rejected")
         self.assertEqual(result.claim_certificate.evidence_grade, "G0")
         self.assertIn("real_mqt_backend", result.claim_certificate.failed_keys)
+        self.assertNotIn("receipt_artifacts_bound", result.claim_certificate.failed_keys)
         self.assertNotIn("backend_execution_evidence_bound", result.claim_certificate.failed_keys)
         self.assertNotIn("learning_certificate_supports_claim", result.claim_certificate.failed_keys)
         self.assertNotIn("heldout_arm_isolated", result.claim_certificate.failed_keys)
@@ -172,7 +180,10 @@ class QuantumMqtBenchAdapterTests(unittest.TestCase):
         self.assertTrue(validate_claim_certificate(result.claim_certificate))
         if result.report.backend_available:
             self.assertTrue(result.report.real_backend)
-            self.assertEqual(result.claim_certificate.evidence_grade, "G1" if result.report.backend_execution_evidence_ok else "G0")
+            self.assertEqual(
+                result.claim_certificate.evidence_grade,
+                "G1" if result.report.receipt_artifacts_bound and result.report.backend_execution_evidence_ok else "G0",
+            )
         else:
             self.assertEqual(result.claim_certificate.status, "rejected")
             self.assertEqual(result.claim_certificate.evidence_grade, "G0")
