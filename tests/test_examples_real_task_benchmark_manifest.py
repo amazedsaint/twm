@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 from examples.real_task_benchmark_manifest import (
     REAL_TASK_MANIFEST_CERTIFICATE_SCHEMA,
+    RequirementProbe,
     _default_probe,
     build_real_task_benchmark_manifest,
     build_real_task_manifest_certificate,
@@ -30,6 +31,8 @@ class RealTaskBenchmarkManifestTests(unittest.TestCase):
         self.assertEqual(len(manifest.specs), 4)
         self.assertTrue(all(spec.source_urls for spec in manifest.specs))
         self.assertTrue(all(spec.command_templates for spec in manifest.specs))
+        self.assertTrue(manifest.specs[0].required_task_assets)
+        self.assertTrue(manifest.specs[1].required_task_assets)
         self.assertIn("TRWM_MOTION_BENCHMARK_TASK_ROOT", manifest.specs[0].required_env_vars)
         self.assertIn("TRWM_RISCV_FORMAL_TASK_ROOT", manifest.specs[1].required_env_vars)
         self.assertTrue(set(spec.train_split_id for spec in manifest.specs).isdisjoint(spec.held_out_split_id for spec in manifest.specs))
@@ -66,6 +69,13 @@ class RealTaskBenchmarkManifestTests(unittest.TestCase):
                 ("env_var", env_var): True
                 for spec in manifest.specs
                 for env_var in spec.required_env_vars
+            }
+        )
+        availability.update(
+            {
+                ("task_asset", asset): True
+                for spec in manifest.specs
+                for asset in spec.required_task_assets
             }
         )
         result = run_real_task_benchmark_readiness(probe=fake_probe(availability))
@@ -117,6 +127,40 @@ class RealTaskBenchmarkManifestTests(unittest.TestCase):
                 directory_probe = _default_probe("env_var", key)
             self.assertTrue(directory_probe.available)
             self.assertEqual(directory_probe.evidence, str(task_root))
+
+    def test_task_asset_probes_reject_empty_task_roots_and_accept_shaped_assets(self) -> None:
+        manifest = build_real_task_benchmark_manifest()
+        with tempfile.TemporaryDirectory() as robotics_tmp, tempfile.TemporaryDirectory() as hardware_tmp:
+            env = {
+                "TRWM_MOTION_BENCHMARK_TASK_ROOT": robotics_tmp,
+                "TRWM_RISCV_FORMAL_TASK_ROOT": hardware_tmp,
+            }
+
+            def probe(kind: str, name: str):
+                if kind in {"tool", "python_module"}:
+                    return RequirementProbe(kind=kind, name=name, available=True, evidence="fake_available")
+                return _default_probe(kind, name)
+
+            with patch.dict(os.environ, env, clear=True):
+                empty_report = build_real_task_preflight_report(manifest, probe=probe)
+            self.assertFalse(empty_report.ready_to_run_all)
+            self.assertTrue(any(":task_asset:" in missing for missing in empty_report.missing_requirements))
+
+            with patch.dict(os.environ, env, clear=True):
+                for spec in manifest.specs:
+                    for asset in spec.required_task_assets:
+                        asset_kind, _, template = asset.partition(":")
+                        path = Path(os.path.expandvars(template))
+                        path.parent.mkdir(parents=True, exist_ok=True)
+                        if asset_kind == "dir":
+                            path.mkdir(parents=True, exist_ok=True)
+                        else:
+                            path.write_text("{}", encoding="utf-8")
+
+            with patch.dict(os.environ, env, clear=True):
+                shaped_report = build_real_task_preflight_report(manifest, probe=probe)
+            self.assertTrue(shaped_report.ready_to_run_all)
+            self.assertEqual(shaped_report.missing_requirements, ())
 
 
 if __name__ == "__main__":

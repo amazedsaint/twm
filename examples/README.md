@@ -1331,7 +1331,9 @@ The gate is intentionally fail-closed. If a required tool, Python module, or
 environment variable is missing, the readiness claim is `rejected`; this is not
 a performance result and cannot support the final receipt-trained proposer
 claim. Task-root environment variables must point at existing directories. A
-supported readiness claim only means the adapters are ready to run and produce
+supported readiness claim also requires the expected robotics candidate
+`command.json` files and hardware task candidate directories/shared
+`genchecks.py` file. It only means the adapters are ready to run and produce
 benchmark receipts.
 
 ## Robotics Motion Benchmark Adapter

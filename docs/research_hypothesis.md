@@ -885,6 +885,8 @@ four-domain external benchmark manifest to a preflight certificate:
 - required Python modules such as `mqt.bench` and `mqt.qcec`,
 - required task-root environment variables that must point at existing
   directories,
+- required task assets inside those roots, including robotics candidate
+  `command.json` files and hardware candidate directories plus `genchecks.py`,
 - command templates for generating or running each external benchmark,
 - train/held-out split ids for each domain,
 - source URLs for every benchmark family.

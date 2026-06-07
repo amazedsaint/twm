@@ -28,6 +28,7 @@ class RealTaskBenchmarkSpec:
     required_tools: tuple[str, ...]
     required_python_modules: tuple[str, ...]
     required_env_vars: tuple[str, ...]
+    required_task_assets: tuple[str, ...]
     command_templates: tuple[str, ...]
     source_urls: tuple[str, ...]
     claim_boundary: str
@@ -36,6 +37,7 @@ class RealTaskBenchmarkSpec:
         object.__setattr__(self, "required_tools", tuple(self.required_tools))
         object.__setattr__(self, "required_python_modules", tuple(self.required_python_modules))
         object.__setattr__(self, "required_env_vars", tuple(self.required_env_vars))
+        object.__setattr__(self, "required_task_assets", tuple(self.required_task_assets))
         object.__setattr__(self, "command_templates", tuple(self.command_templates))
         object.__setattr__(self, "source_urls", tuple(self.source_urls))
 
@@ -167,6 +169,14 @@ def build_real_task_benchmark_manifest() -> RealTaskBenchmarkManifest:
                 required_tools=("roslaunch",),
                 required_python_modules=(),
                 required_env_vars=("TRWM_MOTION_BENCHMARK_TASK_ROOT",),
+                required_task_assets=(
+                    "file:$TRWM_MOTION_BENCHMARK_TASK_ROOT/train-kitchen-pick/unsafe_motion_candidate/command.json",
+                    "file:$TRWM_MOTION_BENCHMARK_TASK_ROOT/train-kitchen-pick/safe_motion_candidate/command.json",
+                    "file:$TRWM_MOTION_BENCHMARK_TASK_ROOT/heldout-shelf-place/unsafe_motion_candidate/command.json",
+                    "file:$TRWM_MOTION_BENCHMARK_TASK_ROOT/heldout-shelf-place/safe_motion_candidate/command.json",
+                    "file:$TRWM_MOTION_BENCHMARK_TASK_ROOT/heldout-cabinet-reach/unsafe_motion_candidate/command.json",
+                    "file:$TRWM_MOTION_BENCHMARK_TASK_ROOT/heldout-cabinet-reach/safe_motion_candidate/command.json",
+                ),
                 command_templates=(
                     "cd $TRWM_MOTION_BENCHMARK_TASK_ROOT/<task>/<candidate>",
                     "roslaunch <launch_package> <launch_file> <candidate_args>",
@@ -194,6 +204,15 @@ def build_real_task_benchmark_manifest() -> RealTaskBenchmarkManifest:
                 required_tools=("sby", "yosys", "make", "python3"),
                 required_python_modules=(),
                 required_env_vars=("TRWM_RISCV_FORMAL_TASK_ROOT",),
+                required_task_assets=(
+                    "file:$TRWM_RISCV_FORMAL_TASK_ROOT/checks/genchecks.py",
+                    "dir:$TRWM_RISCV_FORMAL_TASK_ROOT/train-rv32i-add/rvfi_violating_candidate",
+                    "dir:$TRWM_RISCV_FORMAL_TASK_ROOT/train-rv32i-add/rvfi_compliant_candidate",
+                    "dir:$TRWM_RISCV_FORMAL_TASK_ROOT/heldout-rv32i-branch/rvfi_violating_candidate",
+                    "dir:$TRWM_RISCV_FORMAL_TASK_ROOT/heldout-rv32i-branch/rvfi_compliant_candidate",
+                    "dir:$TRWM_RISCV_FORMAL_TASK_ROOT/heldout-rv32i-load-store/rvfi_violating_candidate",
+                    "dir:$TRWM_RISCV_FORMAL_TASK_ROOT/heldout-rv32i-load-store/rvfi_compliant_candidate",
+                ),
                 command_templates=(
                     "cd $TRWM_RISCV_FORMAL_TASK_ROOT/<task>/<candidate>",
                     "python3 ../../checks/genchecks.py",
@@ -219,6 +238,7 @@ def build_real_task_benchmark_manifest() -> RealTaskBenchmarkManifest:
                 required_tools=("defects4j", "java", "git", "svn", "perl"),
                 required_python_modules=(),
                 required_env_vars=(),
+                required_task_assets=(),
                 command_templates=(
                     "defects4j checkout -p <project> -v <bug_id>b -w <buggy_workdir>",
                     "defects4j checkout -p <project> -v <bug_id>f -w <fixed_workdir>",
@@ -246,6 +266,7 @@ def build_real_task_benchmark_manifest() -> RealTaskBenchmarkManifest:
                 required_tools=(),
                 required_python_modules=("mqt.bench", "mqt.qcec"),
                 required_env_vars=(),
+                required_task_assets=(),
                 command_templates=(
                     "python -m mqt.bench --benchmark <name> --level alg --output-format qasm3",
                     "python -m mqt.qcec <original.qasm> <candidate.qasm>",
@@ -309,13 +330,15 @@ def build_real_task_preflight_report(
     rows: list[RealTaskPreflightRow] = []
     missing: list[str] = []
     for spec in manifest.specs:
-        probes = tuple(
-            probe_fn("tool", tool) for tool in spec.required_tools
-        ) + tuple(
-            probe_fn("python_module", module) for module in spec.required_python_modules
-        ) + tuple(
-            probe_fn("env_var", env_var) for env_var in spec.required_env_vars
+        tool_probes = tuple(probe_fn("tool", tool) for tool in spec.required_tools)
+        module_probes = tuple(probe_fn("python_module", module) for module in spec.required_python_modules)
+        env_probes = tuple(probe_fn("env_var", env_var) for env_var in spec.required_env_vars)
+        asset_probes = (
+            tuple(probe_fn("task_asset", asset) for asset in spec.required_task_assets)
+            if all(probe.available for probe in env_probes)
+            else ()
         )
+        probes = tool_probes + module_probes + env_probes + asset_probes
         row_missing = tuple(f"{spec.domain}:{probe.kind}:{probe.name}" for probe in probes if not probe.available)
         missing.extend(row_missing)
         rows.append(
@@ -392,6 +415,13 @@ def validate_real_task_manifest(manifest: RealTaskBenchmarkManifest) -> bool:
             if spec.train_split_id == spec.held_out_split_id:
                 return False
             if not spec.command_templates or not spec.source_urls:
+                return False
+            if spec.required_env_vars and not spec.required_task_assets:
+                return False
+            if any(
+                not asset.startswith(("file:", "dir:", "exists:"))
+                for asset in spec.required_task_assets
+            ):
                 return False
         return manifest.manifest_hash == real_task_manifest_hash(manifest)
     except Exception:
@@ -490,7 +520,51 @@ def _default_probe(kind: str, name: str) -> RequirementProbe:
                 return RequirementProbe(kind=kind, name=name, available=False, evidence=f"not_directory:{value}")
             return RequirementProbe(kind=kind, name=name, available=True, evidence=str(path))
         return RequirementProbe(kind=kind, name=name, available=True, evidence="set")
+    if kind == "task_asset":
+        return _probe_task_asset(name)
     raise ValueError(f"unknown probe kind: {kind}")
+
+
+def _probe_task_asset(name: str) -> RequirementProbe:
+    asset_kind, separator, template = name.partition(":")
+    if not separator:
+        asset_kind = "exists"
+        template = name
+    if asset_kind not in {"file", "dir", "exists"}:
+        return RequirementProbe(
+            kind="task_asset",
+            name=name,
+            available=False,
+            evidence=f"unknown_asset_kind:{asset_kind}",
+        )
+    expanded = os.path.expandvars(template)
+    if "$" in expanded:
+        return RequirementProbe(kind="task_asset", name=name, available=False, evidence=f"unresolved_env:{template}")
+    path = Path(expanded)
+    if asset_kind == "file":
+        if not path.exists():
+            return RequirementProbe(kind="task_asset", name=name, available=False, evidence=f"missing_path:{expanded}")
+        return RequirementProbe(
+            kind="task_asset",
+            name=name,
+            available=path.is_file(),
+            evidence=str(path) if path.is_file() else f"not_file:{expanded}",
+        )
+    if asset_kind == "dir":
+        if not path.exists():
+            return RequirementProbe(kind="task_asset", name=name, available=False, evidence=f"missing_path:{expanded}")
+        return RequirementProbe(
+            kind="task_asset",
+            name=name,
+            available=path.is_dir(),
+            evidence=str(path) if path.is_dir() else f"not_directory:{expanded}",
+        )
+    return RequirementProbe(
+        kind="task_asset",
+        name=name,
+        available=path.exists(),
+        evidence=str(path) if path.exists() else f"missing_path:{expanded}",
+    )
 
 
 def _is_hash(value: str) -> bool:
