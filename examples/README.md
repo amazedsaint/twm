@@ -58,6 +58,9 @@ python3 -m examples.branch_budget_transfer
 python3 -m examples.branch_stop_rule_transfer
 python3 -m examples.branch_composition_transfer
 python3 -m examples.context_retention_transfer
+python3 -m examples.receipt_trained_reversible_proposer_benchmark
+python3 -m examples.real_task_benchmark_manifest
+python3 -m examples.quantum_mqt_bench_adapter
 python3 -m examples.branch_history_frontier
 python3 -m examples.programmable_world_model_frontier
 ```
@@ -1325,3 +1328,27 @@ missing, the readiness claim is `rejected`; this is not a performance result
 and cannot support the final receipt-trained proposer claim. A supported
 readiness claim only means the adapters are ready to run and produce benchmark
 receipts.
+
+## Quantum MQT Bench Adapter
+
+Run:
+
+```bash
+python3 -m examples.quantum_mqt_bench_adapter
+```
+
+This emits JSON with top-level `report`, `learning_certificate`, and
+`claim_certificate`. The adapter is dependency-free by default: if `mqt.bench`
+or `mqt.qcec` is unavailable, it emits a rejected claim with zero receipts
+rather than treating a missing backend as evidence.
+
+When the optional MQT packages are installed, the adapter generates train and
+held-out circuit tasks from MQT Bench and checks candidate rewrites with MQT
+QCEC equivalence. The learned arm is allowed to support the single-domain
+quantum claim only if the real backend is available, the learning certificate
+validates, held-out success is preserved, hard-verifier calls are reduced,
+replay/rollback audits pass, and invalid commits remain zero.
+
+The deterministic backend used by tests exercises the transaction, receipt,
+learning, replay, and claim-boundary mechanics. It cannot support a real
+quantum benchmark claim.

@@ -809,3 +809,24 @@ model should distinguish:
   reductions.
 
 The last category is still open.
+
+## Optional Quantum MQT Adapter
+
+The quantum MQT adapter is the first concrete step from readiness evidence
+toward a real benchmark receipt stream. It keeps the repository dependency-free
+while exposing the real adapter boundary:
+
+- MQT Bench provides train and held-out circuit tasks,
+- MQT QCEC owns the hard equivalence decision,
+- missing `mqt.bench` or `mqt.qcec` produces a rejected claim with zero
+  receipts,
+- deterministic test doubles can validate transaction mechanics but not
+  quantum benchmark performance,
+- the real backend must preserve held-out success, reduce QCEC calls, validate
+  the learning certificate, pass replay/rollback audit, and keep invalid
+  commits at zero before a single-domain quantum claim can be supported.
+
+This changes the substrate requirement from "name the external verifier" to
+"ship an adapter that can fail closed until the verifier is available." The
+same pattern should be used for robotics, hardware, and program repair before
+the aggregate four-domain proof is attempted.

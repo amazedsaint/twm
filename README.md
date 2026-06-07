@@ -90,6 +90,7 @@ python3 -m examples.branch_composition_transfer
 python3 -m examples.context_retention_transfer
 python3 -m examples.receipt_trained_reversible_proposer_benchmark
 python3 -m examples.real_task_benchmark_manifest
+python3 -m examples.quantum_mqt_bench_adapter
 python3 -m examples.branch_history_frontier
 python3 -m examples.programmable_world_model_frontier
 ```
@@ -180,6 +181,9 @@ benchmark preserves four held-out local canary successes while reducing
 hard-verifier calls from eight to four with zero invalid commits; the
 real-task benchmark manifest adds a fail-closed readiness certificate for the
 external robotics, hardware, program, and quantum benchmark adapters; the
+quantum MQT adapter runs the same receipt-trained call-reduction path against
+MQT Bench/QCEC when those optional packages are installed and otherwise
+rejects cleanly; the
 residual-template example turns a
 source residual/repair pair into a named repair-template proposal without
 transferring commit authority; the boundary-bracket example uses source

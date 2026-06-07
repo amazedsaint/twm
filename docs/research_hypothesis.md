@@ -309,6 +309,9 @@ This repository currently targets `G1` evidence:
   verification certificates, replay packages, and replay verification
   certificates that package those attestations and validate the underlying
   trace/candidate/receipt/learner body evidence,
+- an optional MQT Bench/QCEC quantum adapter that generates train/held-out
+  circuit-equivalence tasks, fails closed when `mqt.bench` or `mqt.qcec` is
+  missing, and supports a quantum call-reduction claim only on the real backend,
 - browser ESM demos using `trwm.browser.receipt.v1` receipts that are not
   byte-compatible with Python `trwm.receipt.v1` ledger rows.
 
@@ -875,3 +878,10 @@ supported readiness claim would mean only that the adapters can execute; it is
 not evidence for the receipt-trained proposer claim. The final proof still
 needs real benchmark receipts, baseline and learned hard-verifier-call counts,
 zero invalid commits, and replay/rollback audits across all four domains.
+
+`examples.quantum_mqt_bench_adapter` is the first single-domain adapter after
+the readiness gate. It uses MQT Bench as the task source and MQT QCEC as the
+hard equivalence verifier when the optional packages are installed. Without
+those packages it emits a rejected claim and zero receipts. Its deterministic
+test backend validates adapter mechanics only; it cannot promote a quantum
+benchmark-performance claim or satisfy the four-domain goal.
