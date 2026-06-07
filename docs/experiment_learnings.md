@@ -790,3 +790,22 @@ The next substrate requirements are now concrete:
   evaluation receipts,
 - aggregate reports that fail if any domain has an invalid commit or loses
   held-out success.
+
+## Real-Task Adapter Readiness
+
+The real-task manifest adds an environment-facing gate before the final proof
+can be attempted. It names concrete external adapters for MotionBenchMaker/OMPL,
+`riscv-formal`, Defects4J, and MQT Bench/QCEC/RevLib, then probes the local
+toolchain and Python modules. Missing requirements produce a rejected G0
+readiness claim instead of a runtime crash or a softened performance claim.
+
+This adds a useful substrate rule: real benchmark evidence starts only after an
+adapter-readiness certificate validates. A programmable transactional world
+model should distinguish:
+
+- canary evidence that proves local metric mechanics,
+- readiness evidence that proves external hard verifiers can run,
+- performance evidence that binds real-task receipts and verifier-call
+  reductions.
+
+The last category is still open.

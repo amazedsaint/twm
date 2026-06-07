@@ -857,3 +857,21 @@ certificate schema, reversible proposal tokens, held-out split discipline,
 same-case baseline comparison, and zero-invalid-commit gate needed to evaluate
 the target. It does not yet prove real robotics safety, hardware correctness,
 program repair effectiveness, or quantum compilation correctness.
+
+## Real-Task Readiness Gate
+
+`examples.real_task_benchmark_manifest` is the next substrate gate. It binds a
+four-domain external benchmark manifest to a preflight certificate:
+
+- required command-line tools such as `roslaunch`, `sby`, `yosys`, and
+  `defects4j`,
+- required Python modules such as `mqt.bench` and `mqt.qcec`,
+- command templates for generating or running each external benchmark,
+- train/held-out split ids for each domain,
+- source URLs for every benchmark family.
+
+The gate fails closed when the environment cannot run the real benchmarks. A
+supported readiness claim would mean only that the adapters can execute; it is
+not evidence for the receipt-trained proposer claim. The final proof still
+needs real benchmark receipts, baseline and learned hard-verifier-call counts,
+zero invalid commits, and replay/rollback audits across all four domains.

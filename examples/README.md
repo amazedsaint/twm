@@ -1300,3 +1300,28 @@ This is still G1 local evidence. The next real-task adapters should target OMPL
 or MotionBenchMaker robotics tasks, `riscv-formal` RVFI instruction checks,
 Defects4J active bug IDs, and MQT Bench/RevLib circuits checked through MQT
 QCEC.
+
+## Real-Task Benchmark Readiness Gate
+
+Run:
+
+```bash
+python3 -m examples.real_task_benchmark_manifest
+```
+
+This emits JSON with top-level `manifest`, `preflight_report`,
+`manifest_certificate`, and `claim_certificate`.
+
+The readiness gate names the concrete external benchmark adapters needed before
+the local canary can become real-task evidence:
+
+- robotics: MotionBenchMaker/OMPL manipulation problem sets,
+- hardware: `riscv-formal` RVFI checks through SymbiYosys/Yosys,
+- program: Defects4J active bug ids with triggering/relevant tests,
+- quantum: MQT Bench and RevLib circuits checked by MQT QCEC.
+
+The gate is intentionally fail-closed. If a required tool or Python module is
+missing, the readiness claim is `rejected`; this is not a performance result
+and cannot support the final receipt-trained proposer claim. A supported
+readiness claim only means the adapters are ready to run and produce benchmark
+receipts.
