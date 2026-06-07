@@ -910,10 +910,11 @@ reports into one `trwm.real_task_benchmark_suite_report.v1` report plus a
 `trwm.real_task_benchmark_suite_certificate.v1` certificate. The suite binds
 the readiness manifest, preflight report hash, manifest spec hashes, child
 adapter report hashes, adapter evidence certificate hashes, child claim hashes,
-learning certificate hashes, receipt hashes, typed-candidate hashes,
-hard-result hashes, hard-metadata hashes, manifest split task hashes, manifest
-and adapter train/held-out task ids, receipt artifact hashes, receipt artifact
-value hashes, manifest runtime requirement evidence hashes, adapter runtime
+learning certificate hashes, receipt hashes, training/baseline/learned receipt
+partition hashes, typed-candidate hashes, hard-result hashes,
+hard-metadata hashes, manifest split task hashes, manifest and adapter
+train/held-out task ids, receipt artifact hashes, receipt artifact value
+hashes, manifest runtime requirement evidence hashes, adapter runtime
 requirement evidence hashes, manifest task-asset content hashes,
 missing requirements, backend errors, backend execution evidence hashes,
 verifier-call totals, held-out success totals, replay/rollback/ledger status,
@@ -936,7 +937,8 @@ manifest-covered, every child claim and learning certificate is
 report-consistent, every held-out arm comparison is isolated, every domain
 reduces hard-verifier calls while preserving held-out success, all receipt and
 execution-provenance counts bind exact hash lanes, all receipt artifact lanes
-bind exact receipt counts, adapter train/held-out task ids exactly match the
+bind exact receipt counts, aggregate training/baseline/learned receipt
+partition lanes bind the flat receipt lane, adapter train/held-out task ids exactly match the
 manifest split task ids, adapter runtime requirement evidence hashes match the
 manifest preflight requirement hashes, receipt artifact value hashes cover every
 preflighted manifest task-asset content hash, all backend execution evidence

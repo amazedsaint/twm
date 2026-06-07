@@ -119,6 +119,9 @@ class RealTaskBenchmarkSuiteRow:
     replay_audit_ok: bool
     rollback_audit_ok: bool
     ledger_audit_ok: bool
+    training_receipt_hashes: tuple[str, ...]
+    baseline_receipt_hashes: tuple[str, ...]
+    learned_receipt_hashes: tuple[str, ...]
     receipt_hashes: tuple[str, ...]
     typed_candidate_hashes: tuple[str, ...]
     hard_result_hashes: tuple[str, ...]
@@ -150,6 +153,9 @@ class RealTaskBenchmarkSuiteRow:
         object.__setattr__(self, "receipt_artifact_value_hashes", tuple(self.receipt_artifact_value_hashes))
         object.__setattr__(self, "backend_execution_evidence_hashes", tuple(self.backend_execution_evidence_hashes))
         object.__setattr__(self, "source_urls", tuple(self.source_urls))
+        object.__setattr__(self, "training_receipt_hashes", tuple(self.training_receipt_hashes))
+        object.__setattr__(self, "baseline_receipt_hashes", tuple(self.baseline_receipt_hashes))
+        object.__setattr__(self, "learned_receipt_hashes", tuple(self.learned_receipt_hashes))
 
 
 @dataclass(frozen=True)
@@ -232,6 +238,9 @@ class RealTaskBenchmarkSuiteCertificate:
     adapter_evidence_certificate_hashes: tuple[str, ...]
     child_claim_hashes: tuple[str, ...]
     learning_certificate_hashes: tuple[str, ...]
+    training_receipt_hashes: tuple[str, ...]
+    baseline_receipt_hashes: tuple[str, ...]
+    learned_receipt_hashes: tuple[str, ...]
     receipt_hashes: tuple[str, ...]
     typed_candidate_hashes: tuple[str, ...]
     hard_result_hashes: tuple[str, ...]
@@ -278,6 +287,9 @@ class RealTaskBenchmarkSuiteCertificate:
         object.__setattr__(self, "adapter_evidence_certificate_hashes", tuple(self.adapter_evidence_certificate_hashes))
         object.__setattr__(self, "child_claim_hashes", tuple(self.child_claim_hashes))
         object.__setattr__(self, "learning_certificate_hashes", tuple(self.learning_certificate_hashes))
+        object.__setattr__(self, "training_receipt_hashes", tuple(self.training_receipt_hashes))
+        object.__setattr__(self, "baseline_receipt_hashes", tuple(self.baseline_receipt_hashes))
+        object.__setattr__(self, "learned_receipt_hashes", tuple(self.learned_receipt_hashes))
         object.__setattr__(self, "receipt_hashes", tuple(self.receipt_hashes))
         object.__setattr__(self, "typed_candidate_hashes", tuple(self.typed_candidate_hashes))
         object.__setattr__(self, "hard_result_hashes", tuple(self.hard_result_hashes))
@@ -451,6 +463,9 @@ def build_real_task_benchmark_suite_certificate(
         adapter_evidence_certificate_hashes=tuple(row.adapter_evidence_certificate_hash for row in report.rows),
         child_claim_hashes=tuple(row.child_claim_hash for row in report.rows),
         learning_certificate_hashes=tuple(row.learning_certificate_hash for row in report.rows if row.learning_certificate_hash),
+        training_receipt_hashes=tuple(receipt_hash for row in report.rows for receipt_hash in row.training_receipt_hashes),
+        baseline_receipt_hashes=tuple(receipt_hash for row in report.rows for receipt_hash in row.baseline_receipt_hashes),
+        learned_receipt_hashes=tuple(receipt_hash for row in report.rows for receipt_hash in row.learned_receipt_hashes),
         receipt_hashes=tuple(receipt_hash for row in report.rows for receipt_hash in row.receipt_hashes),
         typed_candidate_hashes=tuple(candidate_hash for row in report.rows for candidate_hash in row.typed_candidate_hashes),
         hard_result_hashes=tuple(result_hash for row in report.rows for result_hash in row.hard_result_hashes),
@@ -602,7 +617,21 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
                 return False
             if row.receipt_count != row.training_receipt_count + row.baseline_receipt_count + row.learned_receipt_count:
                 return False
+            if row.training_receipt_count != len(row.training_receipt_hashes):
+                return False
+            if row.baseline_receipt_count != len(row.baseline_receipt_hashes):
+                return False
+            if row.learned_receipt_count != len(row.learned_receipt_hashes):
+                return False
+            if row.receipt_hashes != row.training_receipt_hashes + row.baseline_receipt_hashes + row.learned_receipt_hashes:
+                return False
             if any(not _is_hash(receipt_hash) for receipt_hash in row.receipt_hashes):
+                return False
+            if any(not _is_hash(receipt_hash) for receipt_hash in row.training_receipt_hashes):
+                return False
+            if any(not _is_hash(receipt_hash) for receipt_hash in row.baseline_receipt_hashes):
+                return False
+            if any(not _is_hash(receipt_hash) for receipt_hash in row.learned_receipt_hashes):
                 return False
             if any(not _is_hash(candidate_hash) for candidate_hash in row.typed_candidate_hashes):
                 return False
@@ -758,6 +787,12 @@ def validate_real_task_benchmark_suite_certificate(
             return False
         if any(not _is_hash(row) for row in certificate.learning_certificate_hashes):
             return False
+        if any(not _is_hash(row) for row in certificate.training_receipt_hashes):
+            return False
+        if any(not _is_hash(row) for row in certificate.baseline_receipt_hashes):
+            return False
+        if any(not _is_hash(row) for row in certificate.learned_receipt_hashes):
+            return False
         if any(not _is_hash(row) for row in certificate.receipt_hashes):
             return False
         if any(not _is_hash(row) for row in certificate.typed_candidate_hashes):
@@ -780,6 +815,13 @@ def validate_real_task_benchmark_suite_certificate(
             == len(certificate.receipt_artifact_hashes)
             == len(certificate.backend_execution_evidence_hashes)
         ):
+            return False
+        receipt_partition_hashes = certificate.training_receipt_hashes + certificate.baseline_receipt_hashes + certificate.learned_receipt_hashes
+        if len(receipt_partition_hashes) != len(certificate.receipt_hashes):
+            return False
+        if set(receipt_partition_hashes) != set(certificate.receipt_hashes):
+            return False
+        if len(set(receipt_partition_hashes)) != len(receipt_partition_hashes):
             return False
         if not certificate.all_receipt_counts_bound and certificate.all_child_claims_supported:
             return False
@@ -855,6 +897,12 @@ def validate_real_task_benchmark_suite_certificate(
             if certificate.child_claim_hashes != tuple(row.child_claim_hash for row in report.rows):
                 return False
             if certificate.learning_certificate_hashes != tuple(row.learning_certificate_hash for row in report.rows if row.learning_certificate_hash):
+                return False
+            if certificate.training_receipt_hashes != tuple(receipt_hash for row in report.rows for receipt_hash in row.training_receipt_hashes):
+                return False
+            if certificate.baseline_receipt_hashes != tuple(receipt_hash for row in report.rows for receipt_hash in row.baseline_receipt_hashes):
+                return False
+            if certificate.learned_receipt_hashes != tuple(receipt_hash for row in report.rows for receipt_hash in row.learned_receipt_hashes):
                 return False
             if certificate.receipt_hashes != tuple(receipt_hash for row in report.rows for receipt_hash in row.receipt_hashes):
                 return False
@@ -1007,6 +1055,13 @@ def _suite_row(
         manifest_task_asset_content_hashes=manifest_task_asset_content_hashes,
         receipt_artifact_value_hashes=receipt_artifact_value_hashes,
     )
+    receipt_hashes = tuple(str(row) for row in report.receipt_hashes)
+    training_receipt_hashes, baseline_receipt_hashes, learned_receipt_hashes = _receipt_partitions(
+        receipt_hashes=receipt_hashes,
+        training_receipt_count=int(report.training_receipt_count),
+        baseline_receipt_count=int(report.baseline_receipt_count),
+        learned_receipt_count=int(report.learned_receipt_count),
+    )
     return RealTaskBenchmarkSuiteRow(
         domain=domain,
         report_schema_version=str(report.schema_version),
@@ -1073,7 +1128,10 @@ def _suite_row(
         replay_audit_ok=bool(report.replay_audit_ok),
         rollback_audit_ok=bool(report.rollback_audit_ok),
         ledger_audit_ok=bool(report.ledger_audit_ok),
-        receipt_hashes=tuple(str(row) for row in report.receipt_hashes),
+        training_receipt_hashes=training_receipt_hashes,
+        baseline_receipt_hashes=baseline_receipt_hashes,
+        learned_receipt_hashes=learned_receipt_hashes,
+        receipt_hashes=receipt_hashes,
         typed_candidate_hashes=tuple(str(row) for row in report.typed_candidate_hashes),
         hard_result_hashes=tuple(str(row) for row in report.hard_result_hashes),
         hard_metadata_hashes=tuple(str(row) for row in report.hard_metadata_hashes),
@@ -1271,6 +1329,27 @@ def _row_receipt_counts_bound(row: RealTaskBenchmarkSuiteRow) -> bool:
         == len(row.hard_metadata_hashes)
         == len(row.receipt_artifact_hashes)
         == len(row.backend_execution_evidence_hashes)
+        and row.training_receipt_count == len(row.training_receipt_hashes)
+        and row.baseline_receipt_count == len(row.baseline_receipt_hashes)
+        and row.learned_receipt_count == len(row.learned_receipt_hashes)
+        and row.receipt_hashes == row.training_receipt_hashes + row.baseline_receipt_hashes + row.learned_receipt_hashes
+    )
+
+
+def _receipt_partitions(
+    *,
+    receipt_hashes: tuple[str, ...],
+    training_receipt_count: int,
+    baseline_receipt_count: int,
+    learned_receipt_count: int,
+) -> tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]:
+    training_end = training_receipt_count
+    baseline_end = training_receipt_count + baseline_receipt_count
+    learned_end = baseline_end + learned_receipt_count
+    return (
+        receipt_hashes[:training_end],
+        receipt_hashes[training_end:baseline_end],
+        receipt_hashes[baseline_end:learned_end],
     )
 
 

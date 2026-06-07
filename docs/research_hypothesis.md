@@ -948,8 +948,9 @@ runs the robotics, hardware, program, and quantum adapters, binds the readiness
 manifest, validates every adapter evidence certificate, child claim, and
 learning certificate, and aggregates the preflight report hash, adapter evidence
 certificate hashes, child report hashes, manifest spec hashes, receipt hashes,
-typed-candidate hashes, hard-result hashes, hard-metadata hashes, baseline
-calls, learned calls, held-out successes, replay/rollback/ledger audit status,
+training/baseline/learned receipt partition hashes, typed-candidate hashes,
+hard-result hashes, hard-metadata hashes, baseline calls, learned calls,
+held-out successes, replay/rollback/ledger audit status,
 missing requirements, backend errors, held-out arm isolation status,
 domain-specific backend execution evidence hashes, and invalid commits. It also
 rejects certificate mixing: each adapter evidence
@@ -975,8 +976,9 @@ single-domain claim, every child certificate is report-consistent and
 manifest-covered, every adapter's reported train and held-out task ids exactly
 match the manifest split task ids, and every domain reduces hard-verifier calls
 while preserving held-out success under isolated evaluation arms, exact
-receipt/provenance hash-lane counts, exact receipt artifact hash-lane counts, exact backend
-execution evidence hash-lane counts, and zero invalid commits. It now also
+receipt/provenance hash-lane counts, exact training/baseline/learned partition
+hash lanes, exact receipt artifact hash-lane counts, exact backend execution
+evidence hash-lane counts, and zero invalid commits. It now also
 requires adapter runtime requirement hashes to match the manifest preflight
 tool/module/env hashes and receipt artifact value hashes to cover every
 preflighted manifest task-asset content hash, so a real receipt cannot promote

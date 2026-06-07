@@ -1484,7 +1484,8 @@ certificates, cross-checks each certificate against its child report and
 manifest spec, and aggregates the preflight report hash,
 manifest spec hashes, adapter evidence certificate hashes, child report hashes,
 manifest split task hashes, exact manifest and adapter train/held-out task
-ids, exact receipt counts, typed-candidate hashes, hard-result hashes,
+ids, exact receipt counts, separate training/baseline/learned receipt hash
+partitions, typed-candidate hashes, hard-result hashes,
 hard-metadata hashes, receipt artifact hashes, receipt artifact value hashes,
 manifest runtime requirement evidence hashes, adapter runtime requirement
 evidence hashes, manifest task-asset content hashes, backend execution evidence
@@ -1525,7 +1526,8 @@ report and real-task manifest spec, all learning certificates support call
 reduction, every learning certificate matches its report, all held-out arms are
 isolated, held-out success is preserved, hard-verifier calls are reduced in
 every domain, replay/rollback and ledger audits pass, receipt and
-execution-provenance counts bind exact hash lanes, receipt artifact counts bind
+execution-provenance counts bind exact hash lanes, training/baseline/learned
+receipt partitions bind the flat receipt lane, receipt artifact counts bind
 exact receipt counts, adapter train/held-out task ids match the manifest split
 task ids, adapter runtime requirement evidence hashes match the
 manifest preflight requirement hashes, receipt artifact value hashes cover every
