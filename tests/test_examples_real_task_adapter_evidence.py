@@ -18,6 +18,7 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
         self.assertEqual(certificate.schema_version, "trwm.real_task_adapter_evidence_certificate.v1")
         self.assertEqual(certificate.domain, "robotics")
         self.assertEqual(certificate.evidence_grade, "G0")
+        self.assertEqual(certificate.backend_error, result.report.backend_error)
         self.assertEqual(certificate.receipt_count, result.report.receipt_count)
         self.assertEqual(certificate.training_receipt_count, result.report.training_receipt_count)
         self.assertEqual(certificate.baseline_receipt_count, result.report.baseline_receipt_count)
@@ -46,6 +47,7 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
         certificate = result.evidence_certificate
 
         self.assertEqual(certificate.evidence_grade, "G0")
+        self.assertEqual(certificate.backend_error, result.report.backend_error)
         self.assertEqual(certificate.receipt_count, 0)
         self.assertEqual(certificate.receipt_hashes, ())
         self.assertEqual(certificate.typed_candidate_hashes, ())
@@ -77,6 +79,19 @@ class RealTaskAdapterEvidenceCertificateTests(unittest.TestCase):
     def test_tampered_report_provenance_hash_fails(self) -> None:
         result = run_robotics_motion_benchmark_adapter_experiment(DeterministicMotionBenchmarkBackend())
         bad_report = replace(result.report, hard_metadata_hashes=("0" * 64, *result.report.hard_metadata_hashes[1:]))
+
+        self.assertFalse(
+            validate_real_task_adapter_evidence_certificate(
+                result.evidence_certificate,
+                report=bad_report,
+                learning_certificate=result.learning_certificate,
+                claim_certificate=result.claim_certificate,
+            )
+        )
+
+    def test_tampered_report_backend_error_fails(self) -> None:
+        result = run_robotics_motion_benchmark_adapter_experiment(DeterministicMotionBenchmarkBackend())
+        bad_report = replace(result.report, backend_error="hidden backend failure")
 
         self.assertFalse(
             validate_real_task_adapter_evidence_certificate(

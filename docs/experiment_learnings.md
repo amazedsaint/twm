@@ -821,10 +821,11 @@ exposing real adapter boundaries. Each adapter now emits
 `trwm.real_task_adapter_evidence_certificate.v1`, which binds the adapter
 report hash, backend identity, task splits, claim certificate hash, learning
 certificate hash, ledger head, and exact training/baseline/learned receipt
-partitions. It also binds typed-candidate hashes, hard-result hashes, and
-hard-metadata hashes for every receipt, which turns command output summaries,
-QCEC equivalence metadata, and test-verifier metadata into compact certificate
-lanes. Missing real backends can still produce a valid G0 zero-receipt evidence
+partitions plus any backend execution error. It also binds typed-candidate
+hashes, hard-result hashes, and hard-metadata hashes for every receipt, which
+turns command output summaries, QCEC equivalence metadata, and test-verifier
+metadata into compact certificate lanes. Missing real backends can still
+produce a valid G0 zero-receipt evidence
 certificate; only real-backend supported claims can produce G1 adapter evidence.
 The aggregate suite now additionally binds each adapter evidence certificate to
 the domain's `trwm.real_task_benchmark_manifest.v1` spec hash and source URL
@@ -864,6 +865,8 @@ For quantum:
 - MQT QCEC owns the hard equivalence decision,
 - missing `mqt.bench` or `mqt.qcec` produces a rejected claim with zero
   receipts,
+- backend task-generation or QCEC execution errors now produce a rejected claim
+  with zero receipts and a certificate-bound `backend_error`, not a suite crash,
 - deterministic test doubles can validate transaction mechanics but not
   quantum benchmark performance,
 - the real backend must preserve held-out success, reduce QCEC calls, validate
@@ -896,9 +899,10 @@ reports into one `trwm.real_task_benchmark_suite_report.v1` report plus a
 the readiness manifest, manifest spec hashes, child adapter report hashes,
 adapter evidence certificate hashes, child claim hashes, learning certificate
 hashes, receipt hashes, typed-candidate hashes, hard-result hashes,
-hard-metadata hashes, missing requirements, verifier-call totals, held-out
-success totals, replay/rollback/ledger status, and invalid-commit totals. It
-also cross-checks that each adapter evidence certificate and child claim
+hard-metadata hashes, missing requirements, backend errors, verifier-call
+totals, held-out success totals, replay/rollback/ledger status, and
+invalid-commit totals. It also cross-checks that each adapter evidence
+certificate and child claim
 certificate matches the report it accompanies, that adapter evidence is covered
 by the manifest spec sources for that domain, and that each learning
 certificate matches the report's learner snapshot, verifier-call metrics,

@@ -64,6 +64,7 @@ class RealTaskBenchmarkSuiteRow:
     backend_available: bool
     real_backend: bool
     missing_requirements: tuple[str, ...]
+    backend_error: str
     manifest_spec_hash: str
     manifest_benchmark_id: str
     manifest_train_split_id: str
@@ -108,6 +109,7 @@ class RealTaskBenchmarkSuiteRow:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "missing_requirements", tuple(self.missing_requirements))
+        object.__setattr__(self, "backend_error", str(self.backend_error))
         object.__setattr__(self, "train_task_ids", tuple(self.train_task_ids))
         object.__setattr__(self, "held_out_task_ids", tuple(self.held_out_task_ids))
         object.__setattr__(self, "receipt_hashes", tuple(self.receipt_hashes))
@@ -381,6 +383,8 @@ def validate_real_task_benchmark_suite_report(report: RealTaskBenchmarkSuiteRepo
         if any(not _is_hash(row.manifest_spec_hash) for row in report.rows):
             return False
         if any(not row.manifest_benchmark_id or not row.manifest_train_split_id or not row.manifest_held_out_split_id for row in report.rows):
+            return False
+        if any(not isinstance(row.backend_error, str) for row in report.rows):
             return False
         if any(not _is_hash(row.child_report_hash) for row in report.rows):
             return False
@@ -688,6 +692,7 @@ def _suite_row(domain: str, result: Any, manifest_spec: RealTaskBenchmarkSpec) -
         backend_available=bool(report.backend_available),
         real_backend=bool(report.real_backend),
         missing_requirements=tuple(str(row) for row in report.missing_requirements),
+        backend_error=str(getattr(report, "backend_error", "")),
         manifest_spec_hash=manifest_spec.spec_hash,
         manifest_benchmark_id=manifest_spec.benchmark_id,
         manifest_train_split_id=manifest_spec.train_split_id,
@@ -792,6 +797,11 @@ def _child_claim_matches_report(domain: str, report: Any, claim: ClaimCertificat
     if tuple(row.key for row in claim.requirements) != expected_requirement_keys:
         return False
     requirements = {row.key: row for row in claim.requirements}
+    backend_requirement = requirements["backend_available"]
+    if tuple(backend_requirement.evidence.get("missing", ())) != tuple(report.missing_requirements):
+        return False
+    if str(backend_requirement.evidence.get("error", "")) != str(getattr(report, "backend_error", "")):
+        return False
     expected_passes = {
         "backend_available": bool(report.backend_available),
         real_backend_requirement: bool(report.real_backend),

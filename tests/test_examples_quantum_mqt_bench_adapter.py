@@ -5,11 +5,30 @@ import unittest
 from examples.quantum_mqt_bench_adapter import (
     DeterministicQuantumEquivalenceBackend,
     MqtQuantumEquivalenceBackend,
+    QuantumVerificationResult,
     run_quantum_mqt_bench_adapter_experiment,
 )
 from examples.real_task_adapter_evidence import validate_real_task_adapter_evidence_certificate
 from trwm.claims import validate_claim_certificate
 from trwm.evaluation import learning_evaluation_supports_claim, validate_learning_evaluation_certificate
+
+
+class FailingAvailableQuantumBackend:
+    backend_id = "failing.quantum.available"
+    backend_version = "1.0"
+    real_backend = True
+
+    def available(self) -> bool:
+        return True
+
+    def missing_requirements(self) -> tuple[str, ...]:
+        return ()
+
+    def generate_task(self, spec):
+        raise RuntimeError(f"cannot generate {spec.task_id}")
+
+    def verify_equivalent(self, original_program: str, candidate_program: str) -> QuantumVerificationResult:
+        return QuantumVerificationResult(equivalent=False, metadata={"unreachable": True})
 
 
 class QuantumMqtBenchAdapterTests(unittest.TestCase):
@@ -19,6 +38,7 @@ class QuantumMqtBenchAdapterTests(unittest.TestCase):
 
         self.assertFalse(report.backend_available)
         self.assertEqual(report.missing_requirements, ("mqt.bench", "mqt.qcec"))
+        self.assertEqual(report.backend_error, "")
         self.assertEqual(report.receipt_count, 0)
         self.assertEqual(report.typed_candidate_hashes, ())
         self.assertEqual(report.hard_result_hashes, ())
@@ -36,12 +56,36 @@ class QuantumMqtBenchAdapterTests(unittest.TestCase):
         self.assertEqual(result.claim_certificate.evidence_grade, "G0")
         self.assertIn("backend_available", result.claim_certificate.failed_keys)
 
+    def test_available_backend_error_fails_closed_without_receipts(self) -> None:
+        result = run_quantum_mqt_bench_adapter_experiment(FailingAvailableQuantumBackend())
+        report = result.report
+
+        self.assertFalse(report.backend_available)
+        self.assertTrue(report.real_backend)
+        self.assertEqual(report.missing_requirements, ())
+        self.assertIn("RuntimeError:cannot generate train-ghz-3", report.backend_error)
+        self.assertEqual(report.receipt_count, 0)
+        self.assertIsNone(result.learning_certificate)
+        self.assertEqual(result.evidence_certificate.backend_error, report.backend_error)
+        self.assertTrue(validate_real_task_adapter_evidence_certificate(
+            result.evidence_certificate,
+            report=report,
+            learning_certificate=result.learning_certificate,
+            claim_certificate=result.claim_certificate,
+        ))
+        self.assertTrue(validate_claim_certificate(result.claim_certificate))
+        self.assertEqual(result.claim_certificate.status, "rejected")
+        self.assertIn("backend_available", result.claim_certificate.failed_keys)
+        backend_requirement = result.claim_certificate.requirements[0]
+        self.assertEqual(backend_requirement.evidence["error"], report.backend_error)
+
     def test_deterministic_backend_exercises_receipt_trained_quantum_adapter_mechanics(self) -> None:
         result = run_quantum_mqt_bench_adapter_experiment(DeterministicQuantumEquivalenceBackend())
         report = result.report
 
         self.assertTrue(report.backend_available)
         self.assertFalse(report.real_backend)
+        self.assertEqual(report.backend_error, "")
         self.assertEqual(report.task_count, 3)
         self.assertEqual(report.train_task_ids, ("train-ghz-3",))
         self.assertEqual(report.held_out_task_ids, ("heldout-qft-3", "heldout-ghz-4"))
@@ -116,7 +160,7 @@ class QuantumMqtBenchAdapterTests(unittest.TestCase):
         else:
             self.assertEqual(result.claim_certificate.status, "rejected")
             self.assertEqual(result.claim_certificate.evidence_grade, "G0")
-            self.assertTrue(result.report.missing_requirements)
+            self.assertTrue(result.report.missing_requirements or result.report.backend_error)
 
 
 if __name__ == "__main__":

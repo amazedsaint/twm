@@ -1435,7 +1435,9 @@ This emits JSON with top-level `report`, `learning_certificate`,
 `evidence_certificate`, and `claim_certificate`. The adapter is dependency-free
 by default: if `mqt.bench` or `mqt.qcec` is unavailable, it emits a rejected
 claim and a G0 adapter evidence certificate with zero receipts rather than
-treating a missing backend as evidence.
+treating a missing backend as evidence. If the optional backend is available
+but task generation or QCEC execution raises, the adapter also fails closed with
+a zero-receipt report and a certificate-bound `backend_error`.
 
 When the optional MQT packages are installed, the adapter generates train and
 held-out circuit tasks from MQT Bench and checks candidate rewrites with MQT
@@ -1464,13 +1466,13 @@ its child report and manifest spec, and aggregates manifest spec hashes,
 adapter evidence certificate hashes, child report hashes, exact receipt counts,
 typed-candidate hashes, hard-result hashes, hard-metadata hashes, baseline
 calls, learned calls, held-out successes, replay/rollback/ledger status,
-missing requirements, and invalid-commit counts. Those compact hash lanes keep
-external command/QCEC/test metadata auditable without bloating the aggregate
-report. The adapter evidence cross-check binds exact training, baseline, and
-learned receipt partitions before the manifest cross-check proves the adapter
-evidence sources are covered by the domain's real-task manifest spec. The
-learning cross-check then binds the learned receipt partition into the learning
-certificate.
+missing requirements, backend errors, and invalid-commit counts. Those compact
+hash lanes keep external command/QCEC/test metadata auditable without bloating
+the aggregate report. The adapter evidence cross-check binds exact training,
+baseline, and learned receipt partitions plus any backend execution error
+before the manifest cross-check proves the adapter evidence sources are covered
+by the domain's real-task manifest spec. The learning cross-check then binds
+the learned receipt partition into the learning certificate.
 
 The suite claim is intentionally stricter than adapter readiness. It is
 supported only when all four domains use real backends, all child claims are

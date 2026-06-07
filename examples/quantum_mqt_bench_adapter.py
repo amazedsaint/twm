@@ -106,6 +106,7 @@ class QuantumMqtBenchAdapterReport:
     backend_available: bool
     real_backend: bool
     missing_requirements: tuple[str, ...]
+    backend_error: str
     task_count: int
     train_task_ids: tuple[str, ...]
     held_out_task_ids: tuple[str, ...]
@@ -301,7 +302,14 @@ def run_quantum_mqt_bench_adapter_experiment(
     if not backend.available():
         report = _empty_report(backend)
         return _result_for_report(report, None)
+    try:
+        return _run_available_backend(backend)
+    except Exception as exc:
+        report = _empty_report(backend, backend_error=f"{type(exc).__name__}:{_tail(str(exc), limit=400)}")
+        return _result_for_report(report, None)
 
+
+def _run_available_backend(backend: QuantumEquivalenceBackend) -> QuantumMqtBenchAdapterResult:
     specs = _task_specs()
     bundles = {spec.task_id: backend.generate_task(spec) for spec in specs}
     train_specs = tuple(spec for spec in specs if spec.split == "train")
@@ -371,6 +379,7 @@ def run_quantum_mqt_bench_adapter_experiment(
         backend_available=True,
         real_backend=backend.real_backend,
         missing_requirements=(),
+        backend_error="",
         task_count=len(specs),
         train_task_ids=tuple(spec.task_id for spec in train_specs),
         held_out_task_ids=tuple(spec.task_id for spec in heldout_specs),
@@ -527,7 +536,7 @@ def _claim_for_report(report: QuantumMqtBenchAdapterReport) -> ClaimCertificate:
         evidence_grade="G1" if report.backend_available and report.real_backend else "G0",
         scope="quantum_mqt_bench_adapter",
         requirements=(
-            requirement("backend_available", report.backend_available, missing=report.missing_requirements),
+            requirement("backend_available", report.backend_available, missing=report.missing_requirements, error=report.backend_error),
             requirement("real_mqt_backend", report.real_backend),
             requirement("learning_certificate_valid", report.learning_certificate_valid),
             requirement("learning_certificate_supports_claim", report.learning_certificate_supports_claim),
@@ -547,7 +556,7 @@ def _claim_for_report(report: QuantumMqtBenchAdapterReport) -> ClaimCertificate:
     )
 
 
-def _empty_report(backend: QuantumEquivalenceBackend) -> QuantumMqtBenchAdapterReport:
+def _empty_report(backend: QuantumEquivalenceBackend, *, backend_error: str = "") -> QuantumMqtBenchAdapterReport:
     missing = backend.missing_requirements()
     return QuantumMqtBenchAdapterReport(
         schema_version=QUANTUM_MQT_ADAPTER_REPORT_SCHEMA,
@@ -557,6 +566,7 @@ def _empty_report(backend: QuantumEquivalenceBackend) -> QuantumMqtBenchAdapterR
         backend_available=False,
         real_backend=backend.real_backend,
         missing_requirements=missing,
+        backend_error=backend_error,
         task_count=0,
         train_task_ids=(),
         held_out_task_ids=(),
@@ -637,6 +647,12 @@ def _circuit_to_program(circuit: Any) -> str:
 def _qcec_equivalent(raw: str) -> bool:
     token = raw.strip().lower().split(".")[-1]
     return token in {"equivalent", "true", "1", "yes"}
+
+
+def _tail(text: str | bytes, *, limit: int = 1000) -> str:
+    if isinstance(text, bytes):
+        text = text.decode("utf-8", errors="replace")
+    return str(text)[-limit:]
 
 
 def result_as_dict(result: QuantumMqtBenchAdapterResult) -> dict[str, Any]:

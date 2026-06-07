@@ -13,6 +13,7 @@ from examples.program_defects4j_adapter import (
 )
 from examples.quantum_mqt_bench_adapter import (
     DeterministicQuantumEquivalenceBackend,
+    QuantumVerificationResult,
     run_quantum_mqt_bench_adapter_experiment,
 )
 from examples.real_task_benchmark_suite import (
@@ -38,6 +39,24 @@ def _deterministic_adapter_results() -> dict[str, object]:
         "program": run_program_defects4j_adapter_experiment(DeterministicDefects4JBackend()),
         "quantum": run_quantum_mqt_bench_adapter_experiment(DeterministicQuantumEquivalenceBackend()),
     }
+
+
+class FailingAvailableQuantumBackend:
+    backend_id = "failing.quantum.available"
+    backend_version = "1.0"
+    real_backend = True
+
+    def available(self) -> bool:
+        return True
+
+    def missing_requirements(self) -> tuple[str, ...]:
+        return ()
+
+    def generate_task(self, spec):
+        raise RuntimeError(f"cannot generate {spec.task_id}")
+
+    def verify_equivalent(self, original_program: str, candidate_program: str) -> QuantumVerificationResult:
+        return QuantumVerificationResult(equivalent=False, metadata={"unreachable": True})
 
 
 class RealTaskBenchmarkSuiteTests(unittest.TestCase):
@@ -158,6 +177,22 @@ class RealTaskBenchmarkSuiteTests(unittest.TestCase):
         self.assertEqual(result.claim_certificate.status, "rejected")
         self.assertIn("all_backends_available", result.claim_certificate.failed_keys)
         self.assertIn("hard_verifier_calls_reduced", result.claim_certificate.failed_keys)
+
+    def test_suite_surfaces_child_backend_error(self) -> None:
+        results = _deterministic_adapter_results()
+        results["quantum"] = run_quantum_mqt_bench_adapter_experiment(FailingAvailableQuantumBackend())
+        result = build_real_task_benchmark_suite_result(results)
+        quantum_row = result.report.rows[-1]
+
+        self.assertEqual(quantum_row.domain, "quantum")
+        self.assertFalse(quantum_row.backend_available)
+        self.assertTrue(quantum_row.real_backend)
+        self.assertEqual(quantum_row.missing_requirements, ())
+        self.assertIn("RuntimeError:cannot generate train-ghz-3", quantum_row.backend_error)
+        self.assertTrue(validate_real_task_benchmark_suite_report(result.report))
+        self.assertTrue(validate_real_task_benchmark_suite_certificate(result.suite_certificate, result.report))
+        self.assertEqual(result.claim_certificate.status, "rejected")
+        self.assertIn("all_backends_available", result.claim_certificate.failed_keys)
 
     def test_suite_rejects_tampered_child_claim_certificate(self) -> None:
         results = _deterministic_adapter_results()

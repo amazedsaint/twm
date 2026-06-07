@@ -909,9 +909,11 @@ only, and real MotionBenchMaker/MoveIt/OMPL receipts are still needed.
 `examples.quantum_mqt_bench_adapter` adds the quantum fail-closed shape. It uses
 MQT Bench as the task source and MQT QCEC as the hard equivalence verifier when
 the optional packages are installed. Without those packages it emits a rejected
-claim and zero receipts. Its deterministic test backend validates adapter
-mechanics only; it cannot promote a quantum benchmark-performance claim or
-satisfy the four-domain goal.
+claim and zero receipts. If those packages are available but task generation or
+QCEC execution raises, it now emits a zero-receipt rejected report with a
+certificate-bound `backend_error` instead of crashing the aggregate suite. Its
+deterministic test backend validates adapter mechanics only; it cannot promote
+a quantum benchmark-performance claim or satisfy the four-domain goal.
 
 `examples.program_defects4j_adapter` adds the same fail-closed shape for
 program repair. It uses Defects4J `checkout`, `compile`, and relevant-test
@@ -935,12 +937,13 @@ learning certificate, and aggregates adapter evidence certificate hashes, child
 report hashes, manifest spec hashes, receipt hashes, typed-candidate hashes,
 hard-result hashes, hard-metadata hashes, baseline calls, learned calls,
 held-out successes, replay/rollback/ledger audit status, missing requirements,
-and invalid commits. It also rejects certificate mixing: each adapter evidence
+backend errors, and invalid commits. It also rejects certificate mixing: each adapter evidence
 certificate must bind the report hash, backend identity, task split ids, claim
 hash, learning hash, ledger head, and exact training/baseline/learned receipt
-partitions. It must also bind hard-result and hard-metadata hashes so external
-command, QCEC, and relevant-test execution metadata stay receipt-bound without
-expanding the certificate into raw logs. That evidence must be covered by the
+partitions plus any backend execution error. It must also bind hard-result and
+hard-metadata hashes so external command, QCEC, and relevant-test execution
+metadata stay receipt-bound without expanding the certificate into raw logs.
+That evidence must be covered by the
 manifest spec sources for the same domain; each child claim must match
 its report's requirement passes, metrics, boundary, and sources; and each
 learning certificate must match the report's learner snapshot, held-out metrics,

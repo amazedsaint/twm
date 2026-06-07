@@ -29,6 +29,7 @@ class RealTaskAdapterEvidenceCertificate:
     backend_available: bool
     real_backend: bool
     missing_requirements: tuple[str, ...]
+    backend_error: str
     train_task_ids: tuple[str, ...]
     held_out_task_ids: tuple[str, ...]
     learner_snapshot_hash: str
@@ -127,6 +128,7 @@ def build_real_task_adapter_evidence_certificate(
         backend_available=bool(report_data["backend_available"]),
         real_backend=bool(report_data["real_backend"]),
         missing_requirements=tuple(str(row) for row in report_data["missing_requirements"]),
+        backend_error=str(report_data.get("backend_error", "")),
         train_task_ids=tuple(str(row) for row in report_data["train_task_ids"]),
         held_out_task_ids=tuple(str(row) for row in report_data["held_out_task_ids"]),
         learner_snapshot_hash=str(report_data["learner_snapshot_hash"]),
@@ -189,6 +191,8 @@ def validate_real_task_adapter_evidence_certificate(
         ):
             if not _nonempty_string(value):
                 return False
+        if not isinstance(certificate.backend_error, str):
+            return False
         for hash_value in (certificate.report_hash, certificate.claim_certificate_hash, certificate.certificate_hash):
             if not _is_hash(hash_value):
                 return False
@@ -369,6 +373,7 @@ def _report_matches(certificate: RealTaskAdapterEvidenceCertificate, report: Any
         "backend_available",
         "real_backend",
         "missing_requirements",
+        "backend_error",
         "train_task_ids",
         "held_out_task_ids",
         "learner_snapshot_hash",
@@ -421,6 +426,14 @@ def _claim_matches_report(claim: ClaimCertificate, report_data: Mapping[str, Any
         "verifier_call_reduction": int(report_data["verifier_call_reduction"]),
         "invalid_commit_count": int(report_data["invalid_commit_count"]),
     }
+    requirements = {row.key: row for row in claim.requirements}
+    backend_requirement = requirements.get("backend_available")
+    if backend_requirement is None:
+        return False
+    if tuple(backend_requirement.evidence.get("missing", ())) != tuple(report_data["missing_requirements"]):
+        return False
+    if str(backend_requirement.evidence.get("error", "")) != str(report_data.get("backend_error", "")):
+        return False
     return (
         claim.metrics == expected_metrics
         and claim.boundary == str(report_data["claim_boundary"])
