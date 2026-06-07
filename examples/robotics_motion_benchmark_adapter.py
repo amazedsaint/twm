@@ -8,6 +8,10 @@ import subprocess
 from pathlib import Path
 from typing import Any, Mapping, Protocol
 
+from examples.real_task_adapter_evidence import (
+    RealTaskAdapterEvidenceCertificate,
+    build_real_task_adapter_evidence_certificate,
+)
 from trwm.claims import ClaimCertificate, certify_claim, requirement
 from trwm.core import HardVerifierResult, ProposalTrace, Receipt, TransactionEngine, TypedCandidate, stable_hash
 from trwm.evaluation import (
@@ -149,6 +153,7 @@ class RoboticsMotionBenchmarkAdapterReport:
 class RoboticsMotionBenchmarkAdapterResult:
     report: RoboticsMotionBenchmarkAdapterReport
     learning_certificate: LearningEvaluationCertificate | None
+    evidence_certificate: RealTaskAdapterEvidenceCertificate
     claim_certificate: ClaimCertificate
 
 
@@ -391,12 +396,12 @@ def run_robotics_motion_benchmark_adapter_experiment(
     backend = backend or MotionBenchmarkBackend()
     if not backend.available():
         report = _empty_report(backend)
-        return RoboticsMotionBenchmarkAdapterResult(report=report, learning_certificate=None, claim_certificate=_claim_for_report(report))
+        return _result_for_report(report, None)
     try:
         return _run_available_backend(backend)
     except Exception as exc:
         report = _empty_report(backend, backend_error=f"{type(exc).__name__}:{_tail(str(exc), limit=400)}")
-        return RoboticsMotionBenchmarkAdapterResult(report=report, learning_certificate=None, claim_certificate=_claim_for_report(report))
+        return _result_for_report(report, None)
 
 
 def _run_available_backend(backend: RoboticsBenchmarkBackend) -> RoboticsMotionBenchmarkAdapterResult:
@@ -514,10 +519,25 @@ def _run_available_backend(backend: RoboticsBenchmarkBackend) -> RoboticsMotionB
         source_urls=ROBOTICS_MOTION_BENCHMARK_SOURCES,
         claim_boundary=ROBOTICS_MOTION_BENCHMARK_CLAIM_BOUNDARY,
     )
+    return _result_for_report(report, learning_certificate)
+
+
+def _result_for_report(
+    report: RoboticsMotionBenchmarkAdapterReport,
+    learning_certificate: LearningEvaluationCertificate | None,
+) -> RoboticsMotionBenchmarkAdapterResult:
+    claim = _claim_for_report(report)
+    evidence = build_real_task_adapter_evidence_certificate(
+        domain="robotics",
+        report=report,
+        learning_certificate=learning_certificate,
+        claim_certificate=claim,
+    )
     return RoboticsMotionBenchmarkAdapterResult(
         report=report,
         learning_certificate=learning_certificate,
-        claim_certificate=_claim_for_report(report),
+        evidence_certificate=evidence,
+        claim_certificate=claim,
     )
 
 

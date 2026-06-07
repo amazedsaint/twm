@@ -7,6 +7,10 @@ import tempfile
 from pathlib import Path
 from typing import Any, Mapping, Protocol
 
+from examples.real_task_adapter_evidence import (
+    RealTaskAdapterEvidenceCertificate,
+    build_real_task_adapter_evidence_certificate,
+)
 from trwm.claims import ClaimCertificate, certify_claim, requirement
 from trwm.core import HardVerifierResult, ProposalTrace, Receipt, TransactionEngine, TypedCandidate, stable_hash
 from trwm.evaluation import (
@@ -137,6 +141,7 @@ class QuantumMqtBenchAdapterReport:
 class QuantumMqtBenchAdapterResult:
     report: QuantumMqtBenchAdapterReport
     learning_certificate: LearningEvaluationCertificate | None
+    evidence_certificate: RealTaskAdapterEvidenceCertificate
     claim_certificate: ClaimCertificate
 
 
@@ -291,8 +296,7 @@ def run_quantum_mqt_bench_adapter_experiment(
     backend = backend or MqtQuantumEquivalenceBackend()
     if not backend.available():
         report = _empty_report(backend)
-        claim = _claim_for_report(report)
-        return QuantumMqtBenchAdapterResult(report=report, learning_certificate=None, claim_certificate=claim)
+        return _result_for_report(report, None)
 
     specs = _task_specs()
     bundles = {spec.task_id: backend.generate_task(spec) for spec in specs}
@@ -393,10 +397,25 @@ def run_quantum_mqt_bench_adapter_experiment(
         source_urls=QUANTUM_MQT_SOURCES,
         claim_boundary=QUANTUM_MQT_CLAIM_BOUNDARY,
     )
+    return _result_for_report(report, learning_certificate)
+
+
+def _result_for_report(
+    report: QuantumMqtBenchAdapterReport,
+    learning_certificate: LearningEvaluationCertificate | None,
+) -> QuantumMqtBenchAdapterResult:
+    claim = _claim_for_report(report)
+    evidence = build_real_task_adapter_evidence_certificate(
+        domain="quantum",
+        report=report,
+        learning_certificate=learning_certificate,
+        claim_certificate=claim,
+    )
     return QuantumMqtBenchAdapterResult(
         report=report,
         learning_certificate=learning_certificate,
-        claim_certificate=_claim_for_report(report),
+        evidence_certificate=evidence,
+        claim_certificate=claim,
     )
 
 

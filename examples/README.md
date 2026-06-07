@@ -1344,10 +1344,11 @@ Run:
 python3 -m examples.robotics_motion_benchmark_adapter
 ```
 
-This emits JSON with top-level `report`, `learning_certificate`, and
-`claim_certificate`. The adapter is dependency-free by default: if `roslaunch`
-or `TRWM_MOTION_BENCHMARK_TASK_ROOT` is unavailable, it emits a rejected claim
-with zero receipts.
+This emits JSON with top-level `report`, `learning_certificate`,
+`evidence_certificate`, and `claim_certificate`. The adapter is dependency-free
+by default: if `roslaunch` or `TRWM_MOTION_BENCHMARK_TASK_ROOT` is unavailable,
+it emits a rejected claim and a G0 adapter evidence certificate with zero
+receipts.
 
 When ROS and the task root are available, the adapter expects candidate
 directories under `$TRWM_MOTION_BENCHMARK_TASK_ROOT/<task>/<candidate>/`.
@@ -1375,10 +1376,11 @@ Run:
 python3 -m examples.hardware_riscv_formal_adapter
 ```
 
-This emits JSON with top-level `report`, `learning_certificate`, and
-`claim_certificate`. The adapter is dependency-free by default: if `sby`,
-`yosys`, `make`, `python3`, or `TRWM_RISCV_FORMAL_TASK_ROOT` are unavailable,
-it emits a rejected claim with zero receipts.
+This emits JSON with top-level `report`, `learning_certificate`,
+`evidence_certificate`, and `claim_certificate`. The adapter is dependency-free
+by default: if `sby`, `yosys`, `make`, `python3`, or
+`TRWM_RISCV_FORMAL_TASK_ROOT` are unavailable, it emits a rejected claim and a
+G0 adapter evidence certificate with zero receipts.
 
 When the toolchain and task root are available, the adapter expects candidate
 directories under `$TRWM_RISCV_FORMAL_TASK_ROOT/<task>/<candidate>/`. It runs
@@ -1402,10 +1404,11 @@ Run:
 python3 -m examples.program_defects4j_adapter
 ```
 
-This emits JSON with top-level `report`, `learning_certificate`, and
-`claim_certificate`. The adapter is dependency-free by default: if `defects4j`
-or required host tools such as `java`, `git`, `svn`, or `perl` are unavailable,
-it emits a rejected claim with zero receipts.
+This emits JSON with top-level `report`, `learning_certificate`,
+`evidence_certificate`, and `claim_certificate`. The adapter is dependency-free
+by default: if `defects4j` or required host tools such as `java`, `git`, `svn`,
+or `perl` are unavailable, it emits a rejected claim and a G0 adapter evidence
+certificate with zero receipts.
 
 When the Defects4J CLI is available, the adapter creates train and held-out
 version-candidate tasks and checks candidates through Defects4J `checkout`,
@@ -1428,10 +1431,11 @@ Run:
 python3 -m examples.quantum_mqt_bench_adapter
 ```
 
-This emits JSON with top-level `report`, `learning_certificate`, and
-`claim_certificate`. The adapter is dependency-free by default: if `mqt.bench`
-or `mqt.qcec` is unavailable, it emits a rejected claim with zero receipts
-rather than treating a missing backend as evidence.
+This emits JSON with top-level `report`, `learning_certificate`,
+`evidence_certificate`, and `claim_certificate`. The adapter is dependency-free
+by default: if `mqt.bench` or `mqt.qcec` is unavailable, it emits a rejected
+claim and a G0 adapter evidence certificate with zero receipts rather than
+treating a missing backend as evidence.
 
 When the optional MQT packages are installed, the adapter generates train and
 held-out circuit tasks from MQT Bench and checks candidate rewrites with MQT
@@ -1454,20 +1458,21 @@ python3 -m examples.real_task_benchmark_suite
 
 This emits JSON with top-level `manifest`, `manifest_certificate`, `report`,
 `suite_certificate`, and `claim_certificate`. It runs the four optional real
-adapters, validates their child claim certificates and learning certificates,
-cross-checks each child claim and learning certificate against its child report,
-and aggregates child report hashes, exact receipt counts, baseline calls,
-learned calls, held-out successes, replay/rollback/ledger status, missing
-requirements, and invalid-commit counts. The learning cross-check binds exact
-training and learned receipt partitions rather than only checking that a
-certificate hash is well formed.
+adapters, validates their adapter evidence certificates, child claim
+certificates, and learning certificates, cross-checks each certificate against
+its child report, and aggregates adapter evidence certificate hashes, child
+report hashes, exact receipt counts, baseline calls, learned calls, held-out
+successes, replay/rollback/ledger status, missing requirements, and
+invalid-commit counts. The adapter evidence cross-check binds exact training,
+baseline, and learned receipt partitions before the learning cross-check binds
+the learned receipt partition into the learning certificate.
 
 The suite claim is intentionally stricter than adapter readiness. It is
 supported only when all four domains use real backends, all child claims are
-supported, every child claim matches its report, all learning certificates
-support call reduction, every learning certificate matches its report, held-out
-success is preserved, hard-verifier calls are reduced in every domain,
-replay/rollback and ledger audits pass, receipt counts bind exact receipt
-hashes, and invalid commits remain zero. Missing external tools or
-deterministic test doubles produce a rejected G0 claim rather than weakening
-the final objective.
+supported, every adapter evidence certificate and child claim matches its
+report, all learning certificates support call reduction, every learning
+certificate matches its report, held-out success is preserved, hard-verifier
+calls are reduced in every domain, replay/rollback and ledger audits pass,
+receipt counts bind exact receipt hashes, and invalid commits remain zero.
+Missing external tools or deterministic test doubles produce a rejected G0
+claim rather than weakening the final objective.

@@ -10,6 +10,7 @@ from examples.robotics_motion_benchmark_adapter import (
     _benchmark_result_accepted,
     run_robotics_motion_benchmark_adapter_experiment,
 )
+from examples.real_task_adapter_evidence import validate_real_task_adapter_evidence_certificate
 from trwm.claims import validate_claim_certificate
 from trwm.evaluation import learning_evaluation_supports_claim, validate_learning_evaluation_certificate
 
@@ -23,6 +24,13 @@ class RoboticsMotionBenchmarkAdapterTests(unittest.TestCase):
         self.assertEqual(report.missing_requirements, ROBOTICS_MOTION_BENCHMARK_REQUIRED_REQUIREMENTS)
         self.assertEqual(report.receipt_count, 0)
         self.assertIsNone(result.learning_certificate)
+        self.assertTrue(validate_real_task_adapter_evidence_certificate(
+            result.evidence_certificate,
+            report=report,
+            learning_certificate=result.learning_certificate,
+            claim_certificate=result.claim_certificate,
+        ))
+        self.assertEqual(result.evidence_certificate.evidence_grade, "G0")
         self.assertTrue(validate_claim_certificate(result.claim_certificate))
         self.assertEqual(result.claim_certificate.status, "rejected")
         self.assertEqual(result.claim_certificate.evidence_grade, "G0")
@@ -60,6 +68,15 @@ class RoboticsMotionBenchmarkAdapterTests(unittest.TestCase):
         self.assertTrue(report.source_urls)
         self.assertIsNotNone(result.learning_certificate)
         assert result.learning_certificate is not None
+        self.assertTrue(validate_real_task_adapter_evidence_certificate(
+            result.evidence_certificate,
+            report=report,
+            learning_certificate=result.learning_certificate,
+            claim_certificate=result.claim_certificate,
+        ))
+        self.assertEqual(result.evidence_certificate.evidence_grade, "G0")
+        self.assertEqual(result.evidence_certificate.receipt_count, report.receipt_count)
+        self.assertEqual(result.evidence_certificate.learned_receipt_hashes, result.learning_certificate.evaluation_receipt_hashes)
         self.assertTrue(validate_learning_evaluation_certificate(result.learning_certificate))
         self.assertTrue(learning_evaluation_supports_claim(result.learning_certificate))
 

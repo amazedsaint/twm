@@ -817,7 +817,13 @@ The last category is still open.
 The optional MotionBenchMaker/MoveIt/OMPL, riscv-formal, Defects4J, and MQT
 adapters are the first concrete steps from readiness evidence toward real
 benchmark receipt streams. They keep the repository dependency-free while
-exposing real adapter boundaries.
+exposing real adapter boundaries. Each adapter now emits
+`trwm.real_task_adapter_evidence_certificate.v1`, which binds the adapter
+report hash, backend identity, task splits, claim certificate hash, learning
+certificate hash, ledger head, and exact training/baseline/learned receipt
+partitions. Missing real backends can still produce a valid G0 zero-receipt
+evidence certificate; only real-backend supported claims can produce G1 adapter
+evidence.
 
 For robotics:
 
@@ -881,19 +887,21 @@ The real-task benchmark suite adds the aggregate promotion gate for the active
 objective. It composes the robotics, hardware, program, and quantum adapter
 reports into one `trwm.real_task_benchmark_suite_report.v1` report plus a
 `trwm.real_task_benchmark_suite_certificate.v1` certificate. The suite binds
-the readiness manifest, child adapter report hashes, child claim hashes,
-learning certificate hashes, receipt hashes, missing requirements,
-verifier-call totals, held-out success totals, replay/rollback/ledger status,
-and invalid-commit totals. It also cross-checks that each child claim
-certificate matches the report it accompanies and that each learning certificate
-matches the report's learner snapshot, verifier-call metrics, success metrics,
-hard-commit flag, ledger audit, and exact training/learned receipt partitions.
+the readiness manifest, child adapter report hashes, adapter evidence
+certificate hashes, child claim hashes, learning certificate hashes, receipt
+hashes, missing requirements, verifier-call totals, held-out success totals,
+replay/rollback/ledger status, and invalid-commit totals. It also cross-checks
+that each adapter evidence certificate and child claim certificate matches the
+report it accompanies and that each learning certificate matches the report's
+learner snapshot, verifier-call metrics, success metrics, hard-commit flag,
+ledger audit, and exact training/learned receipt partitions.
 
 That changes the proof boundary again: single-domain adapter success is no
 longer enough. The final claim is supported only if all four real backends are
 available, all child claims are supported, all learning certificates support
-call reduction, every child claim and learning certificate is report-consistent,
-every domain reduces hard-verifier calls while preserving held-out success, all
-receipt counts bind exact receipt hashes, and invalid commits remain zero. On
-the current local machine the suite correctly rejects with G0 because the
-external toolchains and task roots are missing.
+call reduction, every adapter evidence certificate, child claim, and learning
+certificate is report-consistent, every domain reduces hard-verifier calls
+while preserving held-out success, all receipt counts bind exact receipt
+hashes, and invalid commits remain zero. On the current local machine the suite
+correctly rejects with G0 because the external toolchains and task roots are
+missing.

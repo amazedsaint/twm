@@ -9,6 +9,10 @@ import tempfile
 from pathlib import Path
 from typing import Any, Mapping, Protocol
 
+from examples.real_task_adapter_evidence import (
+    RealTaskAdapterEvidenceCertificate,
+    build_real_task_adapter_evidence_certificate,
+)
 from trwm.claims import ClaimCertificate, certify_claim, requirement
 from trwm.core import HardVerifierResult, ProposalTrace, Receipt, TransactionEngine, TypedCandidate, stable_hash
 from trwm.evaluation import (
@@ -143,6 +147,7 @@ class ProgramDefects4JAdapterReport:
 class ProgramDefects4JAdapterResult:
     report: ProgramDefects4JAdapterReport
     learning_certificate: LearningEvaluationCertificate | None
+    evidence_certificate: RealTaskAdapterEvidenceCertificate
     claim_certificate: ClaimCertificate
 
 
@@ -387,13 +392,13 @@ def run_program_defects4j_adapter_experiment(
     backend = backend or Defects4JProgramBackend()
     if not backend.available():
         report = _empty_report(backend)
-        return ProgramDefects4JAdapterResult(report=report, learning_certificate=None, claim_certificate=_claim_for_report(report))
+        return _result_for_report(report, None)
 
     try:
         return _run_available_backend(backend)
     except Exception as exc:
         report = _empty_report(backend, backend_error=f"{type(exc).__name__}:{_tail(str(exc), limit=400)}")
-        return ProgramDefects4JAdapterResult(report=report, learning_certificate=None, claim_certificate=_claim_for_report(report))
+        return _result_for_report(report, None)
 
 
 def _run_available_backend(backend: ProgramRepairBackend) -> ProgramDefects4JAdapterResult:
@@ -511,10 +516,25 @@ def _run_available_backend(backend: ProgramRepairBackend) -> ProgramDefects4JAda
         source_urls=PROGRAM_DEFECTS4J_SOURCES,
         claim_boundary=PROGRAM_DEFECTS4J_CLAIM_BOUNDARY,
     )
+    return _result_for_report(report, learning_certificate)
+
+
+def _result_for_report(
+    report: ProgramDefects4JAdapterReport,
+    learning_certificate: LearningEvaluationCertificate | None,
+) -> ProgramDefects4JAdapterResult:
+    claim = _claim_for_report(report)
+    evidence = build_real_task_adapter_evidence_certificate(
+        domain="program",
+        report=report,
+        learning_certificate=learning_certificate,
+        claim_certificate=claim,
+    )
     return ProgramDefects4JAdapterResult(
         report=report,
         learning_certificate=learning_certificate,
-        claim_certificate=_claim_for_report(report),
+        evidence_certificate=evidence,
+        claim_certificate=claim,
     )
 
 

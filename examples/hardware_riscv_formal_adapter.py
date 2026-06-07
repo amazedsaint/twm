@@ -8,6 +8,10 @@ import subprocess
 from pathlib import Path
 from typing import Any, Mapping, Protocol
 
+from examples.real_task_adapter_evidence import (
+    RealTaskAdapterEvidenceCertificate,
+    build_real_task_adapter_evidence_certificate,
+)
 from trwm.claims import ClaimCertificate, certify_claim, requirement
 from trwm.core import HardVerifierResult, ProposalTrace, Receipt, TransactionEngine, TypedCandidate, stable_hash
 from trwm.evaluation import (
@@ -143,6 +147,7 @@ class HardwareRiscVFormalAdapterReport:
 class HardwareRiscVFormalAdapterResult:
     report: HardwareRiscVFormalAdapterReport
     learning_certificate: LearningEvaluationCertificate | None
+    evidence_certificate: RealTaskAdapterEvidenceCertificate
     claim_certificate: ClaimCertificate
 
 
@@ -375,12 +380,12 @@ def run_hardware_riscv_formal_adapter_experiment(
     backend = backend or RiscVFormalBackend()
     if not backend.available():
         report = _empty_report(backend)
-        return HardwareRiscVFormalAdapterResult(report=report, learning_certificate=None, claim_certificate=_claim_for_report(report))
+        return _result_for_report(report, None)
     try:
         return _run_available_backend(backend)
     except Exception as exc:
         report = _empty_report(backend, backend_error=f"{type(exc).__name__}:{_tail(str(exc), limit=400)}")
-        return HardwareRiscVFormalAdapterResult(report=report, learning_certificate=None, claim_certificate=_claim_for_report(report))
+        return _result_for_report(report, None)
 
 
 def _run_available_backend(backend: HardwareFormalBackend) -> HardwareRiscVFormalAdapterResult:
@@ -498,10 +503,25 @@ def _run_available_backend(backend: HardwareFormalBackend) -> HardwareRiscVForma
         source_urls=HARDWARE_RISCV_FORMAL_SOURCES,
         claim_boundary=HARDWARE_RISCV_FORMAL_CLAIM_BOUNDARY,
     )
+    return _result_for_report(report, learning_certificate)
+
+
+def _result_for_report(
+    report: HardwareRiscVFormalAdapterReport,
+    learning_certificate: LearningEvaluationCertificate | None,
+) -> HardwareRiscVFormalAdapterResult:
+    claim = _claim_for_report(report)
+    evidence = build_real_task_adapter_evidence_certificate(
+        domain="hardware",
+        report=report,
+        learning_certificate=learning_certificate,
+        claim_certificate=claim,
+    )
     return HardwareRiscVFormalAdapterResult(
         report=report,
         learning_certificate=learning_certificate,
-        claim_certificate=_claim_for_report(report),
+        evidence_certificate=evidence,
+        claim_certificate=claim,
     )
 
 
