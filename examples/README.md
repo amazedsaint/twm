@@ -60,6 +60,7 @@ python3 -m examples.branch_composition_transfer
 python3 -m examples.context_retention_transfer
 python3 -m examples.receipt_trained_reversible_proposer_benchmark
 python3 -m examples.real_task_benchmark_manifest
+python3 -m examples.real_task_execution_plan
 python3 -m examples.robotics_motion_benchmark_adapter
 python3 -m examples.hardware_riscv_formal_adapter
 python3 -m examples.program_defects4j_adapter
@@ -1544,6 +1545,24 @@ preflighted manifest task-asset content hash, backend execution evidence counts
 bind exact receipt counts, and invalid commits remain zero. Missing external tools or
 deterministic test doubles produce a rejected G0 claim rather than weakening the
 final objective.
+
+## Real-Task Execution Plan
+
+Run:
+
+```bash
+python3 -m examples.real_task_execution_plan
+```
+
+This emits a manifest-derived execution contract with top-level `manifest`,
+`preflight_report`, `manifest_certificate`, `plan_report`, and
+`plan_certificate`. The plan binds every domain adapter module and command,
+the required tools, Python modules, task-root environment variables, task
+assets, train and held-out task ids, preflight probe hashes, runtime requirement
+hashes, task-asset content hashes, the aggregate suite command, and the final
+evidence-bundle command. It is a pre-run contract: a valid plan proves what a
+provisioned runner must execute and which missing requirements remain, but it
+does not support the final call-reduction claim without the evidence bundle.
 
 ## Real-Task Evidence Bundle
 

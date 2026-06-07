@@ -1003,3 +1003,11 @@ claim hash, missing requirements, failed aggregate gates, and zero invalid
 commits. Validation rebuilds the suite from the included child results, so a
 supported final claim must be carried by one coherent bundle rather than by
 separate report fragments.
+
+`examples.real_task_execution_plan` is the corresponding pre-run contract. It
+binds the manifest and preflight hashes to every domain adapter command,
+required tool/module/env var, task asset, train/held-out task id, probe hash,
+runtime requirement hash, task-asset content hash, aggregate suite command, and
+final evidence-bundle command. This does not add performance evidence, but it
+removes ambiguity about which provisioned external run can produce admissible
+real-task receipts.

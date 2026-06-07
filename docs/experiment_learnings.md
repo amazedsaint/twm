@@ -964,3 +964,12 @@ hand" to "produce one bundle whose certificate can be validated against all
 included child evidence." On this machine it is still a valid G0 bundle with
 zero receipts; on a provisioned machine it is the artifact that must carry the
 real robotics, hardware, program, and quantum receipt streams.
+
+`examples.real_task_execution_plan` now fills the pre-run side of that path.
+It derives a certificate-bound run contract from the manifest and current
+preflight, binding every adapter module/command, required tool, Python module,
+task-root environment variable, task asset, train/held-out split, preflight
+probe hash, runtime requirement hash, task-asset content hash, aggregate suite
+command, and evidence-bundle command. That makes the remaining external work
+concrete: a provisioned runner must first make this plan ready, then produce a
+validated evidence bundle from the same manifest-bound commands.

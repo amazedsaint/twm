@@ -19,15 +19,16 @@ safety proof, a robotics safety case, a public benchmark result, or a claim that
 reversibility alone improves held-out performance.
 
 The active real-task proof path starts with
-`python3 -m examples.real_task_benchmark_manifest` for preflight and uses
-`python3 -m examples.real_task_evidence_bundle` for the auditable proof
-artifact. The bundle command runs the robotics, hardware, program, and quantum
-benchmark adapters, rebuilds the aggregate suite from those exact child
-results, and rejects unless all real backends produce manifest-covered,
-report-bound adapter evidence certificates, compact receipt-bound execution
-provenance hashes, normalized backend execution evidence hashes,
-receipt-bound task/candidate artifact hashes, supported held-out
-call-reduction evidence, and zero invalid commits.
+`python3 -m examples.real_task_benchmark_manifest` for preflight, then
+`python3 -m examples.real_task_execution_plan` for a certificate-bound run
+contract, and finally `python3 -m examples.real_task_evidence_bundle` for the
+auditable proof artifact. The bundle command runs the robotics, hardware,
+program, and quantum benchmark adapters, rebuilds the aggregate suite from
+those exact child results, and rejects unless all real backends produce
+manifest-covered, report-bound adapter evidence certificates, compact
+receipt-bound execution provenance hashes, normalized backend execution
+evidence hashes, receipt-bound task/candidate artifact hashes, supported
+held-out call-reduction evidence, and zero invalid commits.
 
 The current implementation includes:
 
